@@ -5,7 +5,7 @@
     <section class="features-section py-5">
       <div class="container">
         <div class="text-center mb-5">
-          <h2 class="fw-bold mb-3">Why Choose TutorConnect?</h2>
+          <h2 class="fw-bold mb-3">Why Choose TutorGuru?</h2>
           <p class="text-muted">Everything you need to find the perfect tutoring opportunity</p>
         </div>
         

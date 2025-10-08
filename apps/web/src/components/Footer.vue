@@ -13,9 +13,9 @@
         <div class="col-md-4 mb-3 mb-md-0">
           <h6 class="mb-3">Quick Links</h6>
           <ul class="list-unstyled">
-            <li><router-link to="/" class="text-muted text-decoration-none">Home</router-link></li>
-            <li><router-link to="/dashboard" class="text-muted text-decoration-none">Dashboard</router-link></li>
-            <li><router-link to="/profile" class="text-muted text-decoration-none">Profile</router-link></li>
+            <li><router-link to="/" class="text-light text-decoration-none">Home</router-link></li>
+            <li><router-link to="/dashboard" class="text-light text-decoration-none">Dashboard</router-link></li>
+            <li><router-link to="/profile" class="text-light text-decoration-none">Profile</router-link></li>
           </ul>
         </div>
         

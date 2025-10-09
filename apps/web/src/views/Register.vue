@@ -57,7 +57,7 @@ const handleRegister = async () => {
 
     // 4️⃣ Redirect to Tutor Profile page
     alert('Registration successful! Please complete your tutor profile.')
-    router.push('/TutorProfile')  // make sure route matches your TutorProfile.vue path
+    router.push('/Profile')  // make sure route matches your TutorProfile.vue path
 
   } catch (error) {
     console.error('Registration error:', error)

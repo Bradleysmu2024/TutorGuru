@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-// import { loginUser } from '../services/firebase'
+import { loginUser, signInWithGoogle } from '../services/firebase'
 
 const router = useRouter()
 
@@ -15,6 +15,9 @@ const showPassword = ref(false)
 
 const handleLogin = async () => {
   try {
+    
+    const response = await loginUser(registerForm.value.email,registerForm.value.password)
+    localStorage.setItem("user",response.user)
     console.log('Login attempt:', loginForm.value)
     alert('Login successful! (Demo mode)')
     router.push('/dashboard')
@@ -23,6 +26,22 @@ const handleLogin = async () => {
     alert('Login failed. Please check your credentials.')
   }
 }
+
+const handleGoogleLogin = async () => {
+  try {
+    const response = await signInWithGoogle()
+    console.log(response)
+    localStorage.setItem("user",response.user)
+    console.log('Login attempt:', loginForm.value)
+    alert('Login successful! (Demo mode)')
+    router.push('/dashboard')
+
+  } catch (error) {
+    console.error('Login error:', error)
+    alert('Login failed. Please check your credentials.')
+  }
+}
+
 </script>
 
 <template>
@@ -95,7 +114,17 @@ const handleLogin = async () => {
                     <i class="bi bi-box-arrow-in-right me-2"></i>
                     Login
                   </button>
+                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleLogin">
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google logo"
+                      height="20px"
+                    />
+                    Sign in with Google
+                </button>
                 </div>
+
+
                 
                 <div class="text-center">
                   <p class="text-muted mb-0">

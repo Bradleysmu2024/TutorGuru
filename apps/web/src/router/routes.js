@@ -5,6 +5,8 @@ import TutorProfile from "../views/TutorProfile.vue"
 import Login from "../views/Login.vue"
 import Register from "../views/Register.vue"
 
+import Calendar from "../views/Calendar.vue"
+
 const routes = [
   {
     path: "/",
@@ -30,6 +32,11 @@ const routes = [
     path: "/register",
     name: "Register",
     component: Register,
+  },
+  {
+    path: "/calendar",
+    name: "Calendar",
+    component: Calendar,
   },
 ]
 

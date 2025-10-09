@@ -288,7 +288,7 @@ const handleUploadComplete = (files) => {
 onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const refDoc = doc(db, "tutors", user.uid)
+      const refDoc = doc(db, "tutorProfile", user.uid)
       const snap = await getDoc(refDoc)
       if (snap.exists()) profile.value = snap.data()
     } else {
@@ -302,7 +302,7 @@ const saveProfile = async () => {
   const user = auth.currentUser
   if (!user) return alert("You must be logged in!")
 
-  const tutorRef = doc(db, "tutors", user.uid)
+  const tutorRef = doc(db, "tutorProfile", user.uid)
   await updateDoc(tutorRef, profile.value)
   alert("Profile saved successfully!")
 }

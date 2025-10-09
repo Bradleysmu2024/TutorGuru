@@ -23,7 +23,7 @@ const handleRegister = async () => {
   }
 
   try {
-    // 1️⃣ Create user in Firebase Authentication
+    //Create user in Firebase Authentication
     const result = await registerUser(registerForm.value.email, registerForm.value.password)
 
     if (!result.success) {
@@ -32,30 +32,29 @@ const handleRegister = async () => {
     }
 
     const user = result.user
-
-    // 2️⃣ Create Firestore profile document under tutorProfile collection
+    //create Firebase tutorProfile collection
     await setDoc(doc(db, "tutorProfile", user.uid), {
+      username: user.uid,
       name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
       email: registerForm.value.email,
       phone: "",
       location: "",
       bio: "",
-      teaching: [{ subject: "", levels: [] }], // start empty
+      teaching: [{ subject: "", levels: [] }],
       experience: 0,
       avatar: "",
-      createdAt: new Date().toISOString()
+      role: "T",
+      createdAt: new Date().toISOString(),
     })
 
     console.log("✅ Tutor profile created in Firestore for:", user.email)
 
-    // 3️⃣ Optionally save basic info locally
     localStorage.setItem('user', JSON.stringify({
       uid: user.uid,
       email: user.email,
       name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
     }))
 
-    // 4️⃣ Redirect to Tutor Profile page
     alert('Registration successful! Please complete your tutor profile.')
     router.push('/Profile')  // make sure route matches your TutorProfile.vue path
 

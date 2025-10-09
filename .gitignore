@@ -67,7 +67,7 @@ apps/web/package-lock.json
 .yarn-integrity
 
 # dotenv environment variable files
-.env
+env
 .env.*
 !.env.example
 

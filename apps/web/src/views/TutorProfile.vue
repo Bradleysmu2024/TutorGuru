@@ -114,61 +114,72 @@
                 <i class="bi bi-mortarboard me-2"></i> Teaching Expertise
               </h5>
 
-              <div
-                v-for="(item, index) in profile.teaching"
-                :key="index"
-                class="border rounded p-3 mb-3"
-              >
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <strong>Subject {{ index + 1 }}</strong>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-danger"
-                    @click="removeSubject(index)"
-                  >
-                    <i class="bi bi-trash"></i>
-                  </button>
+              <form @submit.prevent="saveProfile">
+                <div
+                  v-for="(item, index) in profile.teaching"
+                  :key="index"
+                  class="border rounded p-3 mb-3"
+                >
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong>Subject {{ index + 1 }}</strong>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-danger"
+                      @click="removeSubject(index)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+
+                  <label class="form-label">Subject</label>
+                  <select v-model="item.subject" class="form-select mb-2">
+                    <option disabled value="">-- Select Subject --</option>
+                    <option value="English">English</option>
+                    <option value="Chinese">Chinese</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Science">Science</option>
+                    <option value="Physics">Physics</option>
+                    <option value="Chemistry">Chemistry</option>
+                    <option value="Biology">Biology</option>
+                    <option value="History">History</option>
+                    <option value="Geography">Geography</option>
+                  </select>
+
+                  <label class="form-label">Levels</label>
+                  <select v-model="item.levels" class="form-select" multiple size="4">
+                    <option value="Primary">Primary</option>
+                    <option value="Secondary">Secondary</option>
+                    <option value="Junior College">Junior College</option>
+                    <option value="University">University</option>
+                  </select>
+                  <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
                 </div>
 
-                <label class="form-label">Subject</label>
-                <select v-model="item.subject" class="form-select mb-2">
-                  <option disabled value="">-- Select Subject --</option>
-                  <option value="English">English</option>
-                  <option value="Chinese">Chinese</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Science">Science</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Biology">Biology</option>
-                  <option value="History">History</option>
-                  <option value="Geography">Geography</option>
-                </select>
+                <button type="button" class="btn btn-outline-primary mt-2" @click="addSubject">
+                  <i class="bi bi-plus"></i> Add Another Subject
+                </button>
 
-                <label class="form-label">Levels</label>
-                <select v-model="item.levels" class="form-select" multiple size="4">
-                  <option value="Primary">Primary</option>
-                  <option value="Secondary">Secondary</option>
-                  <option value="Junior College">Junior College</option>
-                  <option value="University">University</option>
-                </select>
-                <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
-              </div>
+                <div class="col-12 mt-4">
+                  <label class="form-label">Years of Experience</label>
+                  <input
+                    v-model="profile.experience"
+                    type="number"
+                    class="form-control"
+                    min="0"
+                  >
+                </div>
 
-              <button type="button" class="btn btn-outline-primary mt-2" @click="addSubject">
-                <i class="bi bi-plus"></i> Add Another Subject
-              </button>
-
-              <div class="col-12 mt-4">
-                <label class="form-label">Years of Experience</label>
-                <input
-                  v-model="profile.experience"
-                  type="number"
-                  class="form-control"
-                  min="0"
-                >
-              </div>
+                <!-- ✅ Save button now here -->
+                <div class="mt-4 text-end">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-2"></i> Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
+
+            
 
           <!-- Documents -->
           <div class="card shadow-sm">

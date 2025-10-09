@@ -55,6 +55,8 @@ This will install all required dependencies including:
 - Vue Router 4
 - Bootstrap 5
 - Bootstrap Icons
+- BootstrapVueNext
+- SCSS
 - Firebase
 - Vite (build tool)
 

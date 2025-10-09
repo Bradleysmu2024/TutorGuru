@@ -39,7 +39,7 @@
       </div>
     </div>
     
-     Application Modal 
+     <!-- Application Modal  -->
     <div 
       class="modal fade" 
       id="applicationModal" 

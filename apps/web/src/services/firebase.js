@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app"
-import { getFirestore, collection, getDocs, query, where, orderBy, addDoc } from "firebase/firestore"
+import { getFirestore, collection, getDocs, query, where, orderBy, addDoc, doc, getDoc } from "firebase/firestore"
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { GoogleAuthProvider } from "firebase/auth";
@@ -359,6 +359,57 @@ export const deleteEvent = async (token, calendarId = 'primary', eventId) => {
   }
 }
 
+export const getSubjects = async () => {
+  try {
+    const docRef = doc(db, 'Subjects', 'subject') // Note: capital 'S' in Subjects
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return docSnap.data().list || []
+    } else {
+      console.log('No subjects found!')
+      return []
+    }
+  } catch (error) {
+    console.error('Error fetching subjects:', error)
+    return []
+  }
+}
+
+export const getLevels = async () => {
+  try {
+    const docRef = doc(db, 'Subjects', 'levels')
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return docSnap.data().list || []
+    } else {
+      console.log('No levels found!')
+      return []
+    }
+  } catch (error) {
+    console.error('Error fetching levels:', error)
+    return []
+  }
+}
+
+export const getLocations = async () => {
+  try {
+    const docRef = doc(db, 'Subjects', 'location')
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      return docSnap.data().list || []
+    } else {
+      console.log('No locations found!')
+      return []
+    }
+  } catch (error) {
+    console.error('Error fetching locations:', error)
+    return []
+  }
+}
 
 
+export { app as firebaseApp }
 export { db, auth, storage }

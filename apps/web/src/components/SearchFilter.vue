@@ -79,9 +79,15 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { subjects, levels, locations } from '../data/dummyData'
+import { levels, locations } from '../data/dummyData'
 
 const props = defineProps({
+  subjects: {
+    type: Array,
+    default: () => []
+  },
+  levels: { type: Array, default: () => [] }, 
+  locations: { type: Array, default: () => [] },
   filters: {
     type: Object,
     default: () => ({})

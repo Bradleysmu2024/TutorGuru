@@ -10,6 +10,7 @@
       </div>
       
       <SearchFilter 
+        :subjects="subjects"
         :filters="filters"
         :result-count="filteredJobs.length"
         @update:filters="updateFilters"
@@ -111,7 +112,18 @@ import { Modal } from 'bootstrap'
 import SearchFilter from '../components/SearchFilter.vue'
 import JobCard from '../components/JobCard.vue'
 import { dummyJobPostings } from '../data/dummyData'
+import { getSubjects } from '../services/firebase'
 // import { getJobPostings, applyToJob } from '../services/firebase'
+
+const subjects = ref([])
+const levels = ref([])
+const locations = ref([])
+
+onMounted(async () => {
+  subjects.value = await getSubjects()
+  levels.value = await getLevels()
+  locations.value = await getLocations()
+})
 
 const loading = ref(false)
 const jobs = ref([])

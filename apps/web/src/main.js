@@ -18,6 +18,10 @@ import * as directives from 'vuetify/directives'
 import { VCalendar } from 'vuetify/labs/VCalendar'
 import '@mdi/font/css/materialdesignicons.css'
 
+// Vuefire
+import { VueFire, VueFireAuth } from 'vuefire'
+import { firebaseApp } from './services/firebase' // Export your app from firebase.js
+
 // Text area Auto size
 // import TextareaAutosize from 'vue-textarea-autosize'
 
@@ -26,5 +30,9 @@ const vuetify = createVuetify({ components:{...components, VCalendar}, directive
 const app = createApp(App)
 app.use(router)
 app.use(vuetify)
+app.use(VueFire, {
+  firebaseApp,
+  modules: [VueFireAuth()],
+})
 // app.component('TextareaAutosize', TextareaAutosize)
 app.mount("#app")

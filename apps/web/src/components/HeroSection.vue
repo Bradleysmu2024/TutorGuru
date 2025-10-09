@@ -123,5 +123,10 @@ import Carousel from './Carousel.vue'
     margin-top: 2rem !important;
   }
   
+<<<<<<< HEAD
+=======
+  /* Adjusted carousel height for mobile */
+
+>>>>>>> origin/main
 }
 </style>

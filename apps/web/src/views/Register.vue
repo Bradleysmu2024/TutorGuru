@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { registerUser } from '../services/firebase'
+import { db } from '../services/firebase'
+import { doc, setDoc } from 'firebase/firestore'
 
 const router = useRouter()
 
@@ -21,6 +23,7 @@ const handleRegister = async () => {
   }
 
   try {
+    //Create user in Firebase Authentication
     const result = await registerUser(registerForm.value.email, registerForm.value.password)
 
     if (!result.success) {
@@ -29,26 +32,40 @@ const handleRegister = async () => {
     }
 
     const user = result.user
+    //create Firebase tutorProfile collection
+    await setDoc(doc(db, "tutorProfile", user.uid), {
+      username: user.uid,
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
+      email: registerForm.value.email,
+      phone: "",
+      location: "",
+      bio: "",
+      teaching: [{ subject: "", levels: [] }],
+      experience: 0,
+      avatar: "",
+      role: "T",
+      createdAt: new Date().toISOString(),
+      verified: false
+    })
 
-    // Optionally save to localStorage
+    console.log("✅ Tutor profile created in Firestore for:", user.email)
+
     localStorage.setItem('user', JSON.stringify({
       uid: user.uid,
       email: user.email,
-      firstName: registerForm.value.firstName,
-      lastName: registerForm.value.lastName
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
     }))
 
-    console.log('Registration successful:', user)
-    alert('Registration successful!')
-    router.push('/profile')
+    alert('Registration successful! Please complete your tutor profile.')
+    router.push('/Profile')  // make sure route matches your TutorProfile.vue path
 
   } catch (error) {
     console.error('Registration error:', error)
     alert('Unexpected error. Please try again.')
   }
 }
-
 </script>
+
 
 <template>
   <div class="register-page">
@@ -103,7 +120,7 @@ const handleRegister = async () => {
                 </div>
 
                 <div class="d-grid mt-4 mb-3">
-                  <button type="submit" class="btn btn-primary btn-lg">
+                  <button type="submit" class="btn btn-primary btn-lg text-light">
                     <i class="bi bi-person-check me-2"></i>
                     Create Account
                   </button>

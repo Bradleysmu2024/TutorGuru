@@ -1,5 +1,6 @@
 <template>
   <div class="home-page">
+    <HeroSearch />
     <HeroSection />
     
     <section class="features-section py-5">
@@ -69,11 +70,18 @@
         </div>
       </div>
     </section>
+   
+    <TestimonialsStrip />
+
+    <TrustedBy />
   </div>
 </template>
 
 <script setup>
 import HeroSection from '../components/HeroSection.vue'
+import HeroSearch from '../components/HeroSearch.vue'
+import TestimonialsStrip from '../components/TestimonialsStrip.vue'
+import TrustedBy from '../components/TrustedBy.vue'
 </script>
 
 <style scoped>

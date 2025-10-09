@@ -36,7 +36,7 @@
       
       <div class="row">
         <div class="col-12 text-center">
-          <p class="mb-0">&copy; 2025 TutorConnect. All rights reserved. Built by Dzaki.</p>
+          <p class="mb-0">&copy; 2025 TutorConnect. All rights reserved</p>
         </div>
       </div>
     </div>

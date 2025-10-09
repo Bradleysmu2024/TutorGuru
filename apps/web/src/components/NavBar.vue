@@ -31,18 +31,71 @@
               Home
             </router-link>
           </li>
-          <li class="nav-item">
-            <router-link to="/dashboard" class="nav-link" active-class="active" @click="closeNavbar">
-              <i class="bi bi-grid me-1"></i>
-              Dashboard
-            </router-link>
+           <!-- Added role switcher dropdown for parent/tutor navigation  -->
+          <li class="nav-item dropdown">
+            <a 
+              class="nav-link dropdown-toggle" 
+              href="#" 
+              id="roleDropdown" 
+              role="button" 
+              @click.prevent="toggleDropdown"
+              :aria-expanded="dropdownOpen"
+            >
+              <i class="bi bi-person-badge me-1"></i>
+              {{ currentRole === 'tutor' ? 'Tutor' : 'Parent' }}
+            </a>
+            <ul class="dropdown-menu" :class="{ 'show': dropdownOpen }">
+              <li>
+                <a class="dropdown-item" href="#" @click.prevent="switchRole('tutor')">
+                  <i class="bi bi-mortarboard me-2"></i>
+                  Switch to Tutor
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" href="#" @click.prevent="switchRole('parent')">
+                  <i class="bi bi-people me-2"></i>
+                  Switch to Parent
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="nav-item">
-            <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
-              <i class="bi bi-person me-1"></i>
-              Profile
-            </router-link>
-          </li>
+
+          <!-- Tutor/Parent Navigation (must be adjacent for v-if/v-else) -->
+          <template v-if="currentRole === 'tutor'">
+            <li class="nav-item">
+              <router-link to="/dashboard" class="nav-link" active-class="active" @click="closeNavbar">
+                <i class="bi bi-grid me-1"></i>
+                Dashboard
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
+                <i class="bi bi-person me-1"></i>
+                Profile
+              </router-link>
+            </li>
+          </template>
+          <template v-else>
+            <li class="nav-item">
+              <router-link to="/parent-dashboard" class="nav-link" active-class="active" @click="closeNavbar">
+                <i class="bi bi-grid me-1"></i>
+                Dashboard
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/post-assignment" class="nav-link" active-class="active" @click="closeNavbar">
+                <i class="bi bi-plus-circle me-1"></i>
+                Post Assignment
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/parent-profile" class="nav-link" active-class="active" @click="closeNavbar">
+                <i class="bi bi-person me-1"></i>
+                Profile
+              </router-link>
+            </li>
+          </template>
+
           <li class="nav-item ms-lg-3">
             <router-link to="/login" class="btn btn-outline-primary btn-sm" @click="closeNavbar">
               <i class="bi bi-box-arrow-in-right me-1"></i>
@@ -56,18 +109,43 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue' // Add 'watch' import
+import { useRoute } from 'vue-router' // Add this import
 
+const route = useRoute() // Add this line
 const isOpen = ref(false)
+const dropdownOpen = ref(false)
+const currentRole = ref('parent') // 'tutor' or 'parent'
 
 const toggleNavbar = () => {
   isOpen.value = !isOpen.value
+  dropdownOpen.value = false
 }
 
 const closeNavbar = () => {
   isOpen.value = false
+  dropdownOpen.value = false
 }
+
+const toggleDropdown = () => {
+  dropdownOpen.value = !dropdownOpen.value
+}
+
+const switchRole = (role) => {
+  currentRole.value = role
+  dropdownOpen.value = false
+  closeNavbar()
+}
+
+// Watch for route changes and close navbar
+watch(
+  () => route.fullPath,
+  () => {
+    closeNavbar()
+  }
+)
 </script>
+
 
 <style scoped>
 .navbar {

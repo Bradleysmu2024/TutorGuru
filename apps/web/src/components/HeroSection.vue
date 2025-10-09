@@ -123,9 +123,5 @@ import Carousel from './Carousel.vue'
     margin-top: 2rem !important;
   }
   
-  /* Adjusted carousel height for mobile */
-  .carousel-container {
-    height: 300px;
-  }
 }
 </style>

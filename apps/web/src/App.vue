@@ -12,6 +12,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import NavBar from './components/NavBar.vue'
 import HomePage from './components/HomePage.vue'
+import { BApp } from 'bootstrap-vue-next';
 
 // Loading state + numbers
 const isLoading = ref(true)

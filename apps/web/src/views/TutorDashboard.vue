@@ -64,7 +64,7 @@
                   <label class="form-label">Cover Letter</label>
                   <textarea 
                     v-model="application.coverLetter"
-                    class="form-control" 
+                    class="form-control"
                     rows="4"
                     placeholder="Tell the student why you're a great fit..."
                     required

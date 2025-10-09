@@ -49,3 +49,25 @@
   color: var(--tg-navy) !important;       /* ensure dark text */
   background-color:#fff !important;
 }
+
+/* === Temporary Logos === */
+.testimonial-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f3f3f3;
+  object-fit: cover;
+}
+
+.trusted-logo {
+  width: 100px;
+  height: 50px;
+  object-fit: contain;
+  filter: grayscale(100%);
+  opacity: 0.9;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.trusted-logo:hover {
+  transform: scale(1.05);
+  opacity: 1;
+}

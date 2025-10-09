@@ -2,24 +2,29 @@
   <section class="py-5 bg-white border-top">
     <div class="container">
       <h2 class="fw-bold mb-4 text-center section-title">
-        What clients say about TutorGuru
+        What parents say about TutorGuru
       </h2>
 
       <div class="row g-4">
-        <div class="col-lg-4" v-for="(t, i) in testimonials" :key="i">
+        <div
+          class="col-lg-4"
+          v-for="(t, i) in testimonials"
+          :key="i"
+        >
           <div class="card shadow-sm border-0 rounded-4 h-100">
-            <div class="card-body">
-              <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="logo-box rounded-3"></div>
-                <div class="small text-muted fw-semibold">{{ t.company }}</div>
+            <div class="card-body text-center">
+              <!-- Parent photo -->
+              <div class="parent-img-wrapper mb-3">
+                <img
+                  :src="t.image"
+                  alt="Parent photo"
+                  class="parent-img"
+                />
               </div>
 
-              <p class="mb-4 text-secondary">“{{ t.quote }}”</p>
-
-              <div class="small">
-                <div class="fw-semibold">{{ t.name }}</div>
-                <div class="text-muted">{{ t.role }}</div>
-              </div>
+              <p class="text-secondary mb-4">“{{ t.quote }}”</p>
+              <h6 class="fw-semibold mb-0">{{ t.name }}</h6>
+              <small class="text-muted">{{ t.role }}</small>
             </div>
           </div>
         </div>
@@ -29,34 +34,54 @@
 </template>
 
 <script setup>
+import parent1 from '../assets/parent1.png'
+import parent2 from '../assets/parent2.png'
+import parent3 from '../assets/parent3.png'
+
 const testimonials = [
   {
-    company: "MorningCrunch",
+    image: parent1,
     quote:
-      "Speed, quality, and a trusted network of tutors we rely on long-term.",
-    name: "Gregor Becker & Paul Ostwald",
-    role: "Founders",
+      'TutorGuru has been a lifesaver for my son. The tutors are patient, understanding, and really care about progress!',
+    name: 'Mrs Lim',
+    role: 'Mother of Secondary 3 Student'
   },
   {
-    company: "Project Alianza",
-    quote: "Matched us with educators who truly understand student needs.",
-    name: "Kristin Van Busum",
-    role: "CEO & Co-Founder",
+    image: parent2,
+    quote:
+      'We love how flexible the scheduling is. My daughter enjoys her sessions and her grades have improved so much!',
+    name: 'Mr Tan',
+    role: 'Father of Primary 6 Student'
   },
   {
-    company: "SENIA",
-    quote: "Turnaround time is fast and results are excellent.",
-    name: "Christina & Gina Senia",
-    role: "Co-Founders",
-  },
-];
+    image: parent3,
+    quote:
+      'Professional tutors and seamless matching process. Highly recommended for busy working parents like us!',
+    name: 'Mr Rajesh',
+    role: 'Father of JC Student'
+  }
+]
 </script>
 
 <style scoped>
-.logo-box {
-  width: 84px;
-  height: 28px;
-  background: linear-gradient(90deg, var(--tg-light), #fff);
-  border: 1px solid #e9ecef;
+.parent-img-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.parent-img {
+  width: 100px;
+  height: 120px;
+  border-radius: 15px; /* softly rounded square */
+  object-fit: cover;
+  object-position: top; /* shows full head to shoulder */
+  background-color: #f6f6f6;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.parent-img:hover {
+  transform: scale(1.05);
 }
 </style>

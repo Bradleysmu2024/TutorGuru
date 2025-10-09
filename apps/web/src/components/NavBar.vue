@@ -1,55 +1,12 @@
 <script setup>
-/**
- * NavBar.vue
- * - Sticky navigation with brand on the left.
- * - Highlights the current section link as the user scrolls.
- * - Uses a tiny scroll handler (no extra libraries).
- */
-import { onMounted, onBeforeUnmount, ref } from 'vue'
-
-// Which section is "active" (used to style links)
-const active = ref('find-tutors')
-
-/**
- * Decide which section is active based on each section's position
- * relative to the viewport top. Threshold keeps it from flickering
- * when near boundaries.
- */
-function setActiveByScroll() {
-  const ids = ['find-tutors', 'assignment', 'profile']
-  const tops = ids
-    .map(id => {
-      const el = document.getElementById(id)
-      return el ? { id, top: el.getBoundingClientRect().top } : null
-    })
-    .filter(Boolean)
-
-  const threshold = 140
-  // First section within threshold, otherwise the last one scrolled past
-  const current =
-    tops.find(s => s.top >= 0 && s.top < threshold) ||
-    tops.reverse().find(s => s.top < 0) ||
-    { id: 'find-tutors' }
-
-  active.value = current.id
-}
-
-let handler
-onMounted(() => {
-  handler = () => setActiveByScroll()
-  window.addEventListener('scroll', handler, { passive: true })
-  setActiveByScroll() // initialize on first render
-})
-onBeforeUnmount(() => window.removeEventListener('scroll', handler))
+// No reactive state or scroll handlers needed for this static navbar
 </script>
 
 <template>
-  <nav class="navbar navbar-expand-lg bg-white shadow-sm sticky-top">
+  <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top py-2">
     <div class="container">
-      <!-- Brand (left) -->
-      <a class="navbar-brand fw-bold" href="#">TutorGuru</a>
+      <a class="navbar-brand fw-bold fs-4" href="#">TutorGuru</a>
 
-      <!-- Mobile toggle -->
       <button
         class="navbar-toggler"
         type="button"
@@ -62,24 +19,38 @@ onBeforeUnmount(() => window.removeEventListener('scroll', handler))
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <!-- Links (right) -->
-      <div id="mainNav" class="collapse navbar-collapse">
-        <ul class="navbar-nav ms-auto">
+      <div class="collapse navbar-collapse" id="mainNav">
+        <ul class="navbar-nav ms-auto align-items-lg-center gap-3">
+          <li class="nav-item"><a class="nav-link" href="#">Find Tutors</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Assignments</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">Profile</a></li>
           <li class="nav-item">
-            <a :class="['nav-link', active==='find-tutors' && 'active']" href="#find-tutors">Find Tutors</a>
+            <a class="btn btn-outline-primary rounded-pill px-3" href="#">Sign In</a>
           </li>
           <li class="nav-item">
-            <a :class="['nav-link', active==='assignment' && 'active']" href="#assignment">Assignment</a>
-          </li>
-          <li class="nav-item">
-            <a :class="['nav-link', active==='profile' && 'active']" href="#profile">Profile</a>
-          </li>
-          <li class="nav-item">
-            <!-- CTA uses theme's orange (btn-warning) -->
-            <a class="btn btn-warning ms-lg-2" href="#find-tutors">Get Started</a>
+            <a class="btn btn-warning rounded-pill text-white px-3" href="#">Join</a>
           </li>
         </ul>
       </div>
     </div>
   </nav>
 </template>
+
+<style scoped>
+.btn-outline-primary {
+  color: var(--tg-navy);
+  border-color: var(--tg-navy);
+}
+.btn-outline-primary:hover {
+  background-color: var(--tg-navy);
+  color: #fff;
+}
+.btn-warning {
+  background-color: var(--tg-gold);
+  border-color: var(--tg-gold);
+}
+.btn-warning:hover {
+  background-color: #b99355;
+  border-color: #b99355;
+}
+</style>

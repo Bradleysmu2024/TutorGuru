@@ -43,3 +43,9 @@
 
 .reveal { opacity:0; transform:translateY(10px); transition:all .45s ease; }
 .reveal.reveal-in { opacity:1; transform:none; }
+
+/* Pills used in hero (badge + tile) */
+.badge.tile{
+  color: var(--tg-navy) !important;       /* ensure dark text */
+  background-color:#fff !important;
+}

@@ -5,22 +5,27 @@
         <div class="col-lg-6 mb-5 mb-lg-0">
           <div class="hero-content">
             <h1 class="display-4 fw-bold mb-4 animate-fade-in">
-              Find Your Perfect <span class="text-primary">Tutoring Opportunity</span>
+              Find Your Perfect
+              <span class="text-primary">Tutoring Opportunity</span>
             </h1>
             <p class="lead text-muted mb-4 animate-fade-in-delay">
-              Connect with students who need your expertise. Browse hundreds of tutoring opportunities tailored to your skills and schedule.
+              Connect with students who need your expertise. Browse hundreds of
+              tutoring opportunities tailored to your skills and schedule.
             </p>
             <div class="d-flex flex-wrap gap-3 animate-fade-in-delay-2">
               <router-link to="/dashboard" class="btn btn-primary btn-lg px-4">
                 <i class="bi bi-search me-2"></i>
                 Browse Opportunities
               </router-link>
-              <router-link to="/register" class="btn btn-outline-primary btn-lg px-4">
+              <router-link
+                to="/register"
+                class="btn btn-outline-primary btn-lg px-4"
+              >
                 <i class="bi bi-person-plus me-2"></i>
                 Sign Up as Tutor
               </router-link>
             </div>
-            
+
             <div class="stats-row mt-5">
               <div class="row g-4">
                 <div class="col-4">
@@ -56,7 +61,7 @@
 </template>
 
 <script setup>
-import Carousel from './Carousel.vue'
+import Carousel from "./Carousel.vue";
 </script>
 
 <style scoped>
@@ -114,19 +119,13 @@ import Carousel from './Carousel.vue'
   .hero-section {
     padding: 2rem 0;
   }
-  
+
   .hero-content h1 {
     font-size: 2rem;
   }
-  
+
   .stats-row {
     margin-top: 2rem !important;
   }
-  
-<<<<<<< HEAD
-=======
-  /* Adjusted carousel height for mobile */
-
->>>>>>> origin/main
 }
 </style>

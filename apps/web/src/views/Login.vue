@@ -50,7 +50,8 @@ const handleGoogleLogin = async () => {
     const user = response.user
     localStorage.setItem("user", JSON.stringify({
       uid: user.uid,
-      email: user.email
+      email: user.email,
+      token: response.token // google token
     }))
 
     console.log('Google Login successful:', user)

@@ -49,6 +49,7 @@ web_modules/
 
 # Optional npm cache directory
 .npm
+apps/web/package-lock.json
 
 # Optional eslint cache
 .eslintcache
@@ -203,11 +204,6 @@ web_modules/
 
 # Yarn Integrity file
 .yarn-integrity
-
-# dotenv environment variable files
-.env
-.env.*
-!.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

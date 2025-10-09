@@ -21,18 +21,33 @@ const handleRegister = async () => {
   }
 
   try {
+    const result = await registerUser(registerForm.value.email, registerForm.value.password)
 
-    const response = await registerUser(registerForm.value.email, registerForm.value.password)
-    localStorage.setItem("user", response.user)
-    console.log('Registration attempt:', registerForm.value)
-    alert('Registration successful! (Demo mode)')
+    if (!result.success) {
+      alert(`Registration failed: ${result.error}`)
+      return
+    }
+
+    const user = result.user
+
+    // Optionally save to localStorage
+    localStorage.setItem('user', JSON.stringify({
+      uid: user.uid,
+      email: user.email,
+      firstName: registerForm.value.firstName,
+      lastName: registerForm.value.lastName
+    }))
+
+    console.log('Registration successful:', user)
+    alert('Registration successful!')
     router.push('/profile')
 
   } catch (error) {
     console.error('Registration error:', error)
-    // alert('Registration failed. Please try again.')
+    alert('Unexpected error. Please try again.')
   }
 }
+
 </script>
 
 <template>

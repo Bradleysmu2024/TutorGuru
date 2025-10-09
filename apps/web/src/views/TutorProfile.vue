@@ -25,7 +25,7 @@
               </div>
               <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
               <p class="text-muted mb-3">{{ profile.email }}</p>
-              <span class="badge bg-success mb-3">
+              <span v-if="profile.verified" class="badge bg-success mb-3">
                 <i class="bi bi-check-circle me-1"></i> Verified Tutor
               </span>
               <div class="d-grid">
@@ -78,11 +78,16 @@
                   </div>
 
                   <div class="col-md-6">
+                    <label class="form-label">Username</label>
+                    <input v-model="profile.username" type="text" class="form-control">
+                  </div>
+
+                  <div class="col-md-6">
                     <label class="form-label">Phone</label>
                     <input v-model="profile.phone" type="tel" class="form-control">
                   </div>
 
-                  <div class="col-md-6">
+                  <div class="col-12">
                     <label class="form-label">Location</label>
                     <input v-model="profile.location" type="text" class="form-control">
                   </div>
@@ -98,7 +103,7 @@
                   </div>
                 </div>
 
-                <div class="mt-3">
+                <div class="mt-3 text-end">
                   <button type="submit" class="btn btn-primary text-light">
                     <i class="bi bi-save me-2"></i>
                     Save Changes
@@ -172,7 +177,7 @@
 
                 <!-- ✅ Save button now here -->
                 <div class="mt-4 text-end">
-                  <button type="submit" class="btn btn-primary">
+                  <button type="submit" class="btn btn-primary text-light">
                     <i class="bi bi-save me-2"></i> Save Changes
                   </button>
                 </div>
@@ -227,7 +232,7 @@
                 </div>
               </div>
 
-              <div class="mt-3">
+              <div class="mt-3 text-end">
                 <button
                   class="btn btn-primary"
                   @click="uploadDocuments"
@@ -256,13 +261,15 @@ const selectedFiles = ref([])
 
 const profile = ref({
   name: "",
+  username: "",
   email: "",
   phone: "",
   location: "",
   bio: "",
   teaching: [{ subject: "", levels: [] }],
   experience: 0,
-  avatar: ""
+  avatar: "",
+  verified: false
 })
 
 const uploadedDocuments = ref([])

@@ -69,7 +69,7 @@ apps/web/package-lock.json
 # dotenv environment variable files
 .env
 .env.*
-apps/web/.env
+!.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

@@ -45,6 +45,7 @@ const handleRegister = async () => {
       avatar: "",
       role: "T",
       createdAt: new Date().toISOString(),
+      verified: false
     })
 
     console.log("✅ Tutor profile created in Firestore for:", user.email)

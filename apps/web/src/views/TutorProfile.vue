@@ -25,7 +25,7 @@
               </div>
               <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
               <p class="text-muted mb-3">{{ profile.email }}</p>
-              <span class="badge bg-success mb-3">
+              <span v-if="profile.verified" class="badge bg-success mb-3">
                 <i class="bi bi-check-circle me-1"></i> Verified Tutor
               </span>
               <div class="d-grid">
@@ -269,6 +269,7 @@ const profile = ref({
   teaching: [{ subject: "", levels: [] }],
   experience: 0,
   avatar: "",
+  verified: false
 })
 
 const uploadedDocuments = ref([])

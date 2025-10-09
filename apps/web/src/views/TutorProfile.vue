@@ -250,6 +250,8 @@ import FileUpload from "../components/FileUpload.vue"
 import { auth, db } from "../services/firebase"
 import { onAuthStateChanged } from "firebase/auth"
 import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"
+
 
 const fileUploadRef = ref(null)
 const selectedFiles = ref([])
@@ -280,9 +282,41 @@ const handleFilesSelected = (files) => {
 }
 
 const uploadDocuments = async () => {
-  if (selectedFiles.value.length === 0) return
-  fileUploadRef.value.simulateUpload()
+  const user = auth.currentUser
+  if (!user) return alert("You must be logged in to upload documents!")
+
+  if (selectedFiles.value.length === 0) {
+    return alert("Please select at least one file.")
+  }
+
+  const storage = getStorage()
+  const tutorRef = doc(db, "tutorProfile", user.uid)
+  const newUploads = []
+
+  try {
+    for (const file of selectedFiles.value) {
+      const fileRef = storageRef(storage, `tutors/${user.uid}/documents/${file.name}`)
+      await uploadBytes(fileRef, file)
+      const url = await getDownloadURL(fileRef)
+
+      newUploads.push({
+        name: file.name,
+        uploadDate: new Date().toISOString().split("T")[0],
+        url
+      })
+    }
+
+    uploadedDocuments.value.push(...newUploads)
+    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value })
+
+    alert("✅ Documents uploaded successfully!")
+    selectedFiles.value = []
+  } catch (err) {
+    console.error("Upload error:", err)
+    alert("Error uploading files. Please try again.")
+  }
 }
+
 
 const handleUploadComplete = (files) => {
   files.forEach(file => {
@@ -302,11 +336,15 @@ onMounted(() => {
     if (user) {
       const refDoc = doc(db, "tutorProfile", user.uid)
       const snap = await getDoc(refDoc)
-      if (snap.exists()) profile.value = snap.data()
-    } else {
+      if (snap.exists()) {
+      profile.value = snap.data()
+      uploadedDocuments.value = snap.data().uploadedDocuments || []
+    }
+ else {
       alert("Please log in to view your profile.")
     }
-  })
+  }
+})
 })
 
 // Save profile to Firestore

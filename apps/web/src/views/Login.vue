@@ -15,34 +15,55 @@ const showPassword = ref(false)
 
 const handleLogin = async () => {
   try {
-    
-    const response = await loginUser(registerForm.value.email,registerForm.value.password)
-    localStorage.setItem("user",response.user)
-    console.log('Login attempt:', loginForm.value)
-    alert('Login successful! (Demo mode)')
+    const response = await loginUser(loginForm.value.email, loginForm.value.password)
+
+    if (!response.success) {
+      alert(`Login failed: ${response.error}`)
+      return
+    }
+
+    const user = response.user
+    localStorage.setItem("user", JSON.stringify({
+      uid: user.uid,
+      email: user.email
+    }))
+
+    console.log('Login successful:', user)
+    alert('Login successful!')
     router.push('/dashboard')
+
   } catch (error) {
     console.error('Login error:', error)
-    alert('Login failed. Please check your credentials.')
+    alert('Unexpected error during login.')
   }
 }
 
 const handleGoogleLogin = async () => {
   try {
     const response = await signInWithGoogle()
-    console.log(response)
-    localStorage.setItem("user",response.user)
-    console.log('Login attempt:', loginForm.value)
-    alert('Login successful! (Demo mode)')
+
+    if (!response.success) {
+      alert(`Google login failed: ${response.error}`)
+      return
+    }
+
+    const user = response.user
+    localStorage.setItem("user", JSON.stringify({
+      uid: user.uid,
+      email: user.email
+    }))
+
+    console.log('Google Login successful:', user)
+    alert('Google login successful!')
     router.push('/dashboard')
 
   } catch (error) {
-    console.error('Login error:', error)
-    alert('Login failed. Please check your credentials.')
+    console.error('Google Login error:', error)
+    alert('Unexpected error during Google login.')
   }
 }
-
 </script>
+
 
 <template>
   <div class="login-page">

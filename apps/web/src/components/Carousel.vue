@@ -23,7 +23,7 @@
 </template>
 
 <script setup>
-const imageModules = import.meta.glob('../assets/images/*.(jpg|jpeg|png|gif|webp)', { eager: true })
+const imageModules = import.meta.glob('../assets/images/home/*.(jpg|jpeg|png|gif|webp)', { eager: true })
 
 // Extract the image URLs from the modules
 const images = Object.values(imageModules).map(module => module.default)

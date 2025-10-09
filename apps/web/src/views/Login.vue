@@ -132,7 +132,7 @@ const handleGoogleLogin = async () => {
                 </div>
                 
                 <div class="d-grid mb-3">
-                  <button type="submit" class="btn btn-primary btn-lg">
+                  <button type="submit" class="btn btn-primary btn-lg text-light">
                     <i class="bi bi-box-arrow-in-right me-2"></i>
                     Login
                   </button>

@@ -6,16 +6,18 @@ import { GoogleAuthProvider } from "firebase/auth";
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyAFraqP-d8STa9Rci_ntq3qtSOhOiuA4ZA",
-  authDomain: "tutor-72464.firebaseapp.com",
-  projectId: "tutor-72464",
-  storageBucket: "tutor-72464.firebasestorage.app",
-  messagingSenderId: "46575005075",
-  appId: "1:46575005075:web:3c5183e6940ad4db890c66",
-  measurementId: "G-S2QW8VHPBF"
-}
+  apiKey: process.env.VUE_APP_API_KEY,
+  authDomain: process.env.VUE_APP_AUTH_DOMAIN,
+  projectId: process.env.VUE_APP_PROJECT_ID,
+  storageBucket: process.env.VUE_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.VUE_APP_MESSAGING_SENDER_ID,
+  appId: process.env.VUE_APP_APP_ID,
+  measurementId: process.env.VUE_APP_MEASUREMENT_ID
+};
 
 // Initialize Firebase
+console.log(firebaseConfig.apiKey);
+
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const auth = getAuth(app)

@@ -7,7 +7,7 @@
             <i class="bi bi-book-half me-2"></i>
             TutorConnect
           </h5>
-          <p class="text-muted">Connecting passionate tutors with eager learners for a brighter future.</p>
+          <p>Connecting passionate tutors with eager learners for a brighter future.</p>
         </div>
         
         <div class="col-md-4 mb-3 mb-md-0">
@@ -21,11 +21,11 @@
         
         <div class="col-md-4">
           <h6 class="mb-3">Contact Us</h6>
-          <p class="text-muted mb-2">
+          <p class="mb-2">
             <i class="bi bi-envelope me-2"></i>
             support@tutorconnect.com
           </p>
-          <p class="text-muted">
+          <p>
             <i class="bi bi-telephone me-2"></i>
             +65 1234 5678
           </p>
@@ -36,7 +36,7 @@
       
       <div class="row">
         <div class="col-12 text-center">
-          <p class="text-muted mb-0">&copy; 2025 TutorConnect. All rights reserved. Built by Dzaki.</p>
+          <p class="mb-0">&copy; 2025 TutorConnect. All rights reserved. Built by Dzaki.</p>
         </div>
       </div>
     </div>

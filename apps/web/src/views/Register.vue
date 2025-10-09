@@ -120,7 +120,7 @@ const handleRegister = async () => {
                 </div>
 
                 <div class="d-grid mt-4 mb-3">
-                  <button type="submit" class="btn btn-primary btn-lg">
+                  <button type="submit" class="btn btn-primary btn-lg text-light">
                     <i class="bi bi-person-check me-2"></i>
                     Create Account
                   </button>

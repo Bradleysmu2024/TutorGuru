@@ -172,7 +172,7 @@
 
                 <!-- ✅ Save button now here -->
                 <div class="mt-4 text-end">
-                  <button type="submit" class="btn btn-primary">
+                  <button type="submit" class="btn btn-primary text-light">
                     <i class="bi bi-save me-2"></i> Save Changes
                   </button>
                 </div>

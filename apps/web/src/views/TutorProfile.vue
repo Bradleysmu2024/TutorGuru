@@ -99,8 +99,9 @@
                 </div>
 
                 <div class="mt-3">
-                  <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save me-2"></i> Save Changes
+                  <button type="submit" class="btn btn-primary text-light">
+                    <i class="bi bi-save me-2"></i>
+                    Save Changes
                   </button>
                 </div>
               </form>

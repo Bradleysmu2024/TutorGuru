@@ -45,14 +45,9 @@
             </div>
           </div>
         </div>
-        
         <div class="col-lg-6">
-          <div class="hero-image animate-float">
-            <img 
-              src="../assets/vue.svg" 
-              alt="Tutor teaching student" 
-              class="img-fluid rounded-4 shadow-lg"
-            >
+          <div class="carousel-container">
+            <Carousel />
           </div>
         </div>
       </div>
@@ -61,6 +56,7 @@
 </template>
 
 <script setup>
+import Carousel from './Carousel.vue'
 </script>
 
 <style scoped>
@@ -71,6 +67,12 @@
 
 .min-vh-75 {
   min-height: 75vh;
+}
+
+/* Added carousel container with fixed height to match content */
+.carousel-container {
+  height: 500px;
+  width: 100%;
 }
 
 .hero-content h1 {
@@ -89,10 +91,6 @@
   animation: fadeIn 0.8s ease-in 0.4s both;
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -101,15 +99,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20px);
   }
 }
 
@@ -132,6 +121,11 @@
   
   .stats-row {
     margin-top: 2rem !important;
+  }
+  
+  /* Adjusted carousel height for mobile */
+  .carousel-container {
+    height: 300px;
   }
 }
 </style>

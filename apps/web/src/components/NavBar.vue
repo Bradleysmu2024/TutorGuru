@@ -6,40 +6,45 @@
         <span class="fw-bold">TutorConnect</span>
       </router-link>
       
+      <!-- Removed Bootstrap data attributes, added manual click handler -->
       <button 
         class="navbar-toggler" 
         type="button" 
-        data-bs-toggle="collapse" 
-        data-bs-target="#navbarNav"
+        @click="toggleNavbar"
         aria-controls="navbarNav" 
-        aria-expanded="false" 
+        :aria-expanded="isOpen"
         aria-label="Toggle navigation"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
       
-      <div class="collapse navbar-collapse" id="navbarNav">
+      <!-- Added dynamic class binding for show state -->
+      <div 
+        class="navbar-collapse" 
+        :class="{ 'show': isOpen }"
+        id="navbarNav"
+      >
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item">
-            <router-link to="/" class="nav-link" active-class="active">
+            <router-link to="/" class="nav-link" active-class="active" @click="closeNavbar">
               <i class="bi bi-house-door me-1"></i>
               Home
             </router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/dashboard" class="nav-link" active-class="active">
+            <router-link to="/dashboard" class="nav-link" active-class="active" @click="closeNavbar">
               <i class="bi bi-grid me-1"></i>
               Dashboard
             </router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/profile" class="nav-link" active-class="active">
+            <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
               <i class="bi bi-person me-1"></i>
               Profile
             </router-link>
           </li>
           <li class="nav-item ms-lg-3">
-            <router-link to="/login" class="btn btn-outline-primary btn-sm">
+            <router-link to="/login" class="btn btn-outline-primary btn-sm" @click="closeNavbar">
               <i class="bi bi-box-arrow-in-right me-1"></i>
               Login
             </router-link>
@@ -51,6 +56,17 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
+
+const isOpen = ref(false)
+
+const toggleNavbar = () => {
+  isOpen.value = !isOpen.value
+}
+
+const closeNavbar = () => {
+  isOpen.value = false
+}
 </script>
 
 <style scoped>
@@ -84,7 +100,20 @@
   color: #0d6efd;
 }
 
+/* Added manual collapse styles */
+.navbar-collapse {
+  transition: height 0.35s ease;
+}
+
 @media (max-width: 991px) {
+  .navbar-collapse:not(.show) {
+    display: none;
+  }
+  
+  .navbar-collapse.show {
+    display: block;
+  }
+  
   .nav-item {
     margin: 0.5rem 0;
   }

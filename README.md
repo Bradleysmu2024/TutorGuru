@@ -10,7 +10,7 @@ A comprehensive tutoring platform built with Vue.js that connects tutors with st
 - **Profile Management**: Tutors can manage their information and upload credentials
 - **File Upload**: Drag-and-drop file upload for certificates and documents
 - **Responsive Design**: Fully responsive across desktop, tablet, and mobile devices
-- **Firebase Integration**: Ready for Firebase Authentication and Firestore database
+- **Firebase Integration**: Ready for Firebase Authentication, Database and Storage
 
 ## Prerequisites
 

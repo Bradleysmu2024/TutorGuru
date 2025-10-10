@@ -11,7 +11,8 @@ import {
   addDoc,
   doc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  connectFirestoreEmulator 
 } from "firebase/firestore"
 import {
   getAuth,
@@ -19,13 +20,15 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   signInWithPopup,
-  getAdditionalUserInfo
+  getAdditionalUserInfo,
+  connectAuthEmulator
 } from "firebase/auth"
 import {
   getStorage,
   ref,
   uploadBytes,
-  getDownloadURL
+  getDownloadURL,
+  connectStorageEmulator
 } from "firebase/storage"
 import {
   GoogleAuthProvider
@@ -45,11 +48,19 @@ const firebaseConfig = {
 // Initialize Firebase
 console.log(firebaseConfig.apiKey);
 
+const useEmulators = true;
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const auth = getAuth(app)
 const storage = getStorage(app)
 const provider = new GoogleAuthProvider();
+
+// Connect to Firebase Emulators
+if (useEmulators) {
+  connectFirestoreEmulator(db, 'dodieboy.ddns.net', 8081);
+  connectAuthEmulator(auth, "http://dodieboy.ddns.net:9091");
+  connectStorageEmulator(storage, "dodieboy.ddns.net", 9191);
+}
 
 // Request permission to access Calendar
 provider.addScope('https://www.googleapis.com/auth/calendar');
@@ -314,12 +325,12 @@ export const getEvents = async (token, calendarId = 'primary', type) => {
     // console.log(calStart, calEnd)
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?singleEvents=true&orderBy=startTime&timeMin=${calStart}&timeMax=${calEnd}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/json'
-        },
-      }
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      },
+    }
     );
     const data = await response.json()
     // console.log(data)
@@ -524,10 +535,10 @@ export const deleteEvent = async (token, calendarId = 'primary', eventId) => {
 
 // firebase storage calendar
 // get events
-export const getEvent_ = async () =>{
+export const getEvent_ = async () => {
   try {
     const response = await getDocs(collection(db, 'calEvent'))
-    return response  
+    return response
   } catch (error) {
     console.error("Error deleting event:", error)
     return {
@@ -538,16 +549,16 @@ export const getEvent_ = async () =>{
 }
 
 // add event
-export const addEvent_ = async (name,details,start,end,color) =>{
+export const addEvent_ = async (name, details, start, end, color) => {
   try {
     const response = await addDoc(collection(db, 'calEvent'), {
-        name: name,
-        details: details,
-        start: start,
-        end: end,
-        color: color,
-        timed: true
-      })
+      name: name,
+      details: details,
+      start: start,
+      end: end,
+      color: color,
+      timed: true
+    })
     return response
   } catch (error) {
     console.error("Error adding event:", error)
@@ -559,7 +570,7 @@ export const addEvent_ = async (name,details,start,end,color) =>{
 }
 
 // update event
-export const updateEvent_ = async (currentlyEditing, details) =>{
+export const updateEvent_ = async (currentlyEditing, details) => {
   try {
     const response = await updateDoc(doc(db, 'calEvent', currentlyEditing), {
       details: details,
@@ -575,7 +586,7 @@ export const updateEvent_ = async (currentlyEditing, details) =>{
 }
 
 // delete event
-export const deleteEvent_ = async (ev) =>{
+export const deleteEvent_ = async (ev) => {
   try {
     const response = await deleteDoc(doc(db, 'calEvent', ev))
     return response

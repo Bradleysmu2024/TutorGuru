@@ -11,6 +11,8 @@
 <script setup>
 import NavBar from './components/NavBar.vue'
 import Footer from './components/Footer.vue'
+
+document.getElementsByClassName("firebase-emulator-warning")[0].remove();
 </script>
 
 <style scoped>

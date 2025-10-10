@@ -3,7 +3,7 @@
     <div class="container">
       <router-link to="/" class="navbar-brand d-flex align-items-center">
         <i class="bi bi-book-half text-primary me-2 fs-4"></i>
-        <span class="fw-bold">TutorConnect</span>
+        <span class="fw-bold">TutorGuru</span>
       </router-link>
       
       <!-- Removed Bootstrap data attributes, added manual click handler -->

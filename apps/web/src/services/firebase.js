@@ -22,7 +22,8 @@ import {
   signOut,
   signInWithPopup,
   getAdditionalUserInfo,
-  connectAuthEmulator
+  connectAuthEmulator,
+  onAuthStateChanged 
 } from "firebase/auth"
 import {
   getStorage,
@@ -47,8 +48,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-console.log(firebaseConfig.apiKey);
-
 const useEmulators = true;
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
@@ -153,6 +152,18 @@ export const loginUser = async (email, password) => {
     }
   }
 }
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    // User is signed in.
+    console.log("User is logged in:", user.uid);
+    // Here you can store the user data in a global state (e.g., Pinia, Vuex, or a reactive variable)
+  } else {
+    // User is signed out.
+    console.log("User is logged out");
+    // Clear the user data from your global state here
+  }
+});
 
 export const registerUser = async (email, password) => {
   try {

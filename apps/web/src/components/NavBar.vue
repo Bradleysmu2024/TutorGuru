@@ -5,25 +5,15 @@
         <i class="bi bi-book-half text-primary me-2 fs-4"></i>
         <span class="fw-bold">TutorGuru</span>
       </router-link>
-      
+
       <!-- Removed Bootstrap data attributes, added manual click handler -->
-      <button 
-        class="navbar-toggler" 
-        type="button" 
-        @click="toggleNavbar"
-        aria-controls="navbarNav" 
-        :aria-expanded="isOpen"
-        aria-label="Toggle navigation"
-      >
+      <button class="navbar-toggler" type="button" @click="toggleNavbar" aria-controls="navbarNav"
+        :aria-expanded="isOpen" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
-      
+
       <!-- Added dynamic class binding for show state -->
-      <div 
-        class="navbar-collapse" 
-        :class="{ 'show': isOpen }"
-        id="navbarNav"
-      >
+      <div class="navbar-collapse" :class="{ 'show': isOpen }" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-lg-center">
           <li class="nav-item">
             <router-link to="/" class="nav-link" active-class="active" @click="closeNavbar">
@@ -31,16 +21,10 @@
               Home
             </router-link>
           </li>
-           <!-- Added role switcher dropdown for parent/tutor navigation  -->
+          <!-- Added role switcher dropdown for parent/tutor navigation  -->
           <li class="nav-item dropdown">
-            <a 
-              class="nav-link dropdown-toggle" 
-              href="#" 
-              id="roleDropdown" 
-              role="button" 
-              @click.prevent="toggleDropdown"
-              :aria-expanded="dropdownOpen"
-            >
+            <a class="nav-link dropdown-toggle" href="#" id="roleDropdown" role="button" @click.prevent="toggleDropdown"
+              :aria-expanded="dropdownOpen">
               <i class="bi bi-person-badge me-1"></i>
               {{ currentRole === 'tutor' ? 'Tutor' : 'Parent' }}
             </a>
@@ -96,10 +80,16 @@
             </li>
           </template>
 
-          <li class="nav-item ms-lg-3">
+          <li class="nav-item ms-lg-3" v-if="!loginStatus">
             <router-link to="/login" class="btn btn-outline-primary btn-sm" @click="closeNavbar">
               <i class="bi bi-box-arrow-in-right me-1"></i>
               Login
+            </router-link>
+          </li>
+          <li class="nav-item ms-lg-3" v-else>
+            <router-link to="/logout" class="btn btn-outline-primary btn-sm" @click="closeNavbar">
+              <i class="bi bi-box-arrow-in-right me-1"></i>
+              Logout
             </router-link>
           </li>
         </ul>
@@ -111,6 +101,8 @@
 <script setup>
 import { ref, watch } from 'vue' // Add 'watch' import
 import { useRoute } from 'vue-router' // Add this import
+import { loginStatus } from '../router/routes'
+
 
 const route = useRoute() // Add this line
 const isOpen = ref(false)
@@ -187,15 +179,15 @@ watch(
   .navbar-collapse:not(.show) {
     display: none;
   }
-  
+
   .navbar-collapse.show {
     display: block;
   }
-  
+
   .nav-item {
     margin: 0.5rem 0;
   }
-  
+
   .nav-item.ms-lg-3 {
     margin-left: 0 !important;
     margin-top: 1rem;

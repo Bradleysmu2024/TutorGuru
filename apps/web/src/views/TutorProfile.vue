@@ -245,7 +245,7 @@
 <script setup>
 import { ref, onMounted } from "vue"
 import FileUpload from "../components/FileUpload.vue"
-import { auth, db } from "../services/firebase"
+import { auth, db, getSubjects, getLevels } from "../services/firebase"
 import { onAuthStateChanged } from "firebase/auth"
 import { doc, getDoc, updateDoc } from "firebase/firestore"
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"

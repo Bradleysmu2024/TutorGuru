@@ -243,27 +243,27 @@ export const dummyTutorProfiles = [
   },
 ]
 
-export const subjects = [
-  "All Subjects",
-  "Mathematics",
-  "English",
-  "Science",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Chinese",
-  "History",
-  "Geography",
-]
-export const levels = ["All Levels", "Primary", "Secondary", "Junior College", "University"]
-export const locations = [
-  "All Locations",
-  "Online",
-  "Tampines",
-  "Jurong",
-  "Bishan",
-  "Woodlands",
-  "Ang Mo Kio",
-  "Bedok",
-  "Clementi",
-]
+// export const subjects = [
+//   "All Subjects",
+//   "Mathematics",
+//   "English",
+//   "Science",
+//   "Physics",
+//   "Chemistry",
+//   "Biology",
+//   "Chinese",
+//   "History",
+//   "Geography",
+// ]
+// export const levels = ["All Levels", "Primary", "Secondary", "Junior College", "University"]
+// export const locations = [
+//   "All Locations",
+//   "Online",
+//   "Tampines",
+//   "Jurong",
+//   "Bishan",
+//   "Woodlands",
+//   "Ang Mo Kio",
+//   "Bedok",
+//   "Clementi",
+// ]

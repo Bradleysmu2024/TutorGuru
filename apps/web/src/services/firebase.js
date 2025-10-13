@@ -47,8 +47,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-console.log(firebaseConfig.apiKey);
-
 const useEmulators = true;
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)

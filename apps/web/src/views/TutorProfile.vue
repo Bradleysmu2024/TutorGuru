@@ -139,25 +139,18 @@
 
                   <label class="form-label">Subject</label>
                   <select v-model="item.subject" class="form-select mb-2">
-                    <option disabled value="">-- Select Subject --</option>
-                    <option value="English">English</option>
-                    <option value="Chinese">Chinese</option>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Science">Science</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Biology">Biology</option>
-                    <option value="History">History</option>
-                    <option value="Geography">Geography</option>
-                  </select>
+    <option disabled value="">-- Select Subject --</option>
+    <option v-for="subject in subjects" :key="subject" :value="subject">
+      {{ subject }}
+    </option>
+  </select>
 
                   <label class="form-label">Levels</label>
                   <select v-model="item.levels" class="form-select" multiple size="4">
-                    <option value="Primary">Primary</option>
-                    <option value="Secondary">Secondary</option>
-                    <option value="Junior College">Junior College</option>
-                    <option value="University">University</option>
-                  </select>
+    <option v-for="level in levels" :key="level" :value="level">
+      {{ level }}
+    </option>
+  </select>
                   <small class="text-muted">Hold Ctrl/Cmd to select multiple</small>
                 </div>
 
@@ -261,6 +254,10 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
 const fileUploadRef = ref(null)
 const selectedFiles = ref([])
 
+// Add Firebase data
+const subjects = ref([])
+const levels = ref([])
+
 const profile = ref({
   name: "",
   username: "",
@@ -272,6 +269,30 @@ const profile = ref({
   experience: 0,
   avatar: "",
   verified: false
+})
+
+// Load Firebase data on mount
+onMounted(async () => {
+  try {
+    subjects.value = await getSubjects()
+    levels.value = await getLevels()
+  } catch (error) {
+    console.error('Error loading form data:', error)
+  }
+
+  // Existing auth state change logic
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      const refDoc = doc(db, "tutorProfile", user.uid)
+      const snap = await getDoc(refDoc)
+      if (snap.exists()) {
+        profile.value = snap.data()
+        uploadedDocuments.value = snap.data().uploadedDocuments || []
+      }
+    } else {
+      alert("Please log in to view your profile.")
+    }
+  })
 })
 
 const uploadedDocuments = ref([])

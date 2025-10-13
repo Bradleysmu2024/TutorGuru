@@ -6,6 +6,9 @@
           <v-btn class="me-4" color="primary" variant="outlined" dark @click="dialog = true">
             New Event
           </v-btn>
+          <v-btn type="button" color="primary" variant="outlined" class="mr-4" @click="test()">
+                Sync
+              </v-btn>
           <v-btn class="me-4" color="grey-darken-2" variant="outlined" @click="setToday">
             Today
           </v-btn>
@@ -57,7 +60,9 @@
               <v-text-field v-model="details" type="text" label="details"></v-text-field>
               <v-text-field v-model="start" type="datetime-local" label="start (required)"></v-text-field>
               <v-text-field v-model="end" type="datetime-local" label="end (required)"></v-text-field>
-              <v-text-field v-model="color" type="type" label="color (click to open color menu)"></v-text-field>
+              <v-color-picker
+                v-model="color" class="mb-4"
+              ></v-color-picker>
               <v-btn type="submit" color="primary" class="mr-4" @click.stop="dialog = false">
                 Create Event
               </v-btn>
@@ -113,10 +118,11 @@
 </template>
 
 <script setup>
-import { db } from '../services/firebase.js'
+import { db, getEvents as firebaseGetEvents, getEvent_, addEvent_, updateEvent_, deleteEvent_ } from '../services/firebase'
 import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
-
 import { onMounted, ref } from 'vue'
+
+
 
 const calendar = ref()
 
@@ -150,7 +156,7 @@ onMounted(() => {
 
 async function getEvents() {
   try {
-    let querySnapshot = await getDocs(collection(db, 'calEvent'))
+    let querySnapshot = await getEvent_()
     let events = []
     querySnapshot.forEach(doc => {
       const data = doc.data()
@@ -176,14 +182,14 @@ async function addEvent() {
     if (name.value && start.value && end.value) {
       start.value = convertInput(start.value)
       end.value = convertInput(end.value)
-      const response = await addDoc(collection(db, 'calEvent'), {
-        name: name.value,
-        details: details.value,
-        start: start.value,
-        end: end.value,
-        color: color.value,
-        timed: true
-      })
+      const response = await addEvent_(
+        name.value,
+        details.value,
+        start.value,
+        end.value,
+        color.value
+      );
+      
       await updateRange('', '')
       name.value = "";
       details.value = "";
@@ -200,9 +206,7 @@ async function addEvent() {
 
 async function updateEvent(ev) {
   try {
-    await updateDoc(doc(db, 'calEvent', this.currentlyEditing), {
-      details: ev.details,
-    })
+    const response = await updateEvent_(this.currentlyEditing, ev.details)
     selectedOpen.value = false
     currentlyEditing.value = null
   } catch (error) {
@@ -212,7 +216,7 @@ async function updateEvent(ev) {
 
 async function deleteEvent(ev) {
   try {
-    await deleteDoc(doc(db, 'calEvent', ev))
+    const response = await deleteEvent_(ev)
     selectedOpen.value = false
     await updateRange('', '')
   } catch (error) {
@@ -291,5 +295,50 @@ async function updateRange({ start, end }) {
 // function rnd (a, b) {
 //   return Math.floor((b - a + 1) * Math.random()) + a
 // }
+
+// sync your calendar events from google calendar to firebase storage
+async function test(){
+  try {
+    let events = []
+    const colors_obj = {
+      default: "#039be5",   // blue (peacock)
+      1: "#7986cb",         // soft purple (lavender)
+      2: "#33b679",         // light green (sage)
+      3: "#8e24aa",         // purple (grape)
+      4: "#e67c73",         // pinkish red (flamingo)
+      5: "#f6bf26",         // yellow (banana)
+      6: "#f4511e",         // orange (tangerine)
+      8: "#616161",         // grey (graphite)
+      9: "#3f51b5",         // indigo blue (blueberry)
+      10: "#0b8043",        // dark green (basil)
+      11: "#d50000",        // bright red (tomato)
+    };
+    const user_ = JSON.parse(localStorage.getItem('user'));
+    // console.log(user_.token)
+    const response = await firebaseGetEvents(user_.token,'primary','month')
+    // console.log(response)
+    response.calendar.forEach(event => {
+      events.push({
+        name: event.summary ?? "(No title)",
+        details: event.description ?? "(No Description)",
+        start: event.start.dateTime,
+        end: event.end.dateTime,
+        colorId: colors_obj[event.colorId] ?? colors_obj.default
+      })
+      console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
+    });
+    
+    console.log(events)
+    for (let ev of events){
+      await addEvent_(ev.name, ev.details, ev.start, ev.end, ev.colorId)
+    }
+    console.log('successfully synced from Google Calendar')
+    await updateRange('', '')
+
+  } catch (error) {
+    console.error('Error getting event', error)
+  }
+  
+}
 
 </script>

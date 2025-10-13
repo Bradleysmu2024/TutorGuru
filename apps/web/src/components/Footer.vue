@@ -5,7 +5,7 @@
         <div class="col-md-4 mb-3 mb-md-0">
           <h5 class="mb-3">
             <i class="bi bi-book-half me-2"></i>
-            TutorConnect
+            TutorGuru
           </h5>
           <p>
             Connecting passionate tutors with eager learners for a brighter
@@ -40,7 +40,7 @@
           <h6 class="mb-3">Contact Us</h6>
           <p class="mb-2">
             <i class="bi bi-envelope me-2"></i>
-            support@tutorconnect.com
+            support@tutorguru.com
           </p>
           <p>
             <i class="bi bi-telephone me-2"></i>
@@ -53,7 +53,7 @@
 
       <div class="row">
         <div class="col-12 text-center">
-          <p class="mb-0">&copy; 2025 TutorConnect. All rights reserved</p>
+          <p class="mb-0">&copy; 2025 TutorGuru. All rights reserved.</p>
         </div>
       </div>
     </div>

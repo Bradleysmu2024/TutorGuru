@@ -1,8 +1,38 @@
-import { initializeApp } from "firebase/app"
-import { getFirestore, collection, getDocs, query, where, orderBy, addDoc, doc, getDoc } from "firebase/firestore"
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithPopup, getAdditionalUserInfo } from "firebase/auth"
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage"
-import { GoogleAuthProvider } from "firebase/auth";
+import {
+  initializeApp
+} from "firebase/app"
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  connectFirestoreEmulator 
+} from "firebase/firestore"
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  signInWithPopup,
+  getAdditionalUserInfo,
+  connectAuthEmulator
+} from "firebase/auth"
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  connectStorageEmulator
+} from "firebase/storage"
+import {
+  GoogleAuthProvider
+} from "firebase/auth";
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
@@ -18,11 +48,19 @@ const firebaseConfig = {
 // Initialize Firebase
 console.log(firebaseConfig.apiKey);
 
+const useEmulators = true;
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const auth = getAuth(app)
 const storage = getStorage(app)
 const provider = new GoogleAuthProvider();
+
+// Connect to Firebase Emulators
+if (useEmulators) {
+  connectFirestoreEmulator(db, 'dodieboy.ddns.net', 8081);
+  connectAuthEmulator(auth, "http://dodieboy.ddns.net:9091");
+  connectStorageEmulator(storage, "dodieboy.ddns.net", 9191);
+}
 
 // Request permission to access Calendar
 provider.addScope('https://www.googleapis.com/auth/calendar');
@@ -48,7 +86,10 @@ export const getJobPostings = async (filters = {}) => {
     q = query(q, orderBy("postedDate", "desc"))
 
     const querySnapshot = await getDocs(q)
-    return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }))
   } catch (error) {
     console.error("Error fetching job postings:", error)
     return []
@@ -64,10 +105,15 @@ export const applyToJob = async (jobId, tutorId, applicationData) => {
       appliedDate: new Date(),
       status: "pending",
     })
-    return { success: true }
+    return {
+      success: true
+    }
   } catch (error) {
     console.error("Error applying to job:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -77,10 +123,16 @@ export const uploadFile = async (file, path) => {
     const storageRef = ref(storage, path)
     const snapshot = await uploadBytes(storageRef, file)
     const downloadURL = await getDownloadURL(snapshot.ref)
-    return { success: true, url: downloadURL }
+    return {
+      success: true,
+      url: downloadURL
+    }
   } catch (error) {
     console.error("Error uploading file:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -88,30 +140,47 @@ export const uploadFile = async (file, path) => {
 export const loginUser = async (email, password) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password)
-    return { success: true, user: userCredential.user }
+    return {
+      success: true,
+      user: userCredential.user
+    }
   } catch (error) {
     console.error("Error logging in:", error)
-    return { success: false, error: error.message }
+    return {
+      success: false,
+      error: error.message
+    }
   }
 }
 
 export const registerUser = async (email, password) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    return { success: true, user: userCredential.user }
+    return {
+      success: true,
+      user: userCredential.user
+    }
   } catch (error) {
     console.error("Error registering:", error)
-    return { success: false, error: error.message }
+    return {
+      success: false,
+      error: error.message
+    }
   }
 }
 
 export const logoutUser = async () => {
   try {
     await signOut(auth)
-    return { success: true }
+    return {
+      success: true
+    }
   } catch (error) {
     console.error("Error logging out:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -130,7 +199,11 @@ export const signInWithGoogle = async () => {
     // IdP data available using getAdditionalUserInfo(result)
     const additionalUserInfo = getAdditionalUserInfo(userCredential)
 
-    return { success: true, user: user, token: token }
+    return {
+      success: true,
+      user: user,
+      token: token
+    }
 
   } catch (error) {
     // Handle Errors here.
@@ -143,7 +216,10 @@ export const signInWithGoogle = async () => {
     // ...
 
     console.error("Error logging in:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -158,13 +234,22 @@ export const getUserCalendars = async (token) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      
+
     })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error getting user calendar:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -178,55 +263,116 @@ export const getPrimaryCalendar = async (token, calendarId = 'primary') => {
       },
     })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error getting user calendar:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
 // Google Calendar API - get All Events by calendarId for the current month
-export const getEvents = async (token, calendarId = 'primary') => {
+// for day, week, month, 4 day
+export const getEvents = async (token, calendarId = 'primary', type) => {
+
+  function toLocalISOString(date) {
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localDate = new Date(date.getTime() - tzOffset);
+    return localDate.toISOString().slice(0, 23) + 'Z';
+  }
+
   try {
+    let calStart = '';
+    let calEnd = '';
     const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString()
+    switch (type) {
+      case 'day':
+        calStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
+        calEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59));
+        break
+      case 'week':
+        const firstDayOfWeek = new Date(now)
+        const lastDayOfWeek = new Date(now)
+        // assuming week starts on Monday
+        const dayOfWeek = now.getDay() // Sunday = 0, Monday = 1, ...
+        const diffToMonday = (dayOfWeek + 6) % 7 // Monday offset
+        firstDayOfWeek.setDate(now.getDate() - diffToMonday)
+        firstDayOfWeek.setHours(0, 0, 0, 0)
+        lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6)
+        lastDayOfWeek.setHours(23, 59, 59, 999)
+        calStart = toLocalISOString(firstDayOfWeek)
+        calEnd = toLocalISOString(lastDayOfWeek)
+        break
+      case 'month':
+        calStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), 1))
+        calEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59))
+        break
+      case '4day':
+        // Start of today
+        calStart = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0));
+        // End of the 4th day (today + 3)
+        calEnd = toLocalISOString(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3, 23, 59, 59));
+        break
+    }
+    // console.log(calStart, calEnd)
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?singleEvents=true&orderBy=startTime&timeMin=${calStart}&timeMax=${calEnd}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      },
+    }
+    );
+    const data = await response.json()
+    // console.log(data)
+    data.items.forEach(element => {
+      console.log(element.start.dateTime, element.end.dateTime, element.colorId ?? null, element.description ?? null)
+    });
 
-
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?
-      singleEvents=true&
-      orderBy=startTime&
-      timeMin=${startOfMonth}&
-      timeMax=${endOfMonth}`
-      , {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-
-    return { success: true, calendar: response }
+    return {
+      success: true,
+      calendar: data.items
+    }
   } catch (error) {
     console.error("Error getting month events:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
-// Google Calendar API - get All Events by calendarId for the current month
+// Google Calendar API - get Event by calendarId
 export const getEventById = async (token, calendarId = 'primary', eventId) => {
   try {
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`
-      , {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error getting event:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -252,30 +398,37 @@ export const createEvent = async (token, calendarId = 'primary', event) => {
     // "summary": "Meeting with Team",
     // "description": "Discuss project roadmap",
     // "start": {
-    //   "dateTime": "2025-10-07T11:00:00.000Z",
+    //   "dateTime": "2025-10-07T11:00:00",
     //   "timeZone": "Asia/Singapore"
     // },
     // "end": {
-    //   "dateTime": "2025-10-08T11:00:00.000Z",
+    //   "dateTime": "2025-10-08T11:00:00",
     //   "timeZone": "Asia/Singapore"
     // },
     // "colorId": "5"
     // }
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`
-      , {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: event
-      })
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: event
+    })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error creating new event:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -284,35 +437,42 @@ export const createEvent = async (token, calendarId = 'primary', event) => {
 export const updateEvent = async (token, calendarId = 'primary', eventId, event) => {
   try {
 
-  // requires start and end in body
-  //   {
-  // "summary": "Meeting with Team",
-  // "description": "Discuss project roadmap",
-  // "start": {
-  //   "dateTime": "2025-10-09T11:00:00.000Z",
-  //   "timeZone": "Asia/Singapore"
-  // },
-  // "end": {
-  //   "dateTime": "2025-10-10T11:00:00.000Z",
-  //   "timeZone": "Asia/Singapore"
-  // },
-  // "colorId": "5"
-  // }
+    // requires start and end in body
+    //   {
+    // "summary": "Meeting with Team",
+    // "description": "Discuss project roadmap",
+    // "start": {
+    //   "dateTime": "2025-10-09T11:00:00.000Z",
+    //   "timeZone": "Asia/Singapore"
+    // },
+    // "end": {
+    //   "dateTime": "2025-10-10T11:00:00.000Z",
+    //   "timeZone": "Asia/Singapore"
+    // },
+    // "colorId": "5"
+    // }
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`
-      , {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: event
-      })
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: event
+    })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error updating event:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -322,20 +482,27 @@ export const patchEvent = async (token, calendarId = 'primary', eventId, event) 
 
     // no fixed requirement on fields in event, able to patch one field without overwriting the whole event
 
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`
-      , {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: event
-      })
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: event
+    })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error updating event:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -344,18 +511,91 @@ export const patchEvent = async (token, calendarId = 'primary', eventId, event) 
 // Google Calendar API - delete an event for a calendar
 export const deleteEvent = async (token, calendarId = 'primary', eventId) => {
   try {
-    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`
-      , {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      })
+    const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    })
 
-    return { success: true, calendar: response }
+    const data = await response.json()
+
+    return {
+      success: true,
+      calendar: data
+    }
   } catch (error) {
     console.error("Error deleting event:", error)
-    return { success: false, error }
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// firebase storage calendar
+// get events
+export const getEvent_ = async () => {
+  try {
+    const response = await getDocs(collection(db, 'calEvent'))
+    return response
+  } catch (error) {
+    console.error("Error deleting event:", error)
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// add event
+export const addEvent_ = async (name, details, start, end, color) => {
+  try {
+    const response = await addDoc(collection(db, 'calEvent'), {
+      name: name,
+      details: details,
+      start: start,
+      end: end,
+      color: color,
+      timed: true
+    })
+    return response
+  } catch (error) {
+    console.error("Error adding event:", error)
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// update event
+export const updateEvent_ = async (currentlyEditing, details) => {
+  try {
+    const response = await updateDoc(doc(db, 'calEvent', currentlyEditing), {
+      details: details,
+    })
+    return response
+  } catch (error) {
+    console.error('Error updating event:', error)
+    return {
+      success: false,
+      error
+    }
+  }
+}
+
+// delete event
+export const deleteEvent_ = async (ev) => {
+  try {
+    const response = await deleteDoc(doc(db, 'calEvent', ev))
+    return response
+  } catch (error) {
+    console.error('Error updating event:', error)
+    return {
+      success: false,
+      error
+    }
   }
 }
 
@@ -411,5 +651,8 @@ export const getLocations = async () => {
 }
 
 
-export { app as firebaseApp }
-export { db, auth, storage }
+export {
+  db,
+  auth,
+  storage
+}

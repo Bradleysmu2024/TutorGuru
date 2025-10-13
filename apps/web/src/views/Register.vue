@@ -68,7 +68,7 @@ const handleRegister = async () => {
     }))
 
     alert('Registration successful! Please complete your tutor profile.')
-    router.push('/TutorProfile') 
+    router.push('/profile') 
   }
 
     else if (registerForm.value.role === "parent"){
@@ -91,7 +91,7 @@ const handleRegister = async () => {
     }))
 
     alert('Registration successful! Please complete your parent profile.')
-    router.push('/ParentProfile') 
+    router.push('/parent-profile') 
     }
   } catch (error) {
     console.error('Registration error:', error)

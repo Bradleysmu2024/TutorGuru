@@ -4,12 +4,12 @@ import {
 import {
   getFirestore,
   collection,
-  addDoc,
+  doc,
   getDoc,
+  addDoc,
   query,
   where,
   orderBy,
-  doc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -150,6 +150,19 @@ export const getParentAssignments = async (parentId) => {
   } catch (error) {
     console.error('Error fetching parent assignments:', error)
     return []
+  }
+}
+
+export const getAssignmentById = async (assignmentId) => {
+  try {
+    if (!assignmentId) return null
+    const docRef = doc(db, 'assignments', assignmentId)
+    const snap = await getDoc(docRef)
+    if (!snap.exists()) return null
+    return { id: snap.id, ...snap.data() }
+  } catch (error) {
+    console.error('Error fetching assignment by id:', error)
+    return null
   }
 }
 
@@ -695,6 +708,21 @@ export const getLocations = async () => {
   } catch (error) {
     console.error('Error fetching locations:', error)
     return []
+  }
+}
+
+// User helpers
+export const getUserRole = async (uid) => {
+  try {
+    if (!uid) return null
+    const userDoc = doc(db, 'users', uid)
+    const snap = await getDoc(userDoc)
+    if (!snap.exists()) return null
+    const data = snap.data()
+    return data.role || null
+  } catch (error) {
+    console.error('Error fetching user role:', error)
+    return null
   }
 }
 

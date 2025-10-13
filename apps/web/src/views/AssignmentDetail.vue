@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { dummyParentAssignments, dummyTutorProfiles } from '../data/dummyData'
+import { getAssignmentById } from '../services/firebase'
 // import { getTutorApplications, selectTutor } from '../services/firebase'
 
 const route = useRoute()
@@ -13,13 +14,20 @@ const selectedTutorId = ref(null)
 const loadAssignment = async () => {
   loading.value = true
   try {
-    // TODO: Replace with Firebase call
     const assignmentId = route.params.id
-    assignment.value = dummyParentAssignments.find(a => a.id === assignmentId)
-    
-    // Load tutor profiles for applicants
+    // Try Firestore first
+    const remote = await getAssignmentById(assignmentId)
+    if (remote) {
+      assignment.value = remote
+    } else {
+      // fallback to local dummy data for development
+      assignment.value = dummyParentAssignments.find(a => a.id === assignmentId) || null
+    }
+
+    // Load tutor profiles for applicants (if present)
     if (assignment.value && assignment.value.applicants) {
-      assignment.value.applicants = assignment.value.applicants.map(app => {
+      assignment.value.applicants = (assignment.value.applicants || []).map(app => {
+        // If applicant has an id, try enrich from dummy tutor profiles (development only)
         const profile = dummyTutorProfiles.find(t => t.id === app.id)
         return { ...app, ...profile }
       })

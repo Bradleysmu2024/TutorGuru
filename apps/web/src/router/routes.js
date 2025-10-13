@@ -23,37 +23,38 @@ const routes = [
     path: "/dashboard",
     name: "TutorDashboard",
     component: TutorDashboard,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['tutor'] },
   },
   {
     path: "/parent-dashboard",
     name: "ParentDashboard",
     component: ParentDashboard,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['parent'] },
   },
   {
     path: "/parent-profile",
     name: "ParentProfile",
     component: ParentProfile,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['parent'] },
   },
   {
     path: "/post-assignment",
     name: "PostAssignment",
     component: PostAssignment,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['parent'] },
   },
   {
     path: "/assignment/:id",
     name: "AssignmentDetail",
     component: AssignmentDetail,
-    meta: { requiresAuth: true },
+    // assignment detail can be viewed by both parents and tutors
+    meta: { requiresAuth: true, allowedRoles: ['parent', 'tutor'] },
   },
   {
     path: "/profile",
     name: "TutorProfile",
     component: TutorProfile,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, allowedRoles: ['tutor'] },
   },
   {
     path: "/login",
@@ -129,23 +130,32 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Navigation guard (check if login)
+// Navigation guard (check if login and role)
+import { getUserRole } from '../services/firebase'
+
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
   if (to.matched.some(record => record.meta.requiresAuth)) {
     const user = await getCurrentUser();
-    console.log(user);
-    if (user) {
-      next();
-    } else {
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath }
-      });
+    if (!user) {
+      return next({ path: '/login', query: { redirect: to.fullPath } });
     }
-  } else {
-    next();
+
+    // If route has role restrictions, verify them
+    const allowedRoles = to.meta && to.meta.allowedRoles ? to.meta.allowedRoles : null
+    if (allowedRoles && allowedRoles.length > 0) {
+      const role = await getUserRole(user.uid)
+      console.log('Route requires role in', allowedRoles, 'user role=', role)
+      if (!role || !allowedRoles.includes(role)) {
+        // Unauthorized — redirect to home or show not-authorized page
+        return next({ path: '/' })
+      }
+    }
+
+    return next()
   }
-});
+
+  return next()
+})
 
 export default router

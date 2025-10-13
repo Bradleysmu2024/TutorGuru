@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginUser, signInWithGoogle } from '../services/firebase'
+import { loginUser, signInWithGoogle, getUserRole } from '../services/firebase'
 
 const router = useRouter()
 
@@ -28,9 +28,16 @@ const handleLogin = async () => {
       email: user.email
     }))
 
-    console.log('Login successful:', user)
+    // route based on role
+    const role = await getUserRole(user.uid)
+    console.log('Login successful:', user, 'role=', role)
     alert('Login successful!')
-    router.push('/dashboard')
+    if (role === 'parent') {
+      router.push('/parent-dashboard')
+    } else {
+      // default to tutor dashboard
+      router.push('/dashboard')
+    }
 
   } catch (error) {
     console.error('Login error:', error)
@@ -54,9 +61,15 @@ const handleGoogleLogin = async () => {
       token: response.token // google token
     }))
 
-    console.log('Google Login successful:', user)
+    // route based on role
+    const role = await getUserRole(user.uid)
+    console.log('Google Login successful:', user, 'role=', role)
     alert('Google login successful!')
-    router.push('/dashboard')
+    if (role === 'parent') {
+      router.push('/parent-dashboard')
+    } else {
+      router.push('/dashboard')
+    }
 
   } catch (error) {
     console.error('Google Login error:', error)

@@ -1,14 +1,19 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import FileUpload from '../components/FileUpload.vue'
-import { subjects, levels, locations } from '../data/dummyData'
+import { getSubjects, getLevels, getLocations } from '../services/firebase'
 // import { createAssignment, uploadAssignmentFiles } from '../services/firebase'
 
 const router = useRouter()
 const fileUploadRef = ref(null)
 const selectedFiles = ref([])
 const submitting = ref(false)
+
+// Firebase data
+const subjects = ref([])
+const levels = ref([])
+const locations = ref([])
 
 const formData = ref({
   title: '',
@@ -21,6 +26,17 @@ const formData = ref({
   duration: '',
   rate: '',
   location: ''
+})
+
+// Load data from Firebase on component mount
+onMounted(async () => {
+  try {
+    subjects.value = await getSubjects()
+    levels.value = await getLevels()
+    locations.value = await getLocations()
+  } catch (error) {
+    console.error('Error loading form data:', error)
+  }
 })
 
 const handleFilesSelected = (files) => {

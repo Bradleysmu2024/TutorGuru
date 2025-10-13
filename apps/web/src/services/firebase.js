@@ -650,7 +650,7 @@ export const getLocations = async () => {
   }
 }
 
-
+export { app as firebaseApp }
 export {
   db,
   auth,

@@ -90,7 +90,6 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { levels, locations } from "../data/dummyData";
 
 const props = defineProps({
   subjects: { type: Array, default: () => [] },

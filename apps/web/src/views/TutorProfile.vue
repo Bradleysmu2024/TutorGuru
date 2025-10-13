@@ -280,19 +280,19 @@ onMounted(async () => {
     console.error('Error loading form data:', error)
   }
 
-  // Existing auth state change logic
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid)
-      const snap = await getDoc(refDoc)
-      if (snap.exists()) {
-        profile.value = snap.data()
-        uploadedDocuments.value = snap.data().uploadedDocuments || []
-      }
-    } else {
-      alert("Please log in to view your profile.")
-    }
-  })
+  // // Existing auth state change logic
+  // onAuthStateChanged(auth, async (user) => {
+  //   if (user) {
+  //     const refDoc = doc(db, "tutorProfile", user.uid)
+  //     const snap = await getDoc(refDoc)
+  //     if (snap.exists()) {
+  //       profile.value = snap.data()
+  //       uploadedDocuments.value = snap.data().uploadedDocuments || []
+  //     }
+  //   } else {
+  //     alert("Please log in to view your profile.")
+  //   }
+  // })
 })
 
 const uploadedDocuments = ref([])

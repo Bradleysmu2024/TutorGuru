@@ -32,6 +32,17 @@ const handleRegister = async () => {
     }
 
     const user = result.user
+
+    // create Firebase user collection (defines role of the user for storage)
+    await setDoc(doc(db, "users", user.uid), {
+      username: user.uid,
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
+      email: registerForm.value.email,
+      createdAt: new Date().toISOString(),
+      role: registerForm.value.role
+    })
+
+    if (registerForm.value.role === "tutor"){
     //create Firebase tutorProfile collection
     await setDoc(doc(db, "tutorProfile", user.uid), {
       username: user.uid,
@@ -57,8 +68,31 @@ const handleRegister = async () => {
     }))
 
     alert('Registration successful! Please complete your tutor profile.')
-    router.push('/Profile')  // make sure route matches your TutorProfile.vue path
+    router.push('/TutorProfile') 
+  }
 
+    else if (registerForm.value.role === "parent"){
+      //create Firebase parentProfile collection
+      await setDoc(doc(db, "parentProfile", user.uid), {
+      username: user.uid,
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
+      email: registerForm.value.email,
+      phone: "",
+      children: [{}],
+      createdAt: new Date().toISOString(),
+    })
+
+    console.log("✅ Parent profile created in Firestore for:", user.email)
+
+    localStorage.setItem('parent', JSON.stringify({
+      uid: user.uid,
+      email: user.email,
+      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
+    }))
+
+    alert('Registration successful! Please complete your parent profile.')
+    router.push('/ParentProfile') 
+    }
   } catch (error) {
     console.error('Registration error:', error)
     alert('Unexpected error. Please try again.')
@@ -117,7 +151,28 @@ const handleRegister = async () => {
                       </label>
                     </div>
                   </div>
-                </div>
+                  
+                  <div class="col-12">
+                        Please select you role:
+                  </div>
+                  <div class="col-12 d-flex gap-4">
+                    <div class="form-check form-check-inline">
+                      
+                      
+                      <input v-model="registerForm.role" type="radio" class="form-check-input" id="tutor" value="tutor" required />
+                      <label class="form-check-label" for="tutor">
+                        Tutor
+                      </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                      <input v-model="registerForm.role" type="radio" class="form-check-input" id="parent" value="parent" required />
+                      <label class="form-check-label" for="parent">
+                        Parent/Guardian
+                      </label>
+                    </div>
+                    
+                  </div>
+                
 
                 <div class="d-grid mt-4 mb-3">
                   <button type="submit" class="btn btn-primary btn-lg text-light">
@@ -134,6 +189,8 @@ const handleRegister = async () => {
                     </router-link>
                   </p>
                 </div>
+
+                </div>
               </form>
             </div>
           </div>
@@ -141,6 +198,7 @@ const handleRegister = async () => {
       </div>
     </div>
   </div>
+
 </template>
 
 <style scoped>

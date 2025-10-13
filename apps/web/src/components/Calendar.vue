@@ -3,15 +3,15 @@
     <v-col>
       <v-sheet height="64">
         <v-toolbar flat>
-          <v-btn class="me-4" color="primary" variant="outlined" dark @click="dialog = true">
+          <v-btn size="small" class="me-4" color="primary" variant="outlined" dark @click="dialog = true">
             New Event
           </v-btn>
-          <v-btn type="button" color="primary" variant="outlined" class="mr-4" @click="test()">
-                Sync
-              </v-btn>
-          <v-btn class="me-4" color="grey-darken-2" variant="outlined" @click="setToday">
-            Today
+          <v-btn size="small" type="button" color="primary" variant="outlined" class="me-4" @click="test()">
+            Sync
           </v-btn>
+          <!-- <v-btn class="me-4" color="grey-darken-2" variant="outlined" @click="setToday">
+            Today
+          </v-btn> -->
           <v-btn color="grey-darken-2" size="small" variant="text" icon @click="prev">
             <v-icon size="small">
               mdi-chevron-left
@@ -22,12 +22,12 @@
               mdi-chevron-right
             </v-icon>
           </v-btn>
-          <v-toolbar-title v-if="calendar">
+          <v-toolbar-title v-if="calendar" class="d-none d-sm-flex">
             {{ calendar.title }}
           </v-toolbar-title>
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn color="grey-darken-2" variant="outlined" v-bind="props">
+              <v-btn size="small" color="grey-darken-2" variant="outlined" v-bind="props">
                 <span>{{ typeToLabel[type] }}</span>
                 <v-icon end>
                   mdi-menu-down
@@ -35,7 +35,7 @@
               </v-btn>
             </template>
             <v-list>
-              <v-list-item @click="type = 'day'">
+              <v-list-item @click="type = 'day'; setToday">
                 <v-list-item-title>Day</v-list-item-title>
               </v-list-item>
               <v-list-item @click="type = 'week'">
@@ -60,9 +60,7 @@
               <v-text-field v-model="details" type="text" label="details"></v-text-field>
               <v-text-field v-model="start" type="datetime-local" label="start (required)"></v-text-field>
               <v-text-field v-model="end" type="datetime-local" label="end (required)"></v-text-field>
-              <v-color-picker
-                v-model="color" class="mb-4"
-              ></v-color-picker>
+              <v-color-picker v-model="color" class="mb-4"></v-color-picker>
               <v-btn type="submit" color="primary" class="mr-4" @click.stop="dialog = false">
                 Create Event
               </v-btn>
@@ -189,7 +187,7 @@ async function addEvent() {
         end.value,
         color.value
       );
-      
+
       await updateRange('', '')
       name.value = "";
       details.value = "";
@@ -297,7 +295,7 @@ async function updateRange({ start, end }) {
 // }
 
 // sync your calendar events from google calendar to firebase storage
-async function test(){
+async function test() {
   try {
     let events = []
     const colors_obj = {
@@ -315,7 +313,7 @@ async function test(){
     };
     const user_ = JSON.parse(localStorage.getItem('user'));
     // console.log(user_.token)
-    const response = await firebaseGetEvents(user_.token,'primary','month')
+    const response = await firebaseGetEvents(user_.token, 'primary', 'month')
     // console.log(response)
     response.calendar.forEach(event => {
       events.push({
@@ -327,9 +325,9 @@ async function test(){
       })
       console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
     });
-    
+
     console.log(events)
-    for (let ev of events){
+    for (let ev of events) {
       await addEvent_(ev.name, ev.details, ev.start, ev.end, ev.colorId)
     }
     console.log('successfully synced from Google Calendar')
@@ -338,7 +336,7 @@ async function test(){
   } catch (error) {
     console.error('Error getting event', error)
   }
-  
+
 }
 
 </script>

@@ -10,6 +10,7 @@ import {
   orderBy,
   addDoc,
   doc,
+  getDocs,
   updateDoc,
   deleteDoc,
   connectFirestoreEmulator 

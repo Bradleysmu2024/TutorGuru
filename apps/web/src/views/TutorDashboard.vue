@@ -12,6 +12,8 @@
       <SearchFilter 
         :subjects="subjects"
         :filters="filters"
+        :levels="levels"
+        :locations="locations"
         :result-count="filteredJobs.length"
         @update:filters="updateFilters"
       />
@@ -112,7 +114,7 @@ import { Modal } from 'bootstrap'
 import SearchFilter from '../components/SearchFilter.vue'
 import JobCard from '../components/JobCard.vue'
 import { dummyJobPostings } from '../data/dummyData'
-import { getSubjects } from '../services/firebase'
+import { getSubjects, getLevels, getLocations } from '../services/firebase'
 // import { getJobPostings, applyToJob } from '../services/firebase'
 
 const subjects = ref([])

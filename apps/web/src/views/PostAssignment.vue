@@ -2,7 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import FileUpload from '../components/FileUpload.vue'
-import { getSubjects, getLevels, getLocations } from '../services/firebase'
+import { getSubjects, getLevels, getLocations, createAssignment } from '../services/firebase'
+import { getCurrentUser } from '../router/routes'
 // import { createAssignment, uploadAssignmentFiles } from '../services/firebase'
 
 const router = useRouter()
@@ -49,26 +50,30 @@ const submitAssignment = async () => {
   submitting.value = true
   
   try {
-    // TODO: Replace with Firebase call
-    // const parentId = 'currentParentId'
-    // const assignmentData = {
-    //   ...formData.value,
-    //   requirements: formData.value.requirements.split('\n').filter(r => r.trim())
-    // }
-    // const result = await createAssignment(parentId, assignmentData)
-    
-    // if (result.success && selectedFiles.value.length > 0) {
-    //   await uploadAssignmentFiles(selectedFiles.value, result.id)
-    // }
-    
-    console.log('Creating assignment:', formData.value)
-    console.log('Files to upload:', selectedFiles.value)
-    
-    setTimeout(() => {
+    const user = await getCurrentUser()
+    if (!user || !user.uid) {
+      alert('You must be logged in as a parent to post an assignment')
       submitting.value = false
-      alert('Assignment posted successfully!')
-      router.push('/parent-dashboard')
-    }, 1000)
+      return
+    }
+
+    const assignmentData = {
+      ...formData.value,
+      requirements: formData.value.requirements ? formData.value.requirements.split('\n').filter(r => r.trim()) : [],
+      files: []
+    }
+
+    const result = await createAssignment(user.uid, assignmentData)
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create assignment')
+    }
+
+    // TODO: handle file uploads and attach storage URLs to the assignment doc
+
+  submitting.value = false
+  alert('Assignment posted successfully!')
+  // Navigate with a refresh query param so the dashboard reloads assignments
+  router.push({ path: '/parent-dashboard', query: { refresh: Date.now().toString() } })
   } catch (error) {
     console.error('Error posting assignment:', error)
     alert('Failed to post assignment. Please try again.')

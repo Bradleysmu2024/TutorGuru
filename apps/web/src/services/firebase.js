@@ -4,12 +4,12 @@ import {
 import {
   getFirestore,
   collection,
+  doc,
   getDoc,
+  addDoc,
   query,
   where,
   orderBy,
-  addDoc,
-  doc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -48,7 +48,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const useEmulators = true;
+const useEmulators = false;
 const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 const auth = getAuth(app)
@@ -114,6 +114,55 @@ export const applyToJob = async (jobId, tutorId, applicationData) => {
       success: false,
       error
     }
+  }
+}
+
+// Assignments
+export const createAssignment = async (parentId, assignmentData) => {
+  try {
+    const payload = {
+      parentId,
+      ...assignmentData,
+      createdAt: new Date().toISOString(),
+      status: 'open',
+    }
+    const docRef = await addDoc(collection(db, 'assignments'), payload)
+    return { success: true, id: docRef.id }
+  } catch (error) {
+    console.error('Error creating assignment:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const getParentAssignments = async (parentId) => {
+  try {
+    // Fetch assignments for parentId without server-side ordering to avoid composite index requirements.
+    const q = query(collection(db, 'assignments'), where('parentId', '==', parentId))
+    const snap = await getDocs(q)
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+    // Sort client-side by createdAt (support ISO string or Firestore timestamp)
+    items.sort((a, b) => {
+      const ta = a.createdAt && typeof a.createdAt === 'string' ? Date.parse(a.createdAt) : (a.createdAt && a.createdAt.seconds ? a.createdAt.seconds * 1000 : 0)
+      const tb = b.createdAt && typeof b.createdAt === 'string' ? Date.parse(b.createdAt) : (b.createdAt && b.createdAt.seconds ? b.createdAt.seconds * 1000 : 0)
+      return tb - ta
+    })
+    return items
+  } catch (error) {
+    console.error('Error fetching parent assignments:', error)
+    return []
+  }
+}
+
+export const getAssignmentById = async (assignmentId) => {
+  try {
+    if (!assignmentId) return null
+    const docRef = doc(db, 'assignments', assignmentId)
+    const snap = await getDoc(docRef)
+    if (!snap.exists()) return null
+    return { id: snap.id, ...snap.data() }
+  } catch (error) {
+    console.error('Error fetching assignment by id:', error)
+    return null
   }
 }
 
@@ -659,6 +708,21 @@ export const getLocations = async () => {
   } catch (error) {
     console.error('Error fetching locations:', error)
     return []
+  }
+}
+
+// User helpers
+export const getUserRole = async (uid) => {
+  try {
+    if (!uid) return null
+    const userDoc = doc(db, 'users', uid)
+    const snap = await getDoc(userDoc)
+    if (!snap.exists()) return null
+    const data = snap.data()
+    return data.role || null
+  } catch (error) {
+    console.error('Error fetching user role:', error)
+    return null
   }
 }
 

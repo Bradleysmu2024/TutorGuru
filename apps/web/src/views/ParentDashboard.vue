@@ -1,33 +1,57 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { dummyParentAssignments } from '../data/dummyData'
-// import { getParentAssignments } from '../services/firebase'
+import { getCurrentUser } from '../router/routes'
+import { db } from '../services/firebase'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 const router = useRouter()
 const loading = ref(false)
 const assignments = ref([])
 const filterStatus = ref('all')
 
-const loadAssignments = async () => {
+let unsubscribe = null
+
+const startRealtimeListener = async () => {
   loading.value = true
   try {
-    // TODO: Replace with Firebase call
-    // const parentId = 'currentParentId'
-    // assignments.value = await getParentAssignments(parentId)
-    
-    setTimeout(() => {
-      assignments.value = dummyParentAssignments
+    const user = await getCurrentUser()
+    if (!user || !user.uid) {
+      assignments.value = []
       loading.value = false
-    }, 500)
-  } catch (error) {
-    console.error('Error loading assignments:', error)
+      return
+    }
+
+    console.debug('[ParentDashboard] starting realtime listener for user', user.uid)
+    const q = query(collection(db, 'assignments'), where('parentId', '==', user.uid))
+    unsubscribe = onSnapshot(q, (snap) => {
+      const items = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      // sort client-side by createdAt (ISO string or Firestore timestamp)
+      items.sort((a, b) => {
+        const ta = a.createdAt && typeof a.createdAt === 'string' ? Date.parse(a.createdAt) : (a.createdAt && a.createdAt.seconds ? a.createdAt.seconds * 1000 : 0)
+        const tb = b.createdAt && typeof b.createdAt === 'string' ? Date.parse(b.createdAt) : (b.createdAt && b.createdAt.seconds ? b.createdAt.seconds * 1000 : 0)
+        return tb - ta
+      })
+      assignments.value = items
+      loading.value = false
+      console.debug('[ParentDashboard] realtime snapshot, count=', assignments.value.length)
+    }, (err) => {
+      console.error('[ParentDashboard] realtime listener error', err)
+      loading.value = false
+    })
+
+  } catch (err) {
+    console.error('Error starting realtime listener:', err)
     loading.value = false
   }
 }
 
-onMounted(async () => {
-  await loadAssignments()
+onMounted(() => {
+  startRealtimeListener()
+})
+
+onUnmounted(() => {
+  if (typeof unsubscribe === 'function') unsubscribe()
 })
 
 const filteredAssignments = computed(() => {
@@ -62,7 +86,17 @@ const createNewAssignment = () => {
 }
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-SG', {
+  if (!date) return 'Unknown date'
+  let ts = null
+  if (typeof date === 'string') {
+    ts = Date.parse(date)
+  } else if (date.seconds) {
+    ts = date.seconds * 1000
+  } else if (date.toDate) {
+    try { ts = date.toDate().getTime() } catch (e) { ts = null }
+  }
+  if (!ts) return 'Unknown date'
+  return new Date(ts).toLocaleDateString('en-SG', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -199,7 +233,7 @@ const formatDate = (date) => {
                   <h5 class="card-title mb-0 me-3">{{ assignment.title }}</h5>
                   <span class="badge" :class="getStatusBadgeClass(assignment.status)">
                     <i :class="getStatusIcon(assignment.status)" class="me-1"></i>
-                    {{ assignment.status.toUpperCase() }}
+                    {{ (assignment.status || 'unknown').toUpperCase() }}
                   </span>
                 </div>
                 <p class="text-muted mb-2">{{ assignment.description }}</p>
@@ -232,13 +266,13 @@ const formatDate = (date) => {
                 <div v-if="assignment.status === 'pending'" class="mb-2">
                   <span class="badge bg-warning text-dark">
                     <i class="bi bi-people me-1"></i>
-                    {{ assignment.applicants.length }} Applicant{{ assignment.applicants.length !== 1 ? 's' : '' }}
+                    {{ (assignment.applicants || []).length }} Applicant{{ (assignment.applicants || []).length !== 1 ? 's' : '' }}
                   </span>
                 </div>
                 <div v-if="assignment.files && assignment.files.length > 0" class="mb-2">
                   <small class="text-muted">
                     <i class="bi bi-paperclip me-1"></i>
-                    {{ assignment.files.length }} file{{ assignment.files.length !== 1 ? 's' : '' }}
+                    {{ (assignment.files || []).length }} file{{ (assignment.files || []).length !== 1 ? 's' : '' }}
                   </small>
                 </div>
                 <button class="btn btn-sm btn-outline-primary">

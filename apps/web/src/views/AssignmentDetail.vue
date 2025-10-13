@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { dummyParentAssignments, dummyTutorProfiles } from '../data/dummyData'
+import { getAssignmentById } from '../services/firebase'
 // import { getTutorApplications, selectTutor } from '../services/firebase'
 
 const route = useRoute()
@@ -13,13 +14,20 @@ const selectedTutorId = ref(null)
 const loadAssignment = async () => {
   loading.value = true
   try {
-    // TODO: Replace with Firebase call
     const assignmentId = route.params.id
-    assignment.value = dummyParentAssignments.find(a => a.id === assignmentId)
-    
-    // Load tutor profiles for applicants
+    // Try Firestore first
+    const remote = await getAssignmentById(assignmentId)
+    if (remote) {
+      assignment.value = remote
+    } else {
+      // fallback to local dummy data for development
+      assignment.value = dummyParentAssignments.find(a => a.id === assignmentId) || null
+    }
+
+    // Load tutor profiles for applicants (if present)
     if (assignment.value && assignment.value.applicants) {
-      assignment.value.applicants = assignment.value.applicants.map(app => {
+      assignment.value.applicants = (assignment.value.applicants || []).map(app => {
+        // If applicant has an id, try enrich from dummy tutor profiles (development only)
         const profile = dummyTutorProfiles.find(t => t.id === app.id)
         return { ...app, ...profile }
       })
@@ -77,11 +85,29 @@ const selectTutorForAssignment = async (tutorId) => {
 }
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString('en-SG', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
+  if (!date) return 'Unknown date'
+
+  // Firestore Timestamp objects may have toDate() or seconds property
+  try {
+    let d = date
+    if (typeof d.toDate === 'function') {
+      d = d.toDate()
+    } else if (d && typeof d.seconds === 'number') {
+      d = new Date(d.seconds * 1000)
+    } else {
+      d = new Date(d)
+    }
+
+    if (isNaN(d.getTime())) return 'Unknown date'
+
+    return d.toLocaleDateString('en-SG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (e) {
+    return 'Unknown date'
+  }
 }
 
 const formatFileSize = (bytes) => {
@@ -128,7 +154,7 @@ onMounted(async () => {
                 <div class="d-flex justify-content-between align-items-start mb-3">
                   <h2 class="fw-bold mb-0">{{ assignment.title }}</h2>
                   <span class="badge" :class="getStatusBadgeClass(assignment.status)">
-                    {{ assignment.status.toUpperCase() }}
+                    {{ (assignment.status || 'unknown').toUpperCase() }}
                   </span>
                 </div>
 
@@ -159,7 +185,7 @@ onMounted(async () => {
                 <div class="mb-4">
                   <h5 class="fw-semibold mb-2">Requirements</h5>
                   <ul class="text-muted">
-                    <li v-for="(req, index) in assignment.requirements" :key="index">
+                    <li v-for="(req, index) in (assignment.requirements || [])" :key="index">
                       {{ req }}
                     </li>
                   </ul>
@@ -195,7 +221,7 @@ onMounted(async () => {
                   </div>
                 </div>
 
-                <div v-if="assignment.files && assignment.files.length > 0" class="mb-4">
+                <div v-if="(assignment.files || []).length > 0" class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-semibold mb-0">
                       <i class="bi bi-paperclip me-2"></i>
@@ -208,7 +234,7 @@ onMounted(async () => {
                   </div>
                   <div class="list-group">
                     <div 
-                      v-for="(file, index) in assignment.files" 
+                      v-for="(file, index) in (assignment.files || [])" 
                       :key="index"
                       class="list-group-item d-flex justify-content-between align-items-center"
                     >
@@ -228,15 +254,15 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div v-if="assignment.status === 'pending' && assignment.applicants.length > 0" class="card shadow-sm">
+            <div v-if="assignment.status === 'pending' && (assignment.applicants || []).length > 0" class="card shadow-sm">
               <div class="card-body">
                 <h5 class="fw-semibold mb-4">
                   <i class="bi bi-people me-2"></i>
-                  Tutor Applications ({{ assignment.applicants.length }})
+                  Tutor Applications ({{ (assignment.applicants || []).length }})
                 </h5>
 
                 <div 
-                  v-for="applicant in assignment.applicants" 
+                  v-for="applicant in (assignment.applicants || [])" 
                   :key="applicant.id"
                   class="applicant-card mb-3"
                 >
@@ -306,7 +332,7 @@ onMounted(async () => {
 
             <div v-else-if="assignment.status === 'closed'" class="alert alert-success">
               <i class="bi bi-check-circle me-2"></i>
-              This assignment has been closed. Tutor selected: <strong>{{ assignment.selectedTutor.name }}</strong>
+              This assignment has been closed. Tutor selected: <strong>{{ assignment.selectedTutor ? assignment.selectedTutor.name : 'Unknown' }}</strong>
             </div>
           </div>
 
@@ -321,12 +347,12 @@ onMounted(async () => {
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Status</small>
                   <span class="badge" :class="getStatusBadgeClass(assignment.status)">
-                    {{ assignment.status.toUpperCase() }}
+                    {{ (assignment.status || 'unknown').toUpperCase() }}
                   </span>
                 </div>
                 <div v-if="assignment.status === 'pending'" class="info-item mb-3">
                   <small class="text-muted d-block">Applications Received</small>
-                  <strong>{{ assignment.applicants.length }}</strong>
+                  <strong>{{ (assignment.applicants || []).length }}</strong>
                 </div>
                 <hr>
                 <div class="d-grid gap-2">

@@ -57,9 +57,9 @@ const provider = new GoogleAuthProvider();
 
 // Connect to Firebase Emulators
 if (useEmulators) {
-  connectFirestoreEmulator(db, 'dodieboy.ddns.net', 8081);
-  connectAuthEmulator(auth, "http://dodieboy.ddns.net:9091");
-  connectStorageEmulator(storage, "dodieboy.ddns.net", 9191);
+  connectFirestoreEmulator(db, 'dodieboy.qzz.io', 8081);
+  connectAuthEmulator(auth, "http://dodieboy.qzz.io:9091");
+  connectStorageEmulator(storage, "dodieboy.qzz.io", 9191);
 }
 
 // Request permission to access Calendar

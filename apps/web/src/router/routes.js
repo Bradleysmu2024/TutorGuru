@@ -91,10 +91,23 @@ const router = createRouter({
 })
 
 //check if there is user session
-export const LoginStatus = ref(false);
-export const checkLoginStatus = () => {
-  if(localStorage.getItem('user') == null) return false
-  return true
+export const loginStatus = ref(false);
+
+try {
+  const auth = getAuth();
+  onAuthStateChanged(auth, (user) => {
+    loginStatus.value = !!user;
+    // keep localStorage consistent with Firebase
+    if (user) {
+      if (!localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
+      }
+    } else {
+      localStorage.removeItem('user');
+    }
+  });
+} catch (err) {
+  console.warn('Auth listener not initialized:', err);
 }
 
 export const getCurrentUser = async () => {
@@ -104,7 +117,7 @@ export const getCurrentUser = async () => {
       const removeListener = onAuthStateChanged(
         getAuth(),
         (user) => {
-          removeListener(); // Clean up the observer
+          removeListener();
           resolve(user);
         },
         reject
@@ -119,8 +132,6 @@ export const getCurrentUser = async () => {
 // Navigation guard (check if login)
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
-  LoginStatus.value = checkLoginStatus();
-  console.log(LoginStatus)
   if (to.matched.some(record => record.meta.requiresAuth)) {
     const user = await getCurrentUser();
     console.log(user);

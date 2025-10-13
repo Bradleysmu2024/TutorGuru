@@ -80,7 +80,7 @@
             </li>
           </template>
 
-          <li class="nav-item ms-lg-3" v-if="showLogin">
+          <li class="nav-item ms-lg-3" v-if="!loginStatus">
             <router-link to="/login" class="btn btn-outline-primary btn-sm" @click="closeNavbar">
               <i class="bi bi-box-arrow-in-right me-1"></i>
               Login
@@ -101,7 +101,7 @@
 <script setup>
 import { ref, watch } from 'vue' // Add 'watch' import
 import { useRoute } from 'vue-router' // Add this import
-import { checkLoginStatus, LoginStatus } from '../router/routes'
+import { loginStatus } from '../router/routes'
 
 
 const route = useRoute() // Add this line
@@ -136,9 +136,6 @@ watch(
     closeNavbar()
   }
 )
-
-// Use the shared reactive LoginStatus ref from the router
-// In <script setup>, imported refs are available directly in the template
 </script>
 
 

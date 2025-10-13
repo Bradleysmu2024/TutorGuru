@@ -1,20 +1,54 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { getDoc, doc, setDoc, updateDoc } from 'firebase/firestore'
+import { db } from '../services/firebase'
+import { getCurrentUser } from '../router/routes'
+import { getParentAssignments } from '../services/firebase'
 
 const profile = ref({
-  name: 'Parent User',
-  email: 'parent@tutorconnect.com',
-  phone: '+65 9876 5432',
-  location: 'Singapore',
-  children: [
-    { name: 'Child 1', grade: 'Grade 9', subjects: ['Mathematics', 'Science'] },
-    { name: 'Child 2', grade: 'Grade 5', subjects: ['English'] }
-  ]
+  name: '',
+  email: '',
+  phone: '',
+  location: '',
+  children: []
 })
+const assignments = ref([])
 
-const saveProfile = () => {
-  console.log('Saving profile:', profile.value)
-  alert('Profile saved successfully!')
+const loadProfile = async () => {
+  try {
+    const user = await getCurrentUser()
+    if (!user || !user.uid) return
+    const snap = await getDoc(doc(db, 'parentProfile', user.uid))
+    if (snap.exists()) {
+      profile.value = { ...profile.value, ...snap.data() }
+    } else {
+      // If no profile exists, attempt to seed from users/{uid} doc if available
+      const userSnap = await getDoc(doc(db, 'users', user.uid))
+      if (userSnap.exists()) {
+        const u = userSnap.data()
+        profile.value.name = u.name || ''
+        profile.value.email = u.email || ''
+      }
+    }
+  } catch (err) {
+    console.error('Error loading parent profile:', err)
+  }
+}
+
+const saveProfile = async () => {
+  try {
+    const user = await getCurrentUser()
+    if (!user || !user.uid) {
+      alert('You must be logged in to save your profile')
+      return
+    }
+    // Use setDoc to create/overwrite the parentProfile document
+    await setDoc(doc(db, 'parentProfile', user.uid), profile.value)
+    alert('Profile saved successfully!')
+  } catch (err) {
+    console.error('Error saving profile:', err)
+    alert('Failed to save profile. Please try again.')
+  }
 }
 
 const addChild = () => {
@@ -24,6 +58,21 @@ const addChild = () => {
 const removeChild = (index) => {
   profile.value.children.splice(index, 1)
 }
+
+onMounted(loadProfile)
+
+// load parent assignments for quick stats
+const loadAssignments = async () => {
+  try {
+    const user = await getCurrentUser()
+    if (!user || !user.uid) return
+    assignments.value = await getParentAssignments(user.uid)
+  } catch (err) {
+    console.error('Error loading parent assignments:', err)
+  }
+}
+
+onMounted(loadAssignments)
 </script>
 
 <template>
@@ -69,11 +118,11 @@ const removeChild = (index) => {
               <h6 class="fw-semibold mb-3">Quick Stats</h6>
               <div class="stat-item d-flex justify-content-between mb-2">
                 <span class="text-muted">Active Postings</span>
-                <span class="fw-semibold">3</span>
+                <span class="fw-semibold">{{ assignments.length }}</span>
               </div>
               <div class="stat-item d-flex justify-content-between mb-2">
                 <span class="text-muted">Active Tutors</span>
-                <span class="fw-semibold">2</span>
+                <span class="fw-semibold">{{ /* placeholder for active tutors */ 0 }}</span>
               </div>
               <div class="stat-item d-flex justify-content-between">
                 <span class="text-muted">Children</span>

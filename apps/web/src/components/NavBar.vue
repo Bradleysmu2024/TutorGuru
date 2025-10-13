@@ -21,63 +21,43 @@
               Home
             </router-link>
           </li>
-          <!-- Added role switcher dropdown for parent/tutor navigation  -->
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="roleDropdown" role="button" @click.prevent="toggleDropdown"
-              :aria-expanded="dropdownOpen">
-              <i class="bi bi-person-badge me-1"></i>
-              {{ currentRole === 'tutor' ? 'Tutor' : 'Parent' }}
-            </a>
-            <ul class="dropdown-menu" :class="{ 'show': dropdownOpen }">
-              <li>
-                <a class="dropdown-item" href="#" @click.prevent="switchRole('tutor')">
-                  <i class="bi bi-mortarboard me-2"></i>
-                  Switch to Tutor
-                </a>
-              </li>
-              <li>
-                <a class="dropdown-item" href="#" @click.prevent="switchRole('parent')">
-                  <i class="bi bi-people me-2"></i>
-                  Switch to Parent
-                </a>
-              </li>
-            </ul>
-          </li>
 
-          <!-- Tutor/Parent Navigation (must be adjacent for v-if/v-else) -->
-          <template v-if="currentRole === 'tutor'">
-            <li class="nav-item">
-              <router-link to="/dashboard" class="nav-link" active-class="active" @click="closeNavbar">
-                <i class="bi bi-grid me-1"></i>
-                Dashboard
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
-                <i class="bi bi-person me-1"></i>
-                Profile
-              </router-link>
-            </li>
-          </template>
-          <template v-else>
-            <li class="nav-item">
-              <router-link to="/parent-dashboard" class="nav-link" active-class="active" @click="closeNavbar">
-                <i class="bi bi-grid me-1"></i>
-                Dashboard
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link to="/post-assignment" class="nav-link" active-class="active" @click="closeNavbar">
-                <i class="bi bi-plus-circle me-1"></i>
-                Post Assignment
-              </router-link>
-            </li>
-            <li class="nav-item">
-              <router-link to="/parent-profile" class="nav-link" active-class="active" @click="closeNavbar">
-                <i class="bi bi-person me-1"></i>
-                Profile
-              </router-link>
-            </li>
+          <!-- Tutor/Parent Navigation (show only when authenticated) -->
+          <template v-if="loginStatus">
+            <template v-if="currentRole === 'tutor'">
+              <li class="nav-item">
+                <router-link to="/dashboard" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-grid me-1"></i>
+                  Dashboard
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-person me-1"></i>
+                  Profile
+                </router-link>
+              </li>
+            </template>
+            <template v-else>
+              <li class="nav-item">
+                <router-link to="/parent-dashboard" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-grid me-1"></i>
+                  Dashboard
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/post-assignment" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-plus-circle me-1"></i>
+                  Post Assignment
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/parent-profile" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-person me-1"></i>
+                  Profile
+                </router-link>
+              </li>
+            </template>
           </template>
 
           <li class="nav-item ms-lg-3" v-if="!loginStatus">
@@ -99,12 +79,13 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue' // Add 'watch' import
-import { useRoute } from 'vue-router' // Add this import
-import { loginStatus } from '../router/routes'
+import { ref, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { loginStatus, getCurrentUser } from '../router/routes'
+import { getDoc, doc as fsDoc } from 'firebase/firestore'
+import { db } from '../services/firebase'
 
-
-const route = useRoute() // Add this line
+const route = useRoute()
 const isOpen = ref(false)
 const dropdownOpen = ref(false)
 const currentRole = ref('parent') // 'tutor' or 'parent'
@@ -123,11 +104,50 @@ const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value
 }
 
+// Local switch (keeps behavior for unauthenticated demo/testing)
 const switchRole = (role) => {
   currentRole.value = role
   dropdownOpen.value = false
   closeNavbar()
 }
+
+// Fetch the user's role from Firestore when logged in
+const fetchUserRole = async () => {
+  try {
+    const user = await getCurrentUser()
+    if (user && user.uid) {
+      const userSnap = await getDoc(fsDoc(db, 'users', user.uid))
+      if (userSnap.exists()) {
+        const data = userSnap.data() || {}
+        // Expect role to be 'tutor' or 'parent'
+        currentRole.value = data.role === 'tutor' ? 'tutor' : 'parent'
+        return
+      }
+    }
+    // default
+    currentRole.value = 'parent'
+  } catch (err) {
+    console.error('Error fetching user role:', err)
+    currentRole.value = 'parent'
+  }
+}
+
+// react to login status changes
+watch(loginStatus, (isLoggedIn) => {
+  if (isLoggedIn) {
+    fetchUserRole()
+  } else {
+    // reset to default for unauthenticated users
+    currentRole.value = 'parent'
+  }
+})
+
+// initial check on mount (in case listener set before this component)
+onMounted(() => {
+  if (loginStatus.value) {
+    fetchUserRole()
+  }
+})
 
 // Watch for route changes and close navbar
 watch(

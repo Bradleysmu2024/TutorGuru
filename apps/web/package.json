@@ -16,11 +16,11 @@
     "bootstrap-vue-next": "^0.40.6",
     "firebase": "^12.3.0",
     "next": "15.5.4",
+    "postinstall": "^0.11.2",
     "unplugin-vue-components": "^29.1.0",
     "vue": "^3.5.21",
     "vue-router": "^4.5.1",
     "vuefire": "^3.2.2",
-    "postinstall": "^0.11.2",
     "vuetify": "^3.10.5"
   },
   "devDependencies": {

@@ -12,7 +12,12 @@
 import NavBar from './components/NavBar.vue'
 import Footer from './components/Footer.vue'
 
-// document.getElementsByClassName("firebase-emulator-warning")[0].remove();
+const emu = document.getElementsByClassName("firebase-emulator-warning");
+if (emu.length > 0) {
+  Array.from(emu).forEach(ele => {
+    ele.remove();
+  });
+}
 </script>
 
 <style scoped>

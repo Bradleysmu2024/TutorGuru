@@ -17,7 +17,7 @@
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
                 <img
-                  :src="profile.avatar || '/placeholder.svg?height=150&width=150'"
+                  :src="profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
                   alt="Profile"
                   class="rounded-circle img-fluid"
                   style="width: 150px; height: 150px; object-fit: cover;"

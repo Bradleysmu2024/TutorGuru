@@ -51,7 +51,7 @@ const routes = [
     meta: { requiresAuth: true, allowedRoles: ['parent', 'tutor'] },
   },
   {
-    path: "/profile",
+    path: "/tutorprofile",
     name: "TutorProfile",
     component: TutorProfile,
     meta: { requiresAuth: true, allowedRoles: ['tutor'] },
@@ -75,6 +75,12 @@ const routes = [
     path: "/calendar",
     name: "Calendar",
     component: Calendar,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/profile",
+    name: "Profile",
+    component: Profile,
     meta: { requiresAuth: true },
   },
 ]
@@ -132,6 +138,7 @@ export const getCurrentUser = async () => {
 
 // Navigation guard (check if login and role)
 import { getUserRole } from '../services/firebase'
+import Profile from "../views/Profile.vue"
 
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication

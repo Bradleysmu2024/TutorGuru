@@ -171,9 +171,13 @@ onMounted(async () => {
                     <i class="bi bi-geo-alt me-1"></i>
                     {{ assignment.location }}
                   </span>
-                  <span class="badge bg-success">
-                    <i class="bi bi-cash me-1"></i>
+                  <span class="badge bg-success me-2">
+                    <i class="bi bi-cash me-2"></i>
                     {{ assignment.rate }}
+                  </span>
+                  <span class="badge bg-warning">
+                    <i class="bi bi-geo me-1"></i>
+                    {{ assignment.postalCode }}
                   </span>
                 </div>
 

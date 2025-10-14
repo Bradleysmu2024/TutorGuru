@@ -26,7 +26,8 @@ const formData = ref({
   sessionsPerWeek: 2,
   duration: '',
   rate: '',
-  location: ''
+  location: '',
+  postalCode: '',
 })
 
 // Load data from Firebase on component mount
@@ -167,7 +168,16 @@ const cancel = () => {
                     </select>
                   </div>
                 </div>
-
+                <div class="col-12">
+                  <label class="form-label">Key in your postal code</label>
+                    <input 
+                      v-model="formData.postalCode"
+                      type="text" 
+                      class="form-control"
+                      placeholder="6 digit postal code"
+                    >
+                  
+                </div>
                 <div class="mb-3">
                   <label class="form-label">Description <span class="text-danger">*</span></label>
                   <textarea 

@@ -33,6 +33,7 @@ const startRealtimeListener = async () => {
         return tb - ta
       })
       assignments.value = items
+      console.log(assignments)
       loading.value = false
       console.debug('[ParentDashboard] realtime snapshot, count=', assignments.value.length)
     }, (err) => {
@@ -250,10 +251,15 @@ const formatDate = (date) => {
                     <i class="bi bi-geo-alt me-1"></i>
                     {{ assignment.location }}
                   </span>
+                  <span class="badge bg-warning me-2">
+                    <i class="bi bi-geo me-1"></i>
+                    {{ assignment.postalCode }}
+                  </span>
                   <span class="badge bg-success">
                     <i class="bi bi-cash me-1"></i>
                     {{ assignment.rate }}
                   </span>
+                  
                 </div>
               </div>
               <div class="col-md-4 text-md-end mt-3 mt-md-0">

@@ -10,6 +10,7 @@ import Login from "../views/Login.vue"
 import Register from "../views/Register.vue"
 import Calendar from "../views/Calendar.vue"
 import Logout from "../views/Logout.vue"
+import TutorMaps from "../views/TutorMaps.vue"
 import { ref } from "vue"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 
@@ -55,6 +56,13 @@ const routes = [
     name: "TutorProfile",
     component: TutorProfile,
     meta: { requiresAuth: true, allowedRoles: ['tutor'] },
+  },
+  {
+    path: "/tutor-maps",
+    name: "TutorMaps",
+    component: TutorMaps,
+    meta: { requiresAuth: true, allowedRoles: ['tutor'] },
+
   },
   {
     path: "/login",

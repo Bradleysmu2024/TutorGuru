@@ -37,6 +37,12 @@
                   Profile
                 </router-link>
               </li>
+              <li class="nav-item">
+                <router-link to="/tutor-maps" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-person me-1"></i>
+                  Assignment Map
+                </router-link>
+              </li>
             </template>
             <template v-else>
               <li class="nav-item">

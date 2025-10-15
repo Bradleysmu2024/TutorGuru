@@ -100,7 +100,7 @@ const submitAssignment = async () => {
       files: [],
       ...(geo
         ? {
-            coords: new GeoPoint(geo.lat, geo.lng),
+            // coords: new GeoPoint(geo.lat, geo.lng),
             lat: geo.lat,
             lng: geo.lng,
             formattedAddress: geo.formattedAddress,
@@ -124,43 +124,7 @@ const submitAssignment = async () => {
     submitting.value = false
   }
 }
-
-const submitAssignment = async () => {
-  if (!validateForm()) return
-  
-  submitting.value = true
-  
-  try {
-    const user = await getCurrentUser()
-    if (!user || !user.uid) {
-      alert('You must be logged in as a parent to post an assignment')
-      submitting.value = false
-      return
-    }
-
-    const assignmentData = {
-      ...formData.value,
-      requirements: formData.value.requirements ? formData.value.requirements.split('\n').filter(r => r.trim()) : [],
-      files: []
-    }
-
-    const result = await createAssignment(user.uid, assignmentData)
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to create assignment')
-    }
-
-    // TODO: handle file uploads and attach storage URLs to the assignment doc
-
-  submitting.value = false
-  alert('Assignment posted successfully!')
-  // Navigate with a refresh query param so the dashboard reloads assignments
-  router.push({ path: '/parent-dashboard', query: { refresh: Date.now().toString() } })
-  } catch (error) {
-    console.error('Error posting assignment:', error)
-    alert('Failed to post assignment. Please try again.')
-    submitting.value = false
-  }
-}
+ 
 
 const validateForm = () => {
   if (!formData.value.title || !formData.value.subject || !formData.value.level) {

@@ -30,6 +30,33 @@ const formData = ref({
   postalCode: '',
 })
 
+
+// Validate Singapore postal code
+const isValidSGPostal = (v) => /^\d{6}$/.test((v || '').trim())
+
+//OneMap geocoding helper
+const geocodePostalCode = async (postal) => {
+  const cleaned = (postal || '').trim()
+  if (!isValidSGPostal(cleaned)) {
+    throw new Error('Please enter a valid 6-digit Singapore postal code.')
+  }
+
+  const url = `https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${cleaned}&returnGeom=Y&getAddrDetails=Y&pageNum=1`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to contact OneMap API.')
+
+  const data = await res.json()
+  if (!data.results || data.results.length === 0) {
+    throw new Error('No location found for that postal code.')
+  }
+
+  const result = data.results[0]
+  const lat = parseFloat(result.LATITUDE)
+  const lng = parseFloat(result.LONGITUDE)
+  const address = result.ADDRESS || `${result.BUILDING || ''} ${result.ROAD_NAME || ''}`.trim()
+
+  return { lat, lng, formattedAddress: address, postalCode: cleaned }
+}
 // Load data from Firebase on component mount
 onMounted(async () => {
   try {
@@ -43,6 +70,59 @@ onMounted(async () => {
 
 const handleFilesSelected = (files) => {
   selectedFiles.value = files
+}
+
+// Submit handler with OneMap integration
+const submitAssignment = async () => {
+  if (!validateForm()) return
+  submitting.value = true
+
+  try {
+    const user = await getCurrentUser()
+    if (!user || !user.uid) {
+      alert('You must be logged in as a parent to post an assignment')
+      submitting.value = false
+      return
+    }
+
+    // Convert postal code to coordinates
+    let geo = null
+    if (formData.value.postalCode?.trim()) {
+      geo = await geocodePostalCode(formData.value.postalCode)
+    }
+
+    // Construct data to save
+    const assignmentData = {
+      ...formData.value,
+      requirements: formData.value.requirements
+        ? formData.value.requirements.split('\n').map(r => r.trim()).filter(Boolean)
+        : [],
+      files: [],
+      ...(geo
+        ? {
+            coords: new GeoPoint(geo.lat, geo.lng),
+            lat: geo.lat,
+            lng: geo.lng,
+            formattedAddress: geo.formattedAddress,
+            postalCode: geo.postalCode,
+          }
+        : {}),
+    }
+
+    // Save to Firestore
+    const result = await createAssignment(user.uid, assignmentData)
+    if (!result?.success) {
+      throw new Error(result?.error || 'Failed to create assignment')
+    }
+
+    submitting.value = false
+    alert('Assignment posted successfully!')
+    router.push({ path: '/parent-dashboard', query: { refresh: Date.now().toString() } })
+  } catch (error) {
+    console.error('Error posting assignment:', error)
+    alert(error?.message || 'Failed to post assignment. Please try again.')
+    submitting.value = false
+  }
 }
 
 const submitAssignment = async () => {
@@ -87,6 +167,10 @@ const validateForm = () => {
     alert('Please fill in all required fields')
     return false
   }
+  // if (formData.value.postalCode && !isValidSGPostal(formData.value.postalCode)) {
+  //   alert('Please enter a valid 6-digit Singapore postal code.')
+  //   return false
+  // }
   return true
 }
 

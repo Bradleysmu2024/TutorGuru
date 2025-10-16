@@ -3,24 +3,47 @@ import { ref, onMounted } from "vue"
 import FileUpload from "../components/FileUpload.vue"
 import { auth, db, getSubjects, getLevels } from "../services/firebase"
 import { onAuthStateChanged } from "firebase/auth"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
+import { doc, getDoc, updateDoc, getDocs } from "firebase/firestore"
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"
-
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 import * as L from 'leaflet';
 
 import 'leaflet/dist/leaflet.css';
 
-onMounted(() => {
-  const map = L.map('map').setView([1.3521, 103.8198], 11) // Singapore center
+async function getAllAssignments() {
+  try {
+    const snapshot = await getDocs(collection(db, "assignments"))
+    console.log(snapshot)
+    const assignments = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+    console.log("Fetched assignments:", assignments)
+    return assignments
+  } catch (error) {
+    console.error("Error fetching assignments:", error)
+    return []
+  }
+}
+onMounted(async () => {
+  // Initialize map
+  map.value = L.map("map").setView([1.3521, 103.8198], 11) // Singapore center
 
   // Load free OSM tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map)
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map.value)
 
-  // Add pin
-  const marker = L.marker([1.3456, 103.9312]).addTo(map)
-  marker.bindPopup('<b>Math Tuition at Bedok</b><br>Click to view').openPopup()
+  // Fetch assignments
+  const assignments = await getAllAssignments()
+
+  // Add markers dynamically
+  assignments.forEach((a) => {
+    if (a.lat && a.lng) {
+      const marker = L.marker([a.lat, a.lng]).addTo(map.value)
+      marker.bindPopup(`<b>${a.title || "Untitled Assignment"}</b><br>${a.subject || ""}`)
+    }
+  })
 })
 
 // let mapOptions = {

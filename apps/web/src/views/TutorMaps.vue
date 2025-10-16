@@ -41,7 +41,12 @@ onMounted(async () => {
   assignments.forEach((a) => {
     if (a.lat && a.lng) {
       const marker = L.marker([a.lat, a.lng]).addTo(map.value)
-      marker.bindPopup(`<b>${a.title || "Untitled Assignment"}</b><br>${a.subject || ""}`)
+      marker.bindPopup(`<b>Subject: </b> ${a.subject || ""}<br>
+      <b>Level: </b> ${a.level || ""}<br> 
+      <b>Description: </b>${a.title || "Untitled Assignment"}<br>
+      <b>Address: </b> ${a.formattedAddress || ""}<br>
+
+      `)
     }
   })
 })

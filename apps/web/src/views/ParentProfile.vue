@@ -1,78 +1,151 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { getDoc, doc, setDoc, updateDoc } from 'firebase/firestore'
-import { db } from '../services/firebase'
-import { getCurrentUser } from '../router/routes'
-import { getParentAssignments } from '../services/firebase'
+import { ref, onMounted } from "vue";
+import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
+import { db, updateUserEmail } from "../services/firebase";
+import { getCurrentUser } from "../router/routes";
+import { getParentAssignments } from "../services/firebase";
 
 const profile = ref({
-  name: '',
-  email: '',
-  phone: '',
-  location: '',
-  children: []
-})
-const assignments = ref([])
+  name: "",
+  email: "",
+  phone: "",
+  location: "",
+  children: [],
+});
+const assignments = ref([]);
+
+const showEmailModal = ref(false);
+const newEmail = ref("");
+const currentPassword = ref("");
+const emailChangeError = ref("");
+const emailChangeLoading = ref(false);
 
 const loadProfile = async () => {
   try {
-    const user = await getCurrentUser()
-    if (!user || !user.uid) return
-    const snap = await getDoc(doc(db, 'parentProfile', user.uid))
+    const user = await getCurrentUser();
+    if (!user || !user.uid) return;
+    const snap = await getDoc(doc(db, "parentProfile", user.uid));
     if (snap.exists()) {
-      profile.value = { ...profile.value, ...snap.data() }
+      profile.value = { ...profile.value, ...snap.data() };
     } else {
       // If no profile exists, attempt to seed from users/{uid} doc if available
-      const userSnap = await getDoc(doc(db, 'users', user.uid))
+      const userSnap = await getDoc(doc(db, "users", user.uid));
       if (userSnap.exists()) {
-        const u = userSnap.data()
-        profile.value.name = u.name || ''
-        profile.value.email = u.email || ''
+        const u = userSnap.data();
+        profile.value.name = u.name || "";
+        profile.value.email = u.email || "";
       }
     }
   } catch (err) {
-    console.error('Error loading parent profile:', err)
+    console.error("Error loading parent profile:", err);
   }
-}
+};
 
 const saveProfile = async () => {
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user || !user.uid) {
-      alert('You must be logged in to save your profile')
-      return
+      alert("You must be logged in to save your profile");
+      return;
     }
     // Use setDoc to create/overwrite the parentProfile document
-    await setDoc(doc(db, 'parentProfile', user.uid), profile.value)
-    alert('Profile saved successfully!')
+    await setDoc(doc(db, "parentProfile", user.uid), profile.value);
+    alert("Profile saved successfully!");
   } catch (err) {
-    console.error('Error saving profile:', err)
-    alert('Failed to save profile. Please try again.')
+    console.error("Error saving profile:", err);
+    alert("Failed to save profile. Please try again.");
   }
-}
+};
 
 const addChild = () => {
-  profile.value.children.push({ name: '', grade: '', subjects: [] })
-}
+  profile.value.children.push({ name: "", grade: "", subjects: [] });
+};
 
 const removeChild = (index) => {
-  profile.value.children.splice(index, 1)
-}
+  profile.value.children.splice(index, 1);
+};
 
-onMounted(loadProfile)
+onMounted(loadProfile);
 
 // load parent assignments for quick stats
 const loadAssignments = async () => {
   try {
-    const user = await getCurrentUser()
-    if (!user || !user.uid) return
-    assignments.value = await getParentAssignments(user.uid)
+    const user = await getCurrentUser();
+    if (!user || !user.uid) return;
+    assignments.value = await getParentAssignments(user.uid);
   } catch (err) {
-    console.error('Error loading parent assignments:', err)
+    console.error("Error loading parent assignments:", err);
   }
-}
+};
 
-onMounted(loadAssignments)
+const openEmailChangeModal = () => {
+  newEmail.value = profile.value.email; // Pre-fill with current email
+  currentPassword.value = "";
+  emailChangeError.value = "";
+  showEmailModal.value = true;
+};
+
+const changeEmail = async () => {
+  //validate that the user knows email and pw
+  if (!newEmail.value || !currentPassword.value) {
+    emailChangeError.value =
+      "Please provide both new email and current password.";
+    return;
+  }
+
+  if (newEmail.value === profile.value.email) {
+    emailChangeError.value =
+      "The new email must be different from the current email.";
+    return;
+  }
+
+  emailChangeError.value = "";
+  emailChangeLoading.value = true;
+  try {
+    // update Firebase Auth email first, so they can login with new email next time
+    const result = await updateUserEmail(newEmail.value, currentPassword.value);
+
+    if (!result.success) {
+      emailChangeError.value = result.error;
+      emailChangeLoading.value = false;
+      return;
+    }
+
+    // then update Firestore profile email
+    const user = await getCurrentUser();
+    if (!user || !user.uid) throw new Error("User not logged in");
+    else {
+      await setDoc(doc(db, "parentProfile", user.uid), {
+        ...profile.value,
+        email: newEmail.value,
+      });
+      // Update local state
+      profile.value.email = newEmail.value;
+
+      // Close modal and show success
+      showEmailModal.value = false;
+      alert(
+        "Email updated successfully! You can now log in with your new email."
+      );
+    }
+  } catch (err) {
+    console.error("Error changing email:", err);
+    emailChangeError.value =
+      err.message || "Failed to change email. Please try again.";
+  } finally {
+    // will always run at the end
+    emailChangeLoading.value = false;
+  }
+};
+
+const cancelEmailChange = () => {
+  showEmailModal.value = false;
+  newEmail.value = "";
+  currentPassword.value = "";
+  emailChangeError.value = "";
+};
+
+onMounted(loadAssignments);
 </script>
 
 <template>
@@ -91,12 +164,12 @@ onMounted(loadAssignments)
           <div class="card shadow-sm">
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
-                <img 
-                  src="../assets/images/me.png" 
-                  alt="Profile" 
+                <img
+                  src="../assets/images/me.png"
+                  alt="Profile"
                   class="rounded-circle img-fluid"
-                  style="width: 150px; height: 150px; object-fit: cover;"
-                >
+                  style="width: 150px; height: 150px; object-fit: cover"
+                />
               </div>
               <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
               <p class="text-muted mb-3">{{ profile.email }}</p>
@@ -122,7 +195,9 @@ onMounted(loadAssignments)
               </div>
               <div class="stat-item d-flex justify-content-between mb-2">
                 <span class="text-muted">Active Tutors</span>
-                <span class="fw-semibold">{{ /* placeholder for active tutors */ 0 }}</span>
+                <span class="fw-semibold">{{
+                  /* placeholder for active tutors */ 0
+                }}</span>
               </div>
               <div class="stat-item d-flex justify-content-between">
                 <span class="text-muted">Children</span>
@@ -143,37 +218,50 @@ onMounted(loadAssignments)
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label">Full Name</label>
-                    <input 
+                    <input
                       v-model="profile.name"
-                      type="text" 
+                      type="text"
                       class="form-control"
                       required
-                    >
+                    />
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Email</label>
-                    <input 
-                      v-model="profile.email"
-                      type="email" 
-                      class="form-control"
-                      required
+                    <div class="input-group">
+                      <input
+                        v-model="profile.email"
+                        type="email"
+                        class="form-control"
+                        disabled
+                        style="background-color: #e9ecef"
+                      />
+                      <button
+                        class="btn btn-outline-primary"
+                        type="button"
+                        @click="openEmailChangeModal"
+                      >
+                        <i class="bi bi-pencil"></i> Change
+                      </button>
+                    </div>
+                    <small class="text-muted"
+                      >Email changes require password verification</small
                     >
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Phone</label>
-                    <input 
+                    <input
                       v-model="profile.phone"
-                      type="tel" 
+                      type="tel"
                       class="form-control"
-                    >
+                    />
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Location</label>
-                    <input 
+                    <input
                       v-model="profile.location"
-                      type="text" 
+                      type="text"
                       class="form-control"
-                    >
+                    />
                   </div>
                 </div>
                 <div class="mt-3">
@@ -188,25 +276,32 @@ onMounted(loadAssignments)
 
           <div class="card shadow-sm">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-4"
+              >
                 <h5 class="fw-semibold mb-0">
                   <i class="bi bi-people me-2"></i>
                   Children Information
                 </h5>
-                <button class="btn btn-sm btn-outline-primary" @click="addChild">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  @click="addChild"
+                >
                   <i class="bi bi-plus-circle me-2"></i>
                   Add Child
                 </button>
               </div>
 
-              <div 
-                v-for="(child, index) in profile.children" 
+              <div
+                v-for="(child, index) in profile.children"
                 :key="index"
                 class="child-card mb-3"
               >
-                <div class="d-flex justify-content-between align-items-start mb-3">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-3"
+                >
                   <h6 class="fw-semibold mb-0">Child {{ index + 1 }}</h6>
-                  <button 
+                  <button
                     class="btn btn-sm btn-outline-danger"
                     @click="removeChild(index)"
                   >
@@ -216,36 +311,117 @@ onMounted(loadAssignments)
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label">Name</label>
-                    <input 
+                    <input
                       v-model="child.name"
-                      type="text" 
+                      type="text"
                       class="form-control"
                       placeholder="Child's name"
-                    >
+                    />
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Grade</label>
-                    <input 
+                    <input
                       v-model="child.grade"
-                      type="text" 
+                      type="text"
                       class="form-control"
                       placeholder="e.g., Grade 9"
-                    >
+                    />
                   </div>
                   <div class="col-12">
                     <label class="form-label">Subjects Studying</label>
-                    <input 
+                    <input
                       v-model="child.subjects"
-                      type="text" 
+                      type="text"
                       class="form-control"
                       placeholder="e.g., Mathematics, Science, English"
+                    />
+                    <small class="text-muted"
+                      >Separate subjects with commas</small
                     >
-                    <small class="text-muted">Separate subjects with commas</small>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Change Modal -->
+  <div
+    v-if="showEmailModal"
+    class="modal-overlay"
+    @click.self="cancelEmailChange"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-envelope me-2"></i>Change Email Address
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="cancelEmailChange"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted mb-3">
+            For security, we need to verify your current password before
+            changing your email.
+          </p>
+
+          <div v-if="emailChangeError" class="alert alert-danger">
+            {{ emailChangeError }}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">New Email Address</label>
+            <input
+              v-model="newEmail"
+              type="email"
+              class="form-control"
+              placeholder="Enter new email"
+              :disabled="emailChangeLoading"
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input
+              v-model="currentPassword"
+              type="password"
+              class="form-control"
+              placeholder="Enter your current password"
+              :disabled="emailChangeLoading"
+            />
+            <small class="text-muted"
+              >We need this to verify it's really you</small
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            @click="cancelEmailChange"
+            :disabled="emailChangeLoading"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            @click="changeEmail"
+            :disabled="emailChangeLoading"
+          >
+            <span v-if="emailChangeLoading">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Updating...
+            </span>
+            <span v-else> <i class="bi bi-check2 me-2"></i>Update Email </span>
+          </button>
         </div>
       </div>
     </div>
@@ -275,6 +451,62 @@ onMounted(loadAssignments)
   padding: 1.5rem;
   background-color: #f8f9fa;
   border-radius: 0.75rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.modal-dialog {
+  max-width: 500px;
+  width: 90%;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.btn-close:hover {
+  opacity: 1;
 }
 
 @media (max-width: 991px) {

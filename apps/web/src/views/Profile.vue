@@ -9,15 +9,25 @@
             <div class="card-body px-10">
               <div class="profile text-center mb-3">
                 <div class="profile-avatar mb-3">
-                  <img :src="profile.avatar || '/src/assets/images/profileplaceholder.JPG'" alt="Profile"
-                    class="rounded-circle img-fluid" style="width: 150px; height: 150px; object-fit: cover;">
+                  <img
+                    :src="
+                      profile.avatar ||
+                      '/src/assets/images/profileplaceholder.JPG'
+                    "
+                    alt="Profile"
+                    class="rounded-circle img-fluid"
+                    style="width: 150px; height: 150px; object-fit: cover"
+                  />
                 </div>
                 <h4 class="fw-bold mb-2">{{ profile.name }}</h4>
                 <span v-if="profile.verified" class="badge bg-success mb-3">
                   <i class="bi bi-check-circle me-1"></i> Verified Tutor
                 </span>
                 <div class="d-grid">
-                  <button class="btn btn-outline-primary btn-sm" @click="editProfile()">
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    @click="editProfile()"
+                  >
                     <i class="bi bi-gear-wide-connected me-2"></i> Edit Profile
                   </button>
                 </div>
@@ -25,8 +35,11 @@
               <div class="mb3 info">
                 <div class="subjects-list mb-3">
                   <h6>Subjects</h6>
-                  <span class="subject-tag" v-for="(item, index) in profile.teaching">{{ item.levels + " " +
-                    item.subject}}</span>
+                  <span
+                    class="subject-tag"
+                    v-for="(item, index) in profile.teaching"
+                    >{{ item.levels + " " + item.subject }}</span
+                  >
                 </div>
                 <div class="experience mb-3">
                   <h6>Years of teaching experience</h6>
@@ -46,7 +59,7 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="card shadow-sm mt-4 col-lg-4">
+        <div class="card shadow-sm mt-6 col-lg-4">
           <div class="card-body">
             <h6 class="fw-semibold mb-3">Quick Stats</h6>
             <div class="stat-item d-flex justify-content-between mb-2">
@@ -64,13 +77,12 @@
           </div>
         </div>
 
-
-
         <!-- Documents -->
         <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title mb-4">
-              <i class="bi bi-file-earmark-text me-2"></i> Documents & Credentials
+              <i class="bi bi-file-earmark-text me-2"></i> Documents &
+              Credentials
             </h5>
           </div>
         </div>
@@ -80,21 +92,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
-import FileUpload from "../components/FileUpload.vue"
-import { auth, db, getSubjects, getLevels } from "../services/firebase"
-import { onAuthStateChanged } from "firebase/auth"
-import { doc, getDoc, updateDoc } from "firebase/firestore"
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage"
-import router from "../router/routes"
+import { ref, onMounted } from "vue";
+import FileUpload from "../components/FileUpload.vue";
+import { auth, db, getSubjects, getLevels } from "../services/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+} from "firebase/storage";
+import router from "../router/routes";
 
-
-const fileUploadRef = ref(null)
-const selectedFiles = ref([])
+const fileUploadRef = ref(null);
+const selectedFiles = ref([]);
 
 // Add Firebase data
-const subjects = ref([])
-const levels = ref([])
+const subjects = ref([]);
+const levels = ref([]);
 
 const profile = ref({
   name: "",
@@ -106,16 +122,16 @@ const profile = ref({
   teaching: [{ subject: "", levels: [] }],
   experience: 0,
   avatar: "",
-  verified: false
-})
+  verified: false,
+});
 
 // Load Firebase data on mount
 onMounted(async () => {
   try {
-    subjects.value = await getSubjects()
-    levels.value = await getLevels()
+    subjects.value = await getSubjects();
+    levels.value = await getLevels();
   } catch (error) {
-    console.error('Error loading form data:', error)
+    console.error("Error loading form data:", error);
   }
 
   // // Existing auth state change logic
@@ -131,101 +147,102 @@ onMounted(async () => {
   //     alert("Please log in to view your profile.")
   //   }
   // })
-})
+});
 
-const uploadedDocuments = ref([])
+const uploadedDocuments = ref([]);
 
 const addSubject = () => {
-  profile.value.teaching.push({ subject: "", levels: [] })
-}
+  profile.value.teaching.push({ subject: "", levels: [] });
+};
 
 const removeSubject = (index) => {
-  profile.value.teaching.splice(index, 1)
-}
+  profile.value.teaching.splice(index, 1);
+};
 
 const handleFilesSelected = (files) => {
-  selectedFiles.value = files
-}
+  selectedFiles.value = files;
+};
 
 const uploadDocuments = async () => {
-  const user = auth.currentUser
-  if (!user) return alert("You must be logged in to upload documents!")
+  const user = auth.currentUser;
+  if (!user) return alert("You must be logged in to upload documents!");
 
   if (selectedFiles.value.length === 0) {
-    return alert("Please select at least one file.")
+    return alert("Please select at least one file.");
   }
 
-  const storage = getStorage()
-  const tutorRef = doc(db, "tutorProfile", user.uid)
-  const newUploads = []
+  const storage = getStorage();
+  const tutorRef = doc(db, "tutorProfile", user.uid);
+  const newUploads = [];
 
   try {
     for (const file of selectedFiles.value) {
-      const fileRef = storageRef(storage, `tutors/${user.uid}/documents/${file.name}`)
-      await uploadBytes(fileRef, file)
-      const url = await getDownloadURL(fileRef)
+      const fileRef = storageRef(
+        storage,
+        `tutors/${user.uid}/documents/${file.name}`
+      );
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
 
       newUploads.push({
         name: file.name,
         uploadDate: new Date().toISOString().split("T")[0],
-        url
-      })
+        url,
+      });
     }
 
-    uploadedDocuments.value.push(...newUploads)
-    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value })
+    uploadedDocuments.value.push(...newUploads);
+    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value });
 
-    alert("✅ Documents uploaded successfully!")
-    selectedFiles.value = []
+    alert("✅ Documents uploaded successfully!");
+    selectedFiles.value = [];
   } catch (err) {
-    console.error("Upload error:", err)
-    alert("Error uploading files. Please try again.")
+    console.error("Upload error:", err);
+    alert("Error uploading files. Please try again.");
   }
-}
-
+};
 
 const handleUploadComplete = (files) => {
-  files.forEach(file => {
+  files.forEach((file) => {
     uploadedDocuments.value.push({
       name: file.name,
       uploadDate: new Date().toISOString().split("T")[0],
-      url: "#"
-    })
-  })
-  selectedFiles.value = []
-  alert("Documents uploaded successfully!")
-}
+      url: "#",
+    });
+  });
+  selectedFiles.value = [];
+  alert("Documents uploaded successfully!");
+};
 
 // Load profile when logged in
 onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid)
-      const snap = await getDoc(refDoc)
+      const refDoc = doc(db, "tutorProfile", user.uid);
+      const snap = await getDoc(refDoc);
       if (snap.exists()) {
-        profile.value = snap.data()
-        uploadedDocuments.value = snap.data().uploadedDocuments || []
-      }
-      else {
-        alert("Please log in to view your profile.")
+        profile.value = snap.data();
+        uploadedDocuments.value = snap.data().uploadedDocuments || [];
+      } else {
+        alert("Please log in to view your profile.");
       }
     }
-  })
-})
+  });
+});
 
 // Save profile to Firestore
 const saveProfile = async () => {
-  const user = auth.currentUser
-  if (!user) return alert("You must be logged in!")
+  const user = auth.currentUser;
+  if (!user) return alert("You must be logged in!");
 
-  const tutorRef = doc(db, "tutorProfile", user.uid)
-  await updateDoc(tutorRef, profile.value)
-  alert("Profile saved successfully!")
-}
+  const tutorRef = doc(db, "tutorProfile", user.uid);
+  await updateDoc(tutorRef, profile.value);
+  alert("Profile saved successfully!");
+};
 
 const editProfile = () => {
-  router.push('tutorProfile')
-}
+  router.push("tutorProfile");
+};
 </script>
 
 <style scoped>
@@ -252,7 +269,7 @@ const editProfile = () => {
 }
 
 .subject-tag {
-  background: #81B29A;
+  background: #81b29a;
   color: white;
   padding: 4px 12px;
   border-radius: 20px;

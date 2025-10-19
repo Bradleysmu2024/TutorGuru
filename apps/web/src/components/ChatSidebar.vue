@@ -30,9 +30,6 @@ const search = ref('')
 const users = ref([])
 let unsubscribe = null
 
-// Try to listen to a 'chats' collection which should contain chat documents.
-// Each chat doc is expected to have: { id, participants: [{id,name,avatar}], lastMessage, updatedAt }
-// We'll map that into a simple list of user-like items for the sidebar: { id, name, avatar, lastMessage }
 const loadChats = async () => {
   try {
     const currentUid = auth.currentUser ? auth.currentUser.uid : null
@@ -49,13 +46,13 @@ const loadChats = async () => {
         return {
           id: otherUid,
           name: participant.name || 'Unknown',
+          username: participant.username || '',
           avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
           lastMessage: data.lastMessage || '',
           bio: participant.bio || ''
         }
       })
 
-      // Enrich items by fetching users/{uid} when participant info is missing or defaulted
       try {
         const enriched = await Promise.all(items.map(async (item) => {
           if (item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG') {
@@ -64,6 +61,7 @@ const loadChats = async () => {
               if (uSnap.exists()) {
                 const u = uSnap.data() || {}
                 item.name = u.name || item.name
+                item.username = u.username || item.username
                 item.avatar = u.avatar || item.avatar
                 item.bio = u.bio || item.bio
               }
@@ -81,10 +79,9 @@ const loadChats = async () => {
     })
   } catch (err) {
     console.error('Error loading chats:', err)
-    // fallback: try to load a users collection so the sidebar still shows contacts
     try {
       const snap = await getDocs(collection(db, 'users'))
-      users.value = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
+  users.value = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), username: (d.data() && d.data().username) || '', avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
     } catch (e) {
       console.error('Fallback users load failed:', e)
     }
@@ -99,7 +96,13 @@ onUnmounted(() => {
   if (typeof unsubscribe === 'function') unsubscribe()
 })
 
-const filteredUsers = computed(() =>
-  users.value.filter(u => u.name && u.name.toLowerCase().includes(search.value.toLowerCase()))
-)
+const filteredUsers = computed(() => {
+  const q = (search.value || '').trim().toLowerCase()
+  if (!q) return users.value
+  return users.value.filter(u => {
+    const name = (u.name || '').toLowerCase()
+    const username = (u.username || '').toLowerCase()
+    return (name && name.includes(q)) || (username && username.includes(q))
+  })
+})
 </script>

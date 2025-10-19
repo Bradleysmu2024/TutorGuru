@@ -98,6 +98,12 @@ const routes = [
     component: PaymentSuccess,
     meta: { requiresAuth: true, allowedRoles: ['parent'] },
   },
+  {
+    path: "/chat",
+    name: "Chat",
+    component: Message,
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
@@ -154,6 +160,7 @@ export const getCurrentUser = async () => {
 // Navigation guard (check if login and role)
 import { getUserRole } from '../services/firebase'
 import Profile from "../views/Profile.vue"
+import Message from "../views/Message.vue"
 
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication

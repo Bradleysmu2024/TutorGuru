@@ -17,6 +17,12 @@ const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
 const submitting = ref(false);
 
+// Postal code validation states
+const geocoding = ref(false);
+const postalError = ref("");
+const postalSuccess = ref(false);
+const geocodedData = ref(null);
+
 // Firebase data
 const subjects = ref([]);
 const levels = ref([]);
@@ -35,6 +41,7 @@ const formData = ref({
   rate: "",
   location: "",
   postalCode: "",
+  formattedAddress: "",
 });
 
 // Computed property to get grades for selected level
@@ -87,6 +94,73 @@ const geocodePostalCode = async (postal) => {
 
   return { lat, lng, formattedAddress: address, postalCode: cleaned };
 };
+
+// Auto-validate and geocode postal code
+const validateAndGeocodePostal = async () => {
+  postalError.value = "";
+  postalSuccess.value = false;
+  geocodedData.value = null;
+
+  const postal = formData.value.postalCode?.trim();
+
+  if (!postal) {
+    postalError.value = "Please enter a postal code";
+    return;
+  }
+
+  if (!isValidSGPostal(postal)) {
+    postalError.value = "Please enter a valid 6-digit Singapore postal code";
+    return;
+  }
+
+  geocoding.value = true;
+
+  try {
+    const result = await geocodePostalCode(postal);
+    geocodedData.value = result;
+    postalSuccess.value = true;
+
+    // Auto-fill formatted address
+    formData.value.formattedAddress = result.formattedAddress;
+
+    // Auto-detect and fill location/region from postal code
+    const postalDistrict = parseInt(postal.substring(0, 2));
+    formData.value.location = getRegionFromPostalDistrict(postalDistrict);
+  } catch (error) {
+    postalError.value = error.message;
+    geocodedData.value = null;
+  } finally {
+    geocoding.value = false;
+  }
+};
+
+// Helper function to determine region from postal district
+const getRegionFromPostalDistrict = (district) => {
+  // Singapore postal district to region mapping
+  const regionMap = {
+    // Central: 01-08
+    central: [1, 2, 3, 4, 5, 6, 7, 8],
+    // North: 25-28, 72-73, 77-78
+    north: [25, 26, 27, 28, 72, 73, 77, 78],
+    // Northeast: 19-20, 28, 53-55, 82
+    northeast: [19, 20, 28, 53, 54, 55, 82],
+    // East: 13-17, 38-42, 45-47, 48-52
+    east: [
+      13, 14, 15, 16, 17, 38, 39, 40, 41, 42, 45, 46, 47, 48, 49, 50, 51, 52,
+    ],
+    // West: 21-24, 60-71
+    west: [21, 22, 23, 24, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71],
+  };
+
+  for (const [region, districts] of Object.entries(regionMap)) {
+    if (districts.includes(district)) {
+      return region.charAt(0).toUpperCase() + region.slice(1); // Capitalize
+    }
+  }
+
+  return "Central"; // Default fallback
+};
+
 // Load data from Firebase on component mount
 onMounted(async () => {
   try {
@@ -116,9 +190,10 @@ const submitAssignment = async () => {
       return;
     }
 
-    // Convert postal code to coordinates
-    let geo = null;
-    if (formData.value.postalCode?.trim()) {
+    // Convert postal code to coordinates (use already geocoded data if available)
+    let geo = geocodedData.value;
+    if (!geo && formData.value.postalCode?.trim()) {
+      // Fallback: geocode if not already done
       geo = await geocodePostalCode(formData.value.postalCode);
     }
 
@@ -134,7 +209,6 @@ const submitAssignment = async () => {
       files: [],
       ...(geo
         ? {
-            // coords: new GeoPoint(geo.lat, geo.lng),
             lat: geo.lat,
             lng: geo.lng,
             formattedAddress: geo.formattedAddress,
@@ -171,10 +245,18 @@ const validateForm = () => {
     alert("Please fill in all required fields");
     return false;
   }
-  // if (formData.value.postalCode && !isValidSGPostal(formData.value.postalCode)) {
-  //   alert('Please enter a valid 6-digit Singapore postal code.')
-  //   return false
-  // }
+
+  // Require postal code verification
+  if (!formData.value.postalCode) {
+    alert("Please enter your postal code");
+    return false;
+  }
+
+  if (!postalSuccess.value) {
+    alert("Please verify your postal code by clicking the location button");
+    return false;
+  }
+
   return true;
 };
 
@@ -259,7 +341,7 @@ const cancel = () => {
                 </div>
 
                 <div class="row g-3 mb-3">
-                  <div class="col-md-6">
+                  <div class="col-md-12">
                     <label class="form-label">Student Grade</label>
                     <select
                       v-model="formData.studentGrade"
@@ -291,29 +373,58 @@ const cancel = () => {
                       grades
                     </small>
                   </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Location</label>
-                    <select v-model="formData.location" class="form-select">
-                      <option value="">Select location</option>
-                      <option
-                        v-for="location in locations.slice(1)"
-                        :key="location"
-                        :value="location"
-                      >
-                        {{ location }}
-                      </option>
-                    </select>
+                </div>
+
+                <!-- Smart Postal Code Input -->
+                <div class="col-12 mb-3">
+                  <label class="form-label">
+                    Location (Postal Code)
+                    <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <input
+                      v-model="formData.postalCode"
+                      type="text"
+                      class="form-control"
+                      placeholder="Enter 6-digit postal code"
+                      @blur="validateAndGeocodePostal"
+                      @keyup.enter="validateAndGeocodePostal"
+                      maxlength="6"
+                      :class="{
+                        'is-invalid': postalError,
+                        'is-valid': postalSuccess,
+                      }"
+                    />
+                    <button
+                      class="btn btn-outline-secondary"
+                      type="button"
+                      @click="validateAndGeocodePostal"
+                      :disabled="geocoding || !formData.postalCode"
+                    >
+                      <span
+                        v-if="geocoding"
+                        class="spinner-border spinner-border-sm"
+                      ></span>
+                      <i v-else class="bi bi-geo-alt"></i>
+                    </button>
                   </div>
+                  <div v-if="postalError" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    {{ postalError }}
+                  </div>
+                  <div v-if="postalSuccess" class="valid-feedback d-block">
+                    <i class="bi bi-check-circle me-1"></i>
+                    <strong>{{ formData.formattedAddress }}</strong>
+                    <span class="ms-2 badge bg-success">{{
+                      formData.location
+                    }}</span>
+                  </div>
+                  <small class="text-muted d-block mt-1">
+                    <i class="bi bi-info-circle me-1"></i>
+                    We'll automatically detect your region and address
+                  </small>
                 </div>
-                <div class="col-12">
-                  <label class="form-label">Key in your postal code</label>
-                  <input
-                    v-model="formData.postalCode"
-                    type="text"
-                    class="form-control"
-                    placeholder="6 digit postal code"
-                  />
-                </div>
+
                 <div class="mb-3">
                   <label class="form-label"
                     >Description <span class="text-danger">*</span></label

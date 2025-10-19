@@ -115,6 +115,8 @@ import SearchFilter from '../components/SearchFilter.vue'
 import JobCard from '../components/JobCard.vue'
 import { dummyJobPostings } from '../data/dummyData'
 import { getSubjects, getLevels, getLocations } from '../services/firebase'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../services/firebase'
 // import { getJobPostings, applyToJob } from '../services/firebase'
 
 const subjects = ref([])
@@ -157,14 +159,27 @@ onMounted(async () => {
 const loadJobs = async () => {
   loading.value = true
   try {
-    // TODO: Replace with Firebase call
-    // jobs.value = await getJobPostings()
-    
-    // Using dummy data for now
-    setTimeout(() => {
-      jobs.value = dummyJobPostings
-      loading.value = false
-    }, 500)
+    // Load from Firestore 'assignments' collection
+    const snap = await getDocs(collection(db, 'assignments'))
+    const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
+
+    // Sort client-side by createdAt (handle ISO strings and Firestore timestamps)
+    items.sort((a, b) => {
+      const ta = a.createdAt && typeof a.createdAt === 'string'
+        ? Date.parse(a.createdAt)
+        : a.createdAt && a.createdAt.seconds
+        ? a.createdAt.seconds * 1000
+        : 0
+      const tb = b.createdAt && typeof b.createdAt === 'string'
+        ? Date.parse(b.createdAt)
+        : b.createdAt && b.createdAt.seconds
+        ? b.createdAt.seconds * 1000
+        : 0
+      return tb - ta
+    })
+
+    jobs.value = items
+    loading.value = false
   } catch (error) {
     console.error('Error loading jobs:', error)
     loading.value = false

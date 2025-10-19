@@ -390,7 +390,7 @@ import {
   updateUserEmail,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import {
   getStorage,
   ref as storageRef,
@@ -527,6 +527,27 @@ const handleUploadComplete = (files) => {
 const saveProfile = async () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in!");
+
+  // Validate username uniqueness (if provided)
+  const desiredUsername = (profile.value.username || "").trim();
+  if (desiredUsername) {
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', desiredUsername));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        // if any matching doc belongs to someone else, block save
+        const takenByOther = snap.docs.some(d => d.id !== user.uid);
+        if (takenByOther) {
+          alert('That username is already taken. Please choose another.');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error validating username uniqueness:', err);
+      alert('Could not validate username uniqueness. Please try again.');
+      return;
+    }
+  }
 
   const tutorRef = doc(db, "users", user.uid);
   await updateDoc(tutorRef, profile.value);

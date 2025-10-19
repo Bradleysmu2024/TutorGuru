@@ -124,6 +124,7 @@ import { auth, db } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useRoute } from 'vue-router'
+import router from "../router/routes";
 
 // Add Firebase data
 const profile = ref({

@@ -2,12 +2,12 @@
   <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
     <!-- Header -->
     <div class="p-3 border-bottom d-flex align-items-center" v-if="activeUser">
-      <img :src="activeUser.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="40" height="40"/>
-      <div>
+      <img :src="activeUser.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="50" height="50"/>
+      <div class="chat-user-info">
         <a href="#" class="text-decoration-none text-dark" @click.prevent="openProfile">
-          <strong>{{ activeUser.name }}</strong>
+          <strong class="d-block mb-0">{{ activeUser.name }}</strong>
+          <small class="text-muted d-block mt-1">@{{ activeUser.username }}</small>
         </a>
-        <br />
       </div>
     </div>
 
@@ -43,7 +43,7 @@ const router = useRouter()
 function openProfile() {
   const user = props.activeUser
   if (!user) return
-  const username = user.username || user.name || user.id
+  const username = user.username
   router.push({ name: 'PublicTutorProfile', params: { username } }).catch(() => {})
 }
 const messages = ref([])
@@ -80,5 +80,13 @@ function formatTime(ts) {
 .d-flex.flex-column.flex-grow-1 {
   overflow: hidden;
   min-height: 0;
+}
+
+.chat-user-info strong {
+  line-height: 1;
+}
+.chat-user-info small {
+  line-height: 1.1;
+  opacity: 0.85;
 }
 </style>

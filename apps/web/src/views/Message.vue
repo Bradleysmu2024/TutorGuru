@@ -21,7 +21,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted, onMounted } from 'vue'
+import { ref, onUnmounted, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ChatWindow from '../components/ChatWindow.vue'
 import MessageSidebar from '../components/ChatSidebar.vue'
@@ -40,7 +40,6 @@ onMounted(async () => {
   const tutorId = route.query.tutorId
   if (!tutorId) return
     try {
-      // try loading by doc id from users collection
       const refDoc = doc(db, 'users', String(tutorId))
       const snap = await getDoc(refDoc)
       if (snap.exists()) {
@@ -48,7 +47,6 @@ onMounted(async () => {
         return
       }
 
-      // fallback: try username field in users
       const q = query(collection(db, 'users'), where('username', '==', String(tutorId)))
       const snap2 = await getDocs(q)
       if (!snap2.empty) {
@@ -64,6 +62,5 @@ const goToDashboard = () => {
   router.push({ path: '/dashboard' })
 }
 
-// cancel any timer if component destroyed (defensive)
 onUnmounted(() => {})
 </script>

@@ -175,7 +175,7 @@ onMounted(async () => {
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
                 <img
-                  src="../assets/images/me.png"
+                  src="../assets/images/profileplaceholder.JPG"
                   alt="Profile"
                   class="rounded-circle img-fluid"
                   style="width: 150px; height: 150px; object-fit: cover"
@@ -275,7 +275,7 @@ onMounted(async () => {
                   </div>
                 </div>
                 <div class="mt-3">
-                  <button type="submit" class="btn btn-primary">
+                  <button type="submit" class="btn btn-primary text-white">
                     <i class="bi bi-save me-2"></i>
                     Save Changes
                   </button>

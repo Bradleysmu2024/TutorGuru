@@ -11,10 +11,10 @@
       <li v-for="user in filteredUsers" :key="user.id"
           @click="$emit('selectChat', user)"
           class="list-group-item d-flex align-items-center list-group-item-action">
-        <img :src="user.avatar" class="rounded-circle me-2" width="40" height="40"/>
+            <img :src="user.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="40" height="40"/>
         <div>
           <strong>{{ user.name }}</strong>
-          <div class="small text-muted">Sed do eiusmod...</div>
+          <div class="small text-muted">{{ user.bio || 'No bio available' }}</div>
         </div>
       </li>
     </ul>
@@ -23,7 +23,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
 
 const search = ref('')
@@ -38,20 +38,46 @@ const loadChats = async () => {
     const currentUid = auth.currentUser ? auth.currentUser.uid : null
     if (!currentUid) return
     const q = query(collection(db, 'chats', currentUid, 'chats'), orderBy('updatedAt', 'desc'))
-    unsubscribe = onSnapshot(q, (snap) => {
-      const items = []
-      snap.docs.forEach(d => {
+    unsubscribe = onSnapshot(q, async (snap) => {
+      const items = snap.docs.map((d) => {
         const data = d.data()
         const otherUid = d.id
-        const participant = (data.participants && Array.isArray(data.participants)) ? data.participants.find(p => p.id === otherUid) || { id: otherUid } : { id: otherUid }
-        items.push({
+        const participant = (data.participants && Array.isArray(data.participants))
+          ? data.participants.find((p) => p.id === otherUid) || { id: otherUid }
+          : { id: otherUid }
+
+        return {
           id: otherUid,
           name: participant.name || 'Unknown',
           avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
-          lastMessage: data.lastMessage || ''
-        })
+          lastMessage: data.lastMessage || '',
+          bio: participant.bio || ''
+        }
       })
-      users.value = items
+
+      // Enrich items by fetching users/{uid} when participant info is missing or defaulted
+      try {
+        const enriched = await Promise.all(items.map(async (item) => {
+          if (item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG') {
+            try {
+              const uSnap = await getDoc(doc(db, 'users', item.id))
+              if (uSnap.exists()) {
+                const u = uSnap.data() || {}
+                item.name = u.name || item.name
+                item.avatar = u.avatar || item.avatar
+                item.bio = u.bio || item.bio
+              }
+            } catch (e) {
+              console.error('Error enriching user', item.id, e)
+            }
+          }
+          return item
+        }))
+        users.value = enriched
+      } catch (e) {
+        console.error('Error enriching chat items:', e)
+        users.value = items
+      }
     })
   } catch (err) {
     console.error('Error loading chats:', err)

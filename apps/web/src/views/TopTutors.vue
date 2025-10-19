@@ -53,11 +53,13 @@ const loading = ref(false)
 onMounted(async () => {
   loading.value = true
   try {
-    const snap = await getDocs(collection(db, 'tutorProfile'))
-    const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
+  const snap = await getDocs(collection(db, 'users'))
+  const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
+  // filter to only tutors
+  const tutorsOnly = items.filter(i => i.role === 'tutor')
     // sort by rating desc (missing rating => 0)
-    items.sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0))
-    tutors.value = items
+  tutorsOnly.sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0))
+  tutors.value = tutorsOnly
   } catch (err) {
     console.error('Error loading tutors:', err)
   } finally {

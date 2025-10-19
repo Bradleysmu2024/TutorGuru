@@ -25,17 +25,9 @@ const loadProfile = async () => {
   try {
     const user = await getCurrentUser();
     if (!user || !user.uid) return;
-    const snap = await getDoc(doc(db, "parentProfile", user.uid));
+    const snap = await getDoc(doc(db, "users", user.uid));
     if (snap.exists()) {
       profile.value = { ...profile.value, ...snap.data() };
-    } else {
-      // If no profile exists, attempt to seed from users/{uid} doc if available
-      const userSnap = await getDoc(doc(db, "users", user.uid));
-      if (userSnap.exists()) {
-        const u = userSnap.data();
-        profile.value.name = u.name || "";
-        profile.value.email = u.email || "";
-      }
     }
   } catch (err) {
     console.error("Error loading parent profile:", err);
@@ -49,8 +41,8 @@ const saveProfile = async () => {
       alert("You must be logged in to save your profile");
       return;
     }
-    // Use setDoc to create/overwrite the parentProfile document
-    await setDoc(doc(db, "parentProfile", user.uid), profile.value);
+  // write profile into users/{uid}
+  await setDoc(doc(db, "users", user.uid), profile.value, { merge: true });
     alert("Profile saved successfully!");
   } catch (err) {
     console.error("Error saving profile:", err);

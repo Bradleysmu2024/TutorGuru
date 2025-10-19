@@ -39,22 +39,22 @@ const selectChat = (user) => {
 onMounted(async () => {
   const tutorId = route.query.tutorId
   if (!tutorId) return
-  try {
-    // try loading by doc id
-    const refDoc = doc(db, 'tutorProfile', String(tutorId))
-    const snap = await getDoc(refDoc)
-    if (snap.exists()) {
-      activeUser.value = { id: snap.id, ...snap.data() }
-      return
-    }
+    try {
+      // try loading by doc id from users collection
+      const refDoc = doc(db, 'users', String(tutorId))
+      const snap = await getDoc(refDoc)
+      if (snap.exists()) {
+        activeUser.value = { id: snap.id, ...snap.data() }
+        return
+      }
 
-    // fallback: try username field
-    const q = query(collection(db, 'tutorProfile'), where('username', '==', String(tutorId)))
-    const snap2 = await getDocs(q)
-    if (!snap2.empty) {
-      const d = snap2.docs[0]
-      activeUser.value = { id: d.id, ...d.data() }
-    }
+      // fallback: try username field in users
+      const q = query(collection(db, 'users'), where('username', '==', String(tutorId)))
+      const snap2 = await getDocs(q)
+      if (!snap2.empty) {
+        const d = snap2.docs[0]
+        activeUser.value = { id: d.id, ...d.data() }
+      }
   } catch (err) {
     console.error('Error loading tutor for chat:', err)
   }

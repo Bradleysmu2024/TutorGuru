@@ -430,7 +430,7 @@ onMounted(async () => {
   // // Existing auth state change logic
   // onAuthStateChanged(auth, async (user) => {
   //   if (user) {
-  //     const refDoc = doc(db, "tutorProfile", user.uid)
+  //     const refDoc = doc(db, "users", user.uid)
   //     const snap = await getDoc(refDoc)
   //     if (snap.exists()) {
   //       profile.value = snap.data()
@@ -465,7 +465,7 @@ const uploadDocuments = async () => {
   }
 
   const storage = getStorage();
-  const tutorRef = doc(db, "tutorProfile", user.uid);
+  const tutorRef = doc(db, "users", user.uid);
   const newUploads = [];
 
   try {
@@ -508,10 +508,10 @@ const handleUploadComplete = (files) => {
 };
 
 // Load profile when logged in
-onMounted(() => {
+  onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid);
+      const refDoc = doc(db, "users", user.uid);
       const snap = await getDoc(refDoc);
       if (snap.exists()) {
         profile.value = snap.data();
@@ -528,7 +528,7 @@ const saveProfile = async () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in!");
 
-  const tutorRef = doc(db, "tutorProfile", user.uid);
+  const tutorRef = doc(db, "users", user.uid);
   await updateDoc(tutorRef, profile.value);
   alert("Profile saved successfully!");
 };

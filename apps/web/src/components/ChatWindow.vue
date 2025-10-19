@@ -2,10 +2,12 @@
   <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
     <!-- Header -->
     <div class="p-3 border-bottom d-flex align-items-center" v-if="activeUser">
-      <img :src="activeUser.avatar" class="rounded-circle me-2" width="40" height="40"/>
+      <img :src="activeUser.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="40" height="40"/>
       <div>
-        <strong>{{ activeUser.name }}</strong><br/>
-        <small class="text-muted">Last active 1 hour ago</small>
+        <a href="#" class="text-decoration-none text-dark" @click.prevent="openProfile">
+          <strong>{{ activeUser.name }}</strong>
+        </a>
+        <br />
       </div>
     </div>
 
@@ -16,7 +18,7 @@
      <div :class="msg.senderIsMe ? 'bg-primary text-white' : 'bg-white border'"
        class="p-2 rounded-3" style="max-width: 60%;">
           {{ msg.text }}
-          <div class="small text-end text-muted">{{ formatTime(msg.timestamp) }}</div>
+          <div class="small text-end text-muted text-white">{{ formatTime(msg.timestamp) }}</div>
         </div>
       </div>
     </div>
@@ -30,11 +32,20 @@
 
 <script setup>
 import { ref, watch, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
 import { db, auth } from '../services/firebase'
 import MessageInput from './MessageInput.vue'
 
 const props = defineProps({ activeUser: Object })
+const router = useRouter()
+
+function openProfile() {
+  const user = props.activeUser
+  if (!user) return
+  const username = user.username || user.name || user.id
+  router.push({ name: 'PublicTutorProfile', params: { username } }).catch(() => {})
+}
 const messages = ref([])
 let unsubscribe = null
 

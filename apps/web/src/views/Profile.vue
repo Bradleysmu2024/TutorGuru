@@ -149,7 +149,6 @@ const showMessageButton = computed(() => {
 })
 
 
-// Load Firebase data on mount
 onMounted(async () => {
   try {
     subjects.value = await getSubjects();
@@ -157,20 +156,6 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error loading form data:", error);
   }
-
-  // // Existing auth state change logic
-  // onAuthStateChanged(auth, async (user) => {
-  //   if (user) {
-  //     const refDoc = doc(db, "tutorProfile", user.uid)
-  //     const snap = await getDoc(refDoc)
-  //     if (snap.exists()) {
-  //       profile.value = snap.data()
-  //       uploadedDocuments.value = snap.data().uploadedDocuments || []
-  //     }
-  //   } else {
-  //     alert("Please log in to view your profile.")
-  //   }
-  // })
 });
 
 const uploadedDocuments = ref([]);
@@ -245,7 +230,7 @@ onMounted(async () => {
   if (username) {
     isPublicView.value = true
     try {
-      const q = query(collection(db, 'tutorProfile'), where('username', '==', username))
+  const q = query(collection(db, 'users'), where('username', '==', username))
       const snap = await getDocs(q)
       if (!snap.empty) {
         const docRef = snap.docs[0]
@@ -265,7 +250,7 @@ onMounted(async () => {
   // Otherwise load current user's profile as before
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid);
+      const refDoc = doc(db, "users", user.uid);
       const snap = await getDoc(refDoc);
       if (snap.exists()) {
         // include doc id for consistency
@@ -283,7 +268,7 @@ const saveProfile = async () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in!");
 
-  const tutorRef = doc(db, "tutorProfile", user.uid);
+  const tutorRef = doc(db, "users", user.uid);
   await updateDoc(tutorRef, profile.value);
   alert("Profile saved successfully!");
 };

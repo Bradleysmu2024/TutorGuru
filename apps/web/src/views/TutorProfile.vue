@@ -534,14 +534,13 @@ const saveProfile = async () => {
 };
 
 const openEmailChangeModal = () => {
-  newEmail.value = profile.value.email; // Pre-fill with current email
+  newEmail.value = profile.value.email;
   currentPassword.value = "";
   emailChangeError.value = "";
   showEmailModal.value = true;
 };
 
 const changeEmail = async () => {
-  // Validation
   if (!newEmail.value || !currentPassword.value) {
     emailChangeError.value = "Please fill in all fields";
     return;

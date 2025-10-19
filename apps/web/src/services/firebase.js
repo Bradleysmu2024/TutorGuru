@@ -748,13 +748,53 @@ export const getLevels = async () => {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      return docSnap.data().list || [];
+      const data = docSnap.data().list || [];
+
+      // Check if data is in new nested format (array of objects with 'name' field)
+      if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
+        // Extract just the level names for backward compatibility
+        return data.map((level) => level.name);
+      }
+
+      // If still in old format (array of strings), return as-is
+      return data;
+      console.log(data);
     } else {
       console.log("No levels found!");
       return [];
     }
   } catch (error) {
     console.error("Error fetching levels:", error);
+    return [];
+  }
+};
+
+// Get levels with grades (nested structure)
+// Returns: [{ name: "Primary", grades: ["Primary 1", "Primary 2", ...] }, ...]
+export const getLevelsWithGrades = async () => {
+  try {
+    const docRef = doc(db, "Subjects", "levels");
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const data = docSnap.data().list || [];
+
+      // Check if data is in new nested format (array of objects)
+      if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
+        return data; // Return full nested structure
+      }
+
+      // If still in old format, return empty array
+      console.warn(
+        "Levels data is in old format. Please update Firestore structure."
+      );
+      return [];
+    } else {
+      console.log("No levels found!");
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching levels with grades:", error);
     return [];
   }
 };

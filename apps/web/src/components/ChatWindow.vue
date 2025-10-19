@@ -11,10 +11,10 @@
 
     <!-- Message List -->
     <div class="flex-grow-1 p-3 overflow-auto bg-light" style="min-height: 0;">
-      <div v-for="msg in messages" :key="msg.id" class="mb-3 d-flex"
-           :class="msg.sender === 'me' ? 'justify-content-end' : 'justify-content-start'">
-        <div :class="msg.sender === 'me' ? 'bg-primary text-white' : 'bg-white border'"
-             class="p-2 rounded-3" style="max-width: 60%;">
+   <div v-for="msg in messages" :key="msg.id" class="mb-3 d-flex"
+     :class="msg.senderIsMe ? 'justify-content-end' : 'justify-content-start'">
+     <div :class="msg.senderIsMe ? 'bg-primary text-white' : 'bg-white border'"
+       class="p-2 rounded-3" style="max-width: 60%;">
           {{ msg.text }}
           <div class="small text-end text-muted">{{ formatTime(msg.timestamp) }}</div>
         </div>
@@ -29,21 +29,34 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
-import { db } from '../services/firebase'
+import { db, auth } from '../services/firebase'
 import MessageInput from './MessageInput.vue'
 
 const props = defineProps({ activeUser: Object })
 const messages = ref([])
+let unsubscribe = null
 
 watch(() => props.activeUser, (user) => {
+  // clean up previous listener
+  if (typeof unsubscribe === 'function') unsubscribe()
+  messages.value = []
   if (user) {
-    const q = query(collection(db, `chats/${user.id}/messages`), orderBy('timestamp'))
-    onSnapshot(q, (snapshot) => {
-      messages.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const currentUid = auth.currentUser ? auth.currentUser.uid : null
+    // listen to messages under the logged-in user's nested chat path
+    const q = query(collection(db, 'chats', currentUid, 'chats', String(user.id), 'messages'), orderBy('timestamp'))
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      messages.value = snapshot.docs.map(doc => {
+        const d = doc.data()
+        return { id: doc.id, ...d, senderIsMe: d.sender === currentUid }
+      })
     })
   }
+})
+
+onUnmounted(() => {
+  if (typeof unsubscribe === 'function') unsubscribe()
 })
 
 function formatTime(ts) {

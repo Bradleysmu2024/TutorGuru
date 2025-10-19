@@ -24,7 +24,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore'
-import { db } from '../services/firebase'
+import { db, auth } from '../services/firebase'
 
 const search = ref('')
 const users = ref([])
@@ -35,15 +35,17 @@ let unsubscribe = null
 // We'll map that into a simple list of user-like items for the sidebar: { id, name, avatar, lastMessage }
 const loadChats = async () => {
   try {
-    const q = query(collection(db, 'chats'), orderBy('updatedAt', 'desc'))
+    const currentUid = auth.currentUser ? auth.currentUser.uid : null
+    if (!currentUid) return
+    const q = query(collection(db, 'chats', currentUid, 'chats'), orderBy('updatedAt', 'desc'))
     unsubscribe = onSnapshot(q, (snap) => {
       const items = []
-      snap.docs.forEach(doc => {
-        const data = doc.data()
-        // choose the other participant (if current user info isn't available here, pick first participant)
-        const participant = (data.participants && data.participants[0]) || { id: doc.id, name: 'Unknown', avatar: '/src/assets/images/profileplaceholder.JPG' }
+      snap.docs.forEach(d => {
+        const data = d.data()
+        const otherUid = d.id
+        const participant = (data.participants && Array.isArray(data.participants)) ? data.participants.find(p => p.id === otherUid) || { id: otherUid } : { id: otherUid }
         items.push({
-          id: doc.id,
+          id: otherUid,
           name: participant.name || 'Unknown',
           avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
           lastMessage: data.lastMessage || ''

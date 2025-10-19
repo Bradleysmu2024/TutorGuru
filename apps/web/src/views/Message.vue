@@ -21,17 +21,44 @@
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch, onUnmounted, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import ChatWindow from '../components/ChatWindow.vue'
 import MessageSidebar from '../components/ChatSidebar.vue'
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
+import { db } from '../services/firebase'
 
 const activeUser = ref(null)
 const router = useRouter()
+const route = useRoute()
 
 const selectChat = (user) => {
   activeUser.value = user
 }
+
+onMounted(async () => {
+  const tutorId = route.query.tutorId
+  if (!tutorId) return
+  try {
+    // try loading by doc id
+    const refDoc = doc(db, 'tutorProfile', String(tutorId))
+    const snap = await getDoc(refDoc)
+    if (snap.exists()) {
+      activeUser.value = { id: snap.id, ...snap.data() }
+      return
+    }
+
+    // fallback: try username field
+    const q = query(collection(db, 'tutorProfile'), where('username', '==', String(tutorId)))
+    const snap2 = await getDocs(q)
+    if (!snap2.empty) {
+      const d = snap2.docs[0]
+      activeUser.value = { id: d.id, ...d.data() }
+    }
+  } catch (err) {
+    console.error('Error loading tutor for chat:', err)
+  }
+})
 
 const goToDashboard = () => {
   router.push({ path: '/dashboard' })

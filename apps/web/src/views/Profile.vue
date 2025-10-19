@@ -31,6 +31,16 @@
                     <i class="bi bi-gear-wide-connected me-2"></i> Edit Profile
                   </button>
                 </div>
+
+                <!-- Public profile: show Message button when viewer isn't the profile owner -->
+                <div class="d-grid" v-if="isPublicView && showMessageButton">
+                  <button
+                    class="btn btn-primary btn-sm mt-2"
+                    @click="messageTutor()"
+                  >
+                    <i class="bi bi-chat-left-text me-2"></i> Message me
+                  </button>
+                </div>
               </div>
               <div class="mb3 info">
                 <div class="subjects-list mb-3">
@@ -92,7 +102,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import FileUpload from "../components/FileUpload.vue";
 import { auth, db, getSubjects, getLevels } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -128,6 +138,15 @@ const profile = ref({
 
 const route = useRoute()
 const isPublicView = ref(false)
+const currentUserId = ref(null)
+onAuthStateChanged(auth, (user) => {
+  currentUserId.value = user ? user.uid : null
+})
+
+const profileId = computed(() => profile.value.id || profile.value.uid || profile.value.username || null)
+const showMessageButton = computed(() => {
+  return profileId.value && currentUserId.value && profileId.value !== currentUserId.value
+})
 
 
 // Load Firebase data on mount
@@ -229,8 +248,10 @@ onMounted(async () => {
       const q = query(collection(db, 'tutorProfile'), where('username', '==', username))
       const snap = await getDocs(q)
       if (!snap.empty) {
-        const docData = snap.docs[0].data()
-        profile.value = docData
+        const docRef = snap.docs[0]
+        const docData = docRef.data()
+        // ensure we record the document id (owner uid) so comparisons work
+        profile.value = { ...docData, id: docRef.id }
         uploadedDocuments.value = docData.uploadedDocuments || []
       } else {
         console.warn('Tutor not found for username:', username)
@@ -247,7 +268,8 @@ onMounted(async () => {
       const refDoc = doc(db, "tutorProfile", user.uid);
       const snap = await getDoc(refDoc);
       if (snap.exists()) {
-        profile.value = snap.data();
+        // include doc id for consistency
+        profile.value = { ...snap.data(), id: snap.id };
         uploadedDocuments.value = snap.data().uploadedDocuments || [];
       } else {
         alert("Please log in to view your profile.");
@@ -265,6 +287,12 @@ const saveProfile = async () => {
   await updateDoc(tutorRef, profile.value);
   alert("Profile saved successfully!");
 };
+
+// Start a chat with this tutor (navigates to /chat?tutorId=...)
+const messageTutor = () => {
+  if (!profileId.value) return alert('Unable to start chat: missing tutor id.');
+  router.push({ path: '/chat', query: { tutorId: profileId.value } });
+}
 
 const editProfile = () => {
   router.push("tutorProfile");

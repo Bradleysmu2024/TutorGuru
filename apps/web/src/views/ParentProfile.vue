@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
-import { db, updateUserEmail } from "../services/firebase";
+import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
 import { getCurrentUser } from "../router/routes";
 import { getParentAssignments } from "../services/firebase";
 
@@ -13,6 +13,7 @@ const profile = ref({
   children: [],
 });
 const assignments = ref([]);
+const levelsWithGrades = ref([]); // Add this for nested grades structure
 
 const showEmailModal = ref(false);
 const newEmail = ref("");
@@ -146,6 +147,15 @@ const cancelEmailChange = () => {
 };
 
 onMounted(loadAssignments);
+
+// Load levels with grades on mount, rather than asking user type themselves
+onMounted(async () => {
+  try {
+    levelsWithGrades.value = await getLevelsWithGrades();
+  } catch (error) {
+    console.error("Error loading levels with grades:", error);
+  }
+});
 </script>
 
 <template>
@@ -320,12 +330,22 @@ onMounted(loadAssignments);
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Grade</label>
-                    <input
-                      v-model="child.grade"
-                      type="text"
-                      class="form-control"
-                      placeholder="e.g., Grade 9"
-                    />
+                    <select v-model="child.grade" class="form-select">
+                      <option value="">-- Select Grade --</option>
+                      <optgroup
+                        v-for="level in levelsWithGrades"
+                        :key="level.name"
+                        :label="level.name"
+                      >
+                        <option
+                          v-for="grade in level.grades"
+                          :key="grade"
+                          :value="grade"
+                        >
+                          {{ grade }}
+                        </option>
+                      </optgroup>
+                    </select>
                   </div>
                   <div class="col-12">
                     <label class="form-label">Subjects Studying</label>

@@ -22,18 +22,56 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore'
+import { db } from '../services/firebase'
 
 const search = ref('')
-const users = ref([
-  { id: 1, name: 'Ioni Bowcher', avatar: '/src/assets/images/profileplaceholder.JPG' },
-  { id: 2, name: 'Stephen Shaw', avatar: '/src/assets/images/profileplaceholder.JPG' },
-  { id: 3, name: 'Xuxue Feng', avatar: '/src/assets/images/profileplaceholder.JPG' },
-  { id: 4, name: 'Ivan Magalhaes', avatar: '/src/assets/images/profileplaceholder.JPG' },
-  { id: 5, name: 'Onyama Limba', avatar: '/src/assets/images/profileplaceholder.JPG' }
-])
+const users = ref([])
+let unsubscribe = null
+
+// Try to listen to a 'chats' collection which should contain chat documents.
+// Each chat doc is expected to have: { id, participants: [{id,name,avatar}], lastMessage, updatedAt }
+// We'll map that into a simple list of user-like items for the sidebar: { id, name, avatar, lastMessage }
+const loadChats = async () => {
+  try {
+    const q = query(collection(db, 'chats'), orderBy('updatedAt', 'desc'))
+    unsubscribe = onSnapshot(q, (snap) => {
+      const items = []
+      snap.docs.forEach(doc => {
+        const data = doc.data()
+        // choose the other participant (if current user info isn't available here, pick first participant)
+        const participant = (data.participants && data.participants[0]) || { id: doc.id, name: 'Unknown', avatar: '/src/assets/images/profileplaceholder.JPG' }
+        items.push({
+          id: doc.id,
+          name: participant.name || 'Unknown',
+          avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
+          lastMessage: data.lastMessage || ''
+        })
+      })
+      users.value = items
+    })
+  } catch (err) {
+    console.error('Error loading chats:', err)
+    // fallback: try to load a users collection so the sidebar still shows contacts
+    try {
+      const snap = await getDocs(collection(db, 'users'))
+      users.value = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
+    } catch (e) {
+      console.error('Fallback users load failed:', e)
+    }
+  }
+}
+
+onMounted(() => {
+  loadChats()
+})
+
+onUnmounted(() => {
+  if (typeof unsubscribe === 'function') unsubscribe()
+})
 
 const filteredUsers = computed(() =>
-  users.value.filter(u => u.name.toLowerCase().includes(search.value.toLowerCase()))
+  users.value.filter(u => u.name && u.name.toLowerCase().includes(search.value.toLowerCase()))
 )
 </script>

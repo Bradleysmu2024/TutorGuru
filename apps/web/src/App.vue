@@ -31,8 +31,7 @@ if (emu.length > 0) {
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* allow children to shrink/scroll correctly inside a flex container */
   min-height: 0;
-  padding-top: 76px; /* Account for fixed navbar */
+  padding-top: 76px;
 }
 </style>

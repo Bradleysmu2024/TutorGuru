@@ -29,6 +29,9 @@ if (emu.length > 0) {
 
 .main-content {
   flex: 1;
-  padding-top: 76px; /* Account for fixed navbar */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: 76px;
 }
 </style>

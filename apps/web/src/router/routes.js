@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router"
 import Home from "../views/Home.vue"
 import TutorDashboard from "../views/TutorDashboard.vue"
 import TutorProfile from "../views/TutorProfile.vue"
+import TopTutors from "../views/TopTutors.vue"
 import ParentDashboard from "../views/ParentDashboard.vue"
 import ParentProfile from "../views/ParentProfile.vue"
 import PostAssignment from "../views/PostAssignment.vue"
@@ -11,9 +12,12 @@ import Register from "../views/Register.vue"
 import Calendar from "../views/Calendar.vue"
 import Logout from "../views/Logout.vue"
 import TutorMaps from "../views/TutorMaps.vue"
+import Profile from "../views/Profile.vue"
 import { ref } from "vue"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
 import PaymentSuccess from '../views/PaymentSuccess.vue'
+import { getUserRole } from '../services/firebase'
+import Message from "../views/Message.vue"
 
 const routes = [
   {
@@ -59,11 +63,23 @@ const routes = [
     meta: { requiresAuth: true, allowedRoles: ['tutor'] },
   },
   {
+    path: "/tutor/:username",
+    name: "PublicTutorProfile",
+    component: Profile,
+    meta: { requiresAuth: true},
+  },
+  {
     path: "/tutor-maps",
     name: "TutorMaps",
     component: TutorMaps,
     meta: { requiresAuth: true, allowedRoles: ['tutor'] },
 
+  },
+  {
+    path: "/top-tutors",
+    name: "TopTutors",
+    component: TopTutors,
+    meta: { requiresAuth: true},
   },
   {
     path: "/login",
@@ -97,6 +113,12 @@ const routes = [
     name: "PaymentSuccess",
     component: PaymentSuccess,
     meta: { requiresAuth: true, allowedRoles: ['parent'] },
+  },
+  {
+    path: "/chat",
+    name: "Chat",
+    component: Message,
+    meta: { requiresAuth: true },
   },
 ]
 
@@ -151,9 +173,6 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Navigation guard (check if login and role)
-import { getUserRole } from '../services/firebase'
-import Profile from "../views/Profile.vue"
 
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
@@ -182,8 +201,6 @@ router.beforeEach(async (to, from, next) => {
 
 // Add global navigation guard
 router.beforeEach((to, from, next) => {
-  console.log('Navigation:', from.path, '→', to.path, 'Params:', to.params)
-  
   // Prevent navigation to assignment detail with undefined ID
   if (to.name === 'AssignmentDetail') {
     if (!to.params.id || to.params.id === 'undefined') {

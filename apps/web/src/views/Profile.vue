@@ -23,7 +23,7 @@
                 <span v-if="profile.verified" class="badge bg-success mb-3">
                   <i class="bi bi-check-circle me-1"></i> Verified Tutor
                 </span>
-                <div class="d-grid">
+                <div class="d-grid" v-if="!isPublicView">
                   <button
                     class="btn btn-outline-primary btn-sm"
                     @click="editProfile()"
@@ -31,8 +31,18 @@
                     <i class="bi bi-gear-wide-connected me-2"></i> Edit Profile
                   </button>
                 </div>
+
+                <!-- Public profile: show Message button when viewer isn't the profile owner -->
+                <div class="d-grid" v-if="isPublicView && showMessageButton">
+                  <button
+                    class="btn btn-primary btn-sm mt-2"
+                    @click="messageTutor()"
+                  >
+                    <i class="bi bi-chat-left-text me-2"></i> Message me
+                  </button>
+                </div>
               </div>
-              <div class="mb3 info">
+                <div class="mb-3 info">
                 <div class="subjects-list mb-3">
                   <h6>Subjects</h6>
                   <span
@@ -72,18 +82,35 @@
             </div>
             <div class="stat-item d-flex justify-content-between">
               <span class="text-muted">Rating</span>
-              <span class="fw-semibold">4.8 ⭐</span>
+              <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
             </div>
           </div>
         </div>
 
-        <!-- Documents -->
-        <div class="card shadow-sm">
+        <!-- Documents --> 
+        <!-- test needed -->
+        <div v-if="uploadedDocuments.length > 0" class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title mb-4">
               <i class="bi bi-file-earmark-text me-2"></i> Documents &
               Credentials
             </h5>
+
+            <div class="list-group">
+              <div v-for="(docItem, idx) in uploadedDocuments" :key="idx" class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
+                  <div>
+                    <div class="fw-semibold">{{ docItem.name }}</div>
+                    <small class="text-muted">Uploaded {{ docItem.uploadDate }}</small>
+                  </div>
+                </div>
+                <div>
+                  <a :href="docItem.url || '#'" target="_blank" class="btn btn-sm btn-outline-primary me-2"> <i class="bi bi-eye"></i> </a>
+                  <button class="btn btn-sm btn-outline-danger"> <i class="bi bi-trash"></i> </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -92,26 +119,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import FileUpload from "../components/FileUpload.vue";
-import { auth, db, getSubjects, getLevels } from "../services/firebase";
+import { ref, onMounted, computed } from "vue";
+import { auth, db } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { useRoute } from 'vue-router'
 import router from "../router/routes";
 
-const fileUploadRef = ref(null);
-const selectedFiles = ref([]);
-
 // Add Firebase data
-const subjects = ref([]);
-const levels = ref([]);
-
 const profile = ref({
   name: "",
   username: "",
@@ -125,120 +140,73 @@ const profile = ref({
   verified: false,
 });
 
-// Load Firebase data on mount
-onMounted(async () => {
-  try {
-    subjects.value = await getSubjects();
-    levels.value = await getLevels();
-  } catch (error) {
-    console.error("Error loading form data:", error);
-  }
+const uploadedDocuments = ref([])
 
-  // // Existing auth state change logic
-  // onAuthStateChanged(auth, async (user) => {
-  //   if (user) {
-  //     const refDoc = doc(db, "tutorProfile", user.uid)
-  //     const snap = await getDoc(refDoc)
-  //     if (snap.exists()) {
-  //       profile.value = snap.data()
-  //       uploadedDocuments.value = snap.data().uploadedDocuments || []
-  //     }
-  //   } else {
-  //     alert("Please log in to view your profile.")
-  //   }
-  // })
-});
+const route = useRoute()
+const isPublicView = ref(false)
+const currentUserId = ref(null)
+onAuthStateChanged(auth, (user) => {
+  currentUserId.value = user ? user.uid : null
+})
 
-const uploadedDocuments = ref([]);
-
-const addSubject = () => {
-  profile.value.teaching.push({ subject: "", levels: [] });
-};
-
-const removeSubject = (index) => {
-  profile.value.teaching.splice(index, 1);
-};
-
-const handleFilesSelected = (files) => {
-  selectedFiles.value = files;
-};
-
-const uploadDocuments = async () => {
-  const user = auth.currentUser;
-  if (!user) return alert("You must be logged in to upload documents!");
-
-  if (selectedFiles.value.length === 0) {
-    return alert("Please select at least one file.");
-  }
-
-  const storage = getStorage();
-  const tutorRef = doc(db, "tutorProfile", user.uid);
-  const newUploads = [];
-
-  try {
-    for (const file of selectedFiles.value) {
-      const fileRef = storageRef(
-        storage,
-        `tutors/${user.uid}/documents/${file.name}`
-      );
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-
-      newUploads.push({
-        name: file.name,
-        uploadDate: new Date().toISOString().split("T")[0],
-        url,
-      });
-    }
-
-    uploadedDocuments.value.push(...newUploads);
-    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value });
-
-    alert("✅ Documents uploaded successfully!");
-    selectedFiles.value = [];
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Error uploading files. Please try again.");
-  }
-};
-
-const handleUploadComplete = (files) => {
-  files.forEach((file) => {
-    uploadedDocuments.value.push({
-      name: file.name,
-      uploadDate: new Date().toISOString().split("T")[0],
-      url: "#",
-    });
-  });
-  selectedFiles.value = [];
-  alert("Documents uploaded successfully!");
-};
+const profileId = computed(() => profile.value.id || profile.value.uid || profile.value.username || null)
+const showMessageButton = computed(() => {
+  return profileId.value && currentUserId.value && profileId.value !== currentUserId.value
+})
 
 // Load profile when logged in
-onMounted(() => {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid);
-      const snap = await getDoc(refDoc);
-      if (snap.exists()) {
-        profile.value = snap.data();
-        uploadedDocuments.value = snap.data().uploadedDocuments || [];
+onMounted(async () => {
+  const username = route.params.username || null
+  if (username) {
+    isPublicView.value = true
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', username))
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        const docRef = snap.docs[0]
+        const docData = docRef.data()
+        profile.value = { ...docData, id: docRef.id }
+        uploadedDocuments.value = docData.uploadedDocuments || []
       } else {
-        alert("Please log in to view your profile.");
+        console.warn('Tutor not found for username:', username)
       }
+    } catch (err) {
+      console.error('Error loading public tutor profile:', err)
     }
-  });
-});
+    return
+  }
 
-// Save profile to Firestore
-const saveProfile = async () => {
-  const user = auth.currentUser;
-  if (!user) return alert("You must be logged in!");
+  const loadProfile = async (uid) => {
+    const refDoc = doc(db, 'users', uid)
+    const snap = await getDoc(refDoc)
+    if (snap.exists()) {
+      profile.value = { ...snap.data(), id: snap.id }
+      uploadedDocuments.value = snap.data().uploadedDocuments || []
+    } else {
+      alert('Please log in to view your profile.')
+    }
+  }
 
-  const tutorRef = doc(db, "tutorProfile", user.uid);
-  await updateDoc(tutorRef, profile.value);
-  alert("Profile saved successfully!");
-};
+  const userNow = auth.currentUser
+  if (userNow) {
+    await loadProfile(userNow.uid)
+  } else {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await loadProfile(user.uid)
+      } else {
+        alert('Please log in to view your profile.')
+      }
+      if (typeof unsub === 'function') unsub()
+    })
+  }
+})
+
+// Start a chat with this tutor (navigates to /chat?tutorId=<username>)
+const messageTutor = () => {
+  if (!profile.value || !profile.value.username) return alert('Unable to start chat: missing tutor username.');
+  router.push({ path: '/chat', query: { tutor: profile.value.username } });
+}
 
 const editProfile = () => {
   router.push("tutorProfile");

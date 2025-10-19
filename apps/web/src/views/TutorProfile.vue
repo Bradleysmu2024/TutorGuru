@@ -53,7 +53,7 @@
               </div>
               <div class="stat-item d-flex justify-content-between">
                 <span class="text-muted">Rating</span>
-                <span class="fw-semibold">4.8 ⭐</span>
+                <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
               </div>
             </div>
           </div>
@@ -390,7 +390,7 @@ import {
   updateUserEmail,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import {
   getStorage,
   ref as storageRef,
@@ -430,7 +430,7 @@ onMounted(async () => {
   // // Existing auth state change logic
   // onAuthStateChanged(auth, async (user) => {
   //   if (user) {
-  //     const refDoc = doc(db, "tutorProfile", user.uid)
+  //     const refDoc = doc(db, "users", user.uid)
   //     const snap = await getDoc(refDoc)
   //     if (snap.exists()) {
   //       profile.value = snap.data()
@@ -465,7 +465,7 @@ const uploadDocuments = async () => {
   }
 
   const storage = getStorage();
-  const tutorRef = doc(db, "tutorProfile", user.uid);
+  const tutorRef = doc(db, "users", user.uid);
   const newUploads = [];
 
   try {
@@ -508,10 +508,10 @@ const handleUploadComplete = (files) => {
 };
 
 // Load profile when logged in
-onMounted(() => {
+  onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      const refDoc = doc(db, "tutorProfile", user.uid);
+      const refDoc = doc(db, "users", user.uid);
       const snap = await getDoc(refDoc);
       if (snap.exists()) {
         profile.value = snap.data();
@@ -528,20 +528,40 @@ const saveProfile = async () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in!");
 
-  const tutorRef = doc(db, "tutorProfile", user.uid);
+  // Validate username uniqueness (if provided)
+  const desiredUsername = (profile.value.username || "").trim();
+  if (desiredUsername) {
+    try {
+      const q = query(collection(db, 'users'), where('username', '==', desiredUsername));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        // if any matching doc belongs to someone else, block save
+        const takenByOther = snap.docs.some(d => d.id !== user.uid);
+        if (takenByOther) {
+          alert('That username is already taken. Please choose another.');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error validating username uniqueness:', err);
+      alert('Could not validate username uniqueness. Please try again.');
+      return;
+    }
+  }
+
+  const tutorRef = doc(db, "users", user.uid);
   await updateDoc(tutorRef, profile.value);
   alert("Profile saved successfully!");
 };
 
 const openEmailChangeModal = () => {
-  newEmail.value = profile.value.email; // Pre-fill with current email
+  newEmail.value = profile.value.email;
   currentPassword.value = "";
   emailChangeError.value = "";
   showEmailModal.value = true;
 };
 
 const changeEmail = async () => {
-  // Validation
   if (!newEmail.value || !currentPassword.value) {
     emailChangeError.value = "Please fill in all fields";
     return;

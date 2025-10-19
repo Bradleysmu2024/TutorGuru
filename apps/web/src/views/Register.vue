@@ -43,55 +43,57 @@ const handleRegister = async () => {
     })
 
     if (registerForm.value.role === "tutor"){
-    //create Firebase tutorProfile collection
-    await setDoc(doc(db, "tutorProfile", user.uid), {
-      username: user.uid,
-      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
-      email: registerForm.value.email,
-      phone: "",
-      location: "",
-      bio: "",
-      teaching: [{ subject: "", levels: [] }],
-      experience: 0,
-      avatar: "",
-      role: "T",
-      createdAt: new Date().toISOString(),
-      verified: false
-    })
+      // add tutor-specific fields into users/{uid}
+      await setDoc(doc(db, "users", user.uid), {
+        username: user.uid,
+        name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
+        email: registerForm.value.email,
+        phone: "",
+        location: "",
+        bio: "",
+        teaching: [{ subject: "", levels: [] }],
+        experience: 0,
+        avatar: "",
+        role: "tutor",
+        rating: 5,
+        createdAt: new Date().toISOString(),
+        verified: false
+      }, { merge: true })
 
-    console.log("✅ Tutor profile created in Firestore for:", user.email)
+      console.log("✅ Tutor user created in Firestore for:", user.email)
 
-    localStorage.setItem('user', JSON.stringify({
-      uid: user.uid,
-      email: user.email,
-      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
-    }))
+      localStorage.setItem('user', JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
+      }))
 
-    alert('Registration successful! Please complete your tutor profile.')
-    router.push('/profile') 
-  }
+      alert('Registration successful! Please complete your tutor profile.')
+      router.push('/profile') 
+    }
 
     else if (registerForm.value.role === "parent"){
-      //create Firebase parentProfile collection
-      await setDoc(doc(db, "parentProfile", user.uid), {
-      username: user.uid,
-      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
-      email: registerForm.value.email,
-      phone: "",
-      children: [{}],
-      createdAt: new Date().toISOString(),
-    })
+      // add parent-specific fields into users/{uid}
+      await setDoc(doc(db, "users", user.uid), {
+        username: user.uid,
+        name: `${registerForm.value.firstName} ${registerForm.value.lastName}`,
+        email: registerForm.value.email,
+        phone: "",
+        children: [],
+        role: "parent",
+        createdAt: new Date().toISOString(),
+      }, { merge: true })
 
-    console.log("✅ Parent profile created in Firestore for:", user.email)
+      console.log("✅ Parent user created in Firestore for:", user.email)
 
-    localStorage.setItem('parent', JSON.stringify({
-      uid: user.uid,
-      email: user.email,
-      name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
-    }))
+      localStorage.setItem('parent', JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        name: `${registerForm.value.firstName} ${registerForm.value.lastName}`
+      }))
 
-    alert('Registration successful! Please complete your parent profile.')
-    router.push('/parent-profile') 
+      alert('Registration successful! Please complete your parent profile.')
+      router.push('/parent-profile') 
     }
   } catch (error) {
     console.error('Registration error:', error)

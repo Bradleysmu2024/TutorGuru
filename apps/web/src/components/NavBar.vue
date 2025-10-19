@@ -32,6 +32,12 @@
                 </router-link>
               </li>
               <li class="nav-item">
+                <router-link to="/top-tutors" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-trophy me-1"></i>
+                  Leaderboard
+                </router-link>
+              </li>
+              <li class="nav-item">
                 <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-person me-1"></i>
                   Profile
@@ -49,6 +55,12 @@
                 <router-link to="/parent-dashboard" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-grid me-1"></i>
                   Dashboard
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/top-tutors" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-trophy me-1"></i>
+                  Top Tutor
                 </router-link>
               </li>
               <li class="nav-item">

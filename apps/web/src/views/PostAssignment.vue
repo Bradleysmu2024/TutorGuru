@@ -513,7 +513,7 @@ const cancel = () => {
           <div class="d-flex gap-3">
             <button
               type="button"
-              class="btn btn-primary"
+              class="btn btn-primary text-white"
               @click="submitAssignment"
               :disabled="submitting"
             >

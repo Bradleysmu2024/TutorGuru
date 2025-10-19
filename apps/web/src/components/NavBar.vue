@@ -38,6 +38,12 @@
                 </router-link>
               </li>
               <li class="nav-item">
+                <router-link to="/calendar" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-person me-1"></i>
+                  Calendar
+                </router-link>
+              </li>
+              <li class="nav-item">
                 <router-link to="/profile" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-person me-1"></i>
                   Profile
@@ -67,6 +73,12 @@
                 <router-link to="/post-assignment" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-plus-circle me-1"></i>
                   Post Assignment
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/calendar" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-person me-1"></i>
+                  Calendar
                 </router-link>
               </li>
               <li class="nav-item">

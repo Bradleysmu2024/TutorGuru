@@ -6,7 +6,7 @@
           <v-btn size="small" class="me-4" color="primary" variant="outlined" dark @click="dialog = true">
             New Event
           </v-btn>
-          <v-btn size="small" type="button" color="primary" variant="outlined" class="me-4" @click="test()">
+          <v-btn size="small" type="button" color="primary" variant="outlined" class="me-4" @click="sync_from_google()">
             Sync
           </v-btn>
           <!-- <v-btn class="me-4" color="grey-darken-2" variant="outlined" @click="setToday">
@@ -116,12 +116,10 @@
 </template>
 
 <script setup>
-import { db, getEvents as firebaseGetEvents, getEvent_, addEvent_, updateEvent_, deleteEvent_ } from '../services/firebase'
-import { doc, collection, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { db, getEvents as firebaseGetEvents, getEvent_, addEvent_, updateEvent_, deleteEvent_, signInWithGoogle, clearEvents_ } from '../services/firebase'
 import { onMounted, ref } from 'vue'
 
-
-
+const userToken = ref(localStorage.getItem("user"));
 const calendar = ref()
 
 const typeToLabel = {
@@ -130,8 +128,6 @@ const typeToLabel = {
   day: 'Day',
   '4day': '4 Days',
 }
-// const colors = ['blue', 'indigo', 'deep-purple', 'cyan', 'green', 'orange', 'grey darken-1']
-// const names = ['Meeting', 'Holiday', 'PTO', 'Travel', 'Event', 'Birthday', 'Conference', 'Party']
 
 const focus = ref('')
 const type = ref('month')
@@ -152,23 +148,28 @@ onMounted(() => {
   calendar.value.checkChange()
 })
 
-async function getEvents() {
+async function getEvents(type) {
   try {
-    let querySnapshot = await getEvent_()
+    const user = JSON.parse(localStorage.getItem('user'))
+    let querySnapshot = await getEvent_(type, user.uid)
     let events = []
-    querySnapshot.forEach(doc => {
-      const data = doc.data()
+    if (querySnapshot) {
+      querySnapshot.forEach(doc => {
+        // console.log(doc)
+        // const data = doc.data()
 
-      // Convert Firestore date fields to JS Date strings
-      const startDate = new Date(data.start)  // assuming 'start' is stored as ISO string
-      const endDate = new Date(data.end)      // assuming 'end' is stored as ISO string
+        // Convert Firestore date fields to JS Date strings
+        const startDate = new Date(doc.start)  // assuming 'start' is stored as ISO string
+        const endDate = new Date(doc.end)      // assuming 'end' is stored as ISO string
 
-      events.push({
-        id: doc.id, ...data, start: startDate,   // e.g., "Sun Oct 12 2025 23:00:00 GMT+0800 (Singapore Standard Time)"
-        end: endDate
+        events.push({
+          id: doc.id, ...doc, start: startDate,   // e.g., "Sun Oct 12 2025 23:00:00 GMT+0800 (Singapore Standard Time)"
+          end: endDate
+        })
+        // console.log(doc.id, doc, 'start:', startDate, 'end:', endDate)
       })
-      console.log(doc.id, data, 'start:', startDate, 'end:', endDate)
-    })
+    }
+    console.log(type, events)
     return events
   } catch (error) {
     console.error('Error fetching events:', error)
@@ -177,15 +178,18 @@ async function getEvents() {
 
 async function addEvent() {
   try {
+    const user = JSON.parse(localStorage.getItem('user'))
     if (name.value && start.value && end.value) {
       start.value = convertInput(start.value)
       end.value = convertInput(end.value)
       const response = await addEvent_(
+        'calendar',
         name.value,
         details.value,
         start.value,
         end.value,
-        color.value
+        color.value,
+        user.uid
       );
 
       await updateRange('', '')
@@ -204,7 +208,8 @@ async function addEvent() {
 
 async function updateEvent(ev) {
   try {
-    const response = await updateEvent_(this.currentlyEditing, ev.details)
+    const user = JSON.parse(localStorage.getItem('user'))
+    const response = await updateEvent_(this.currentlyEditing, ev.details, user.uid)
     selectedOpen.value = false
     currentlyEditing.value = null
   } catch (error) {
@@ -214,7 +219,8 @@ async function updateEvent(ev) {
 
 async function deleteEvent(ev) {
   try {
-    const response = await deleteEvent_(ev)
+    const user = JSON.parse(localStorage.getItem('user'))
+    const response = await deleteEvent_(ev, user.uid)
     selectedOpen.value = false
     await updateRange('', '')
   } catch (error) {
@@ -250,7 +256,6 @@ function editEvent(event) {
   currentlyEditing.value = event.id
 }
 
-
 function showEvent(nativeEvent, { event }) {
   const open = () => {
     selectedEvent.value = event
@@ -266,36 +271,11 @@ function showEvent(nativeEvent, { event }) {
   nativeEvent.stopPropagation()
 }
 async function updateRange({ start, end }) {
-  // const _events = []
-  // const min = new Date(`${start.date}T00:00:00`)
-  // const max = new Date(`${end.date}T23:59:59`)
-  // const days = (max.getTime() - min.getTime()) / 86400000
-  // const eventCount = rnd(days, days + 20)
-  // for (let i = 0; i < eventCount; i++) {
-  //   const allDay = rnd(0, 3) === 0
-  //   const firstTimestamp = rnd(min.getTime(), max.getTime())
-  //   const first = new Date(firstTimestamp - (firstTimestamp % 900000))
-  //   const secondTimestamp = rnd(2, allDay ? 288 : 8) * 900000
-  //   const second = new Date(first.getTime() + secondTimestamp)
-  //   _events.push({
-  //     name: names[rnd(0, names.length - 1)],
-  //     start: first,
-  //     end: second,
-  //     color: colors[rnd(0, colors.length - 1)],
-  //     timed: !allDay,
-  //   })
-  // }
-  // console.log(start,end)
-  // console.log(_events)
-  events.value = await getEvents()
-  // console.log('testing', events.value)
+  events.value = [...await getEvents('calendar') , ...await getEvents('google')]
 }
-// function rnd (a, b) {
-//   return Math.floor((b - a + 1) * Math.random()) + a
-// }
 
 // sync your calendar events from google calendar to firebase storage
-async function test() {
+async function sync_from_google() {
   try {
     let events = []
     const colors_obj = {
@@ -312,31 +292,47 @@ async function test() {
       11: "#d50000",        // bright red (tomato)
     };
     const user_ = JSON.parse(localStorage.getItem('user'));
-    // console.log(user_.token)
-    const response = await firebaseGetEvents(user_.token, 'primary', 'month')
-    // console.log(response)
-    response.calendar.forEach(event => {
-      events.push({
-        name: event.summary ?? "(No title)",
-        details: event.description ?? "(No Description)",
-        start: event.start.dateTime,
-        end: event.end.dateTime,
-        colorId: colors_obj[event.colorId] ?? colors_obj.default
-      })
-      console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
-    });
-
-    console.log(events)
-    for (let ev of events) {
-      await addEvent_(ev.name, ev.details, ev.start, ev.end, ev.colorId)
+    const now = new Date(Date.now());
+    // console.log(now)
+    // check for existing google api token, expiry time, within 5 mins of expiry time
+    if (!user_.token || !user_.expiry || (now >= new Date(user_.expiry) - 5 * 60 * 1000)) {
+      console.log('Invalid/Expired Google Token')
+      const result = confirm("Google Login Required! Are you sure you want to login to Google to sync calendar?");
+      if (result) { // Confirm to Google Login
+        const response_ = await signInWithGoogle()
+        // console.log(response_)
+        const expiryTime = Date.now() + 3600 * 1000; // 1 hour
+        user_.token = response_.token
+        user_.expiry = new Date(expiryTime)
+        localStorage.setItem("user", JSON.stringify(user_))
+        await sync_from_google()
+        console.log('Google Login successful! Calendar has been synced.')
+      }
+    } else {
+      // console.log(user_.token, user_.expiry)
+      const response = await firebaseGetEvents(user_.token, 'primary', 'month')
+      // console.log(response)
+      response.calendar.forEach(event => {
+        events.push({
+          name: event.summary ?? "(No title)",
+          details: event.description ?? "(No Description)",
+          start: event.start.dateTime,
+          end: event.end.dateTime,
+          colorId: colors_obj[event.colorId] ?? colors_obj.default
+        })
+        // console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
+      });
+      await clearEvents_('google',user_.uid)
+      // console.log(events)
+      for (let ev of events) {
+        await addEvent_('google', ev.name, ev.details, ev.start, ev.end, ev.colorId, user_.uid)
+      }
+      await updateRange('', '')
+      alert('successfully synced from Google Calendar')
     }
-    console.log('successfully synced from Google Calendar')
-    await updateRange('', '')
-
   } catch (error) {
     console.error('Error getting event', error)
   }
-
 }
 
 </script>

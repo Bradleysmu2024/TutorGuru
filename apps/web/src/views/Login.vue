@@ -58,7 +58,8 @@ const handleGoogleLogin = async () => {
     localStorage.setItem("user", JSON.stringify({
       uid: user.uid,
       email: user.email,
-      token: response.token // google token
+      token: response.token, // google token
+      expiry: response.expiry // google api token expiry
     }))
 
     // route based on role

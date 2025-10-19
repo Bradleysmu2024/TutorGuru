@@ -13,7 +13,9 @@ import {
   setDoc,
   deleteDoc,
   connectFirestoreEmulator,
-  serverTimestamp,  
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -49,7 +51,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const useEmulators = true;
+const useEmulators = false;
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -149,14 +151,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-          ? a.createdAt.seconds * 1000
-          : 0;
+            ? a.createdAt.seconds * 1000
+            : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-          ? b.createdAt.seconds * 1000
-          : 0;
+            ? b.createdAt.seconds * 1000
+            : 0;
       return tb - ta;
     });
     return items;
@@ -170,11 +172,11 @@ export const getAssignmentById = async (id) => {
   try {
     const docRef = doc(db, 'assignments', id)
     const docSnap = await getDoc(docRef)
-    
+
     if (docSnap.exists()) {
       // IMPORTANT: Make sure ID is included
       return {
-        id: docSnap.id, 
+        id: docSnap.id,
         ...docSnap.data()
       }
     }
@@ -287,10 +289,13 @@ export const signInWithGoogle = async () => {
     // IdP data available using getAdditionalUserInfo(result)
     const additionalUserInfo = getAdditionalUserInfo(userCredential);
 
+    const expiryTime = Date.now() + 3600 * 1000; // 1 hour
+
     return {
       success: true,
       user: user,
       token: token,
+      expiry: new Date(expiryTime)
     };
   } catch (error) {
     // Handle Errors here.
@@ -669,12 +674,22 @@ export const deleteEvent = async (token, calendarId = "primary", eventId) => {
 
 // firebase storage calendar
 // get events
-export const getEvent_ = async () => {
+export const getEvent_ = async (type, userId) => {
   try {
-    const response = await getDocs(collection(db, "calEvent"));
-    return response;
+    const userRef = doc(db, "users", userId);
+    const response = await getDoc(userRef);
+    const data = response.data()
+    // console.log(data.calendar)
+    switch (type) {
+      case 'calendar': {
+        return data.calendar;
+      }
+      case 'google': {
+        return data.googleCal;
+      }
+    }
   } catch (error) {
-    console.error("Error deleting event:", error);
+    console.error("Error getting event:", error);
     return {
       success: false,
       error,
@@ -683,17 +698,39 @@ export const getEvent_ = async () => {
 };
 
 // add event
-export const addEvent_ = async (name, details, start, end, color) => {
+export const addEvent_ = async (type, name, details, start, end, color, userId) => {
   try {
-    const response = await addDoc(collection(db, "calEvent"), {
-      name: name,
-      details: details,
-      start: start,
-      end: end,
-      color: color,
-      timed: true,
-    });
-    return response;
+    const userRef = doc(db, "users", userId);
+    switch (type) {
+      case 'calendar': {
+        const response = await updateDoc(userRef, {
+          calendar: arrayUnion({
+            id: 'calendar_' + crypto.randomUUID(),
+            name: name,
+            details: details,
+            start: start,
+            end: end,
+            color: color,
+            timed: true,
+          })
+        });
+        return response;
+      }
+      case 'google': {
+        const response = await updateDoc(userRef, {
+          googleCal: arrayUnion({
+            id: 'google_' + crypto.randomUUID(),
+            name: name,
+            details: details,
+            start: start,
+            end: end,
+            color: color,
+            timed: true,
+          })
+        });
+        return response;
+      }
+    }
   } catch (error) {
     console.error("Error adding event:", error);
     return {
@@ -704,12 +741,35 @@ export const addEvent_ = async (name, details, start, end, color) => {
 };
 
 // update event
-export const updateEvent_ = async (currentlyEditing, details) => {
+export const updateEvent_ = async (currentlyEditing, details, userId) => {
   try {
-    const response = await updateDoc(doc(db, "calEvent", currentlyEditing), {
-      details: details,
-    });
-    return response;
+    const userRef = doc(db, "users", userId)
+    const snap = await getDoc(userRef)
+    const type = currentlyEditing.split("_")[0]
+    switch (type) {
+      case 'calendar': {
+        const calendar = snap.data().calendar || []
+        let updateDetails = { details: details }
+        const updatedCalendar = calendar.map(event =>
+          event.id === currentlyEditing ? { ...event, ...updateDetails } : event
+        )
+        const response = await updateDoc(userRef, {
+          calendar: updatedCalendar
+        })
+        return response;
+      }
+      case 'google': {
+        const calendar = snap.data().googleCal || []
+        let updateDetails = { details: details }
+        const updatedCalendar = calendar.map(event =>
+          event.id === currentlyEditing ? { ...event, ...updateDetails } : event
+        )
+        const response = await updateDoc(userRef, {
+          googleCal: updatedCalendar
+        })
+        return response;
+      }
+    }
   } catch (error) {
     console.error("Error updating event:", error);
     return {
@@ -720,10 +780,26 @@ export const updateEvent_ = async (currentlyEditing, details) => {
 };
 
 // delete event
-export const deleteEvent_ = async (ev) => {
+export const deleteEvent_ = async (ev, userId) => {
   try {
-    const response = await deleteDoc(doc(db, "calEvent", ev));
-    return response;
+    // console.log(ev)
+    const userRef = doc(db, "users", userId)
+    const snap = await getDoc(userRef)
+    const type = ev.split("_")[0]
+    switch (type) {
+      case 'calendar': {
+        const calendar = snap.data().calendar || []
+        const updatedCalendar = calendar.filter(e => e.id !== ev)
+        const response = await updateDoc(userRef, { calendar: updatedCalendar });
+        return response;
+      }
+      case 'google': {
+        const calendar = snap.data().googleCal || []
+        const updatedCalendar = calendar.filter(e => e.id !== ev)
+        const response = await updateDoc(userRef, { googleCal: updatedCalendar });
+        return response;
+      }
+    }
   } catch (error) {
     console.error("Error updating event:", error);
     return {
@@ -732,6 +808,34 @@ export const deleteEvent_ = async (ev) => {
     };
   }
 };
+
+// clear all events
+export const clearEvents_ = async (type, userId) => {
+  try {
+    const userRef = doc(db, "users", userId);
+    switch(type){
+      case 'calendar':{
+        await updateDoc(userRef, {
+          calendar: []
+        });
+        break;
+      }
+      case 'google':{
+        await updateDoc(userRef, {
+          googleCal: []
+        });
+        break;
+      }
+    }
+  } catch (error) {
+    console.error("Error clearing events:", error);
+    return {
+      success: false,
+      error,
+    };
+  }
+};
+
 
 export const getSubjects = async () => {
   try {
@@ -858,10 +962,10 @@ export const createPaymentRecord = async (assignmentId, paymentData) => {
 export const completePayment = async (assignmentId, sessionId) => {
   try {
     const paymentsRef = collection(db, 'payments')
-    
+
     let q = query(paymentsRef, where('assignmentId', '==', assignmentId))
     let querySnapshot = await getDocs(q)
-    
+
     if (querySnapshot.empty) {
       try {
         const paymentDoc = await getDoc(doc(db, 'payments', assignmentId))
@@ -877,7 +981,7 @@ export const completePayment = async (assignmentId, sessionId) => {
         console.error('Payment not found by document ID')
       }
     }
-    
+
     if (!querySnapshot.empty) {
       const paymentDoc = querySnapshot.docs[0]
       await updateDoc(doc(db, 'payments', paymentDoc.id), {
@@ -887,7 +991,7 @@ export const completePayment = async (assignmentId, sessionId) => {
       })
       return { success: true }
     }
-    
+
     console.warn('Payment record not found, creating new completed record')
     await addDoc(collection(db, 'payments'), {
       assignmentId,
@@ -896,9 +1000,9 @@ export const completePayment = async (assignmentId, sessionId) => {
       paidAt: serverTimestamp(),
       createdAt: serverTimestamp()
     })
-    
+
     return { success: true }
-    
+
   } catch (error) {
     console.error('Error completing payment:', error)
     throw error

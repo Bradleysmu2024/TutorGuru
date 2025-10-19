@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import FileUpload from "../components/FileUpload.vue";
 import {
@@ -7,6 +7,7 @@ import {
   getLevels,
   getLocations,
   createAssignment,
+  getLevelsWithGrades,
 } from "../services/firebase";
 import { getCurrentUser } from "../router/routes";
 // import { createAssignment, uploadAssignmentFiles } from '../services/firebase'
@@ -20,6 +21,7 @@ const submitting = ref(false);
 const subjects = ref([]);
 const levels = ref([]);
 const locations = ref([]);
+const levelsWithGrades = ref([]);
 
 const formData = ref({
   title: "",
@@ -34,6 +36,28 @@ const formData = ref({
   location: "",
   postalCode: "",
 });
+
+// Computed property to get grades for selected level
+const availableGrades = computed(() => {
+  if (!formData.value.level || formData.value.level === "All Levels") {
+    return [];
+  }
+  const selectedLevel = levelsWithGrades.value.find(
+    (level) => level.name === formData.value.level
+  );
+  return selectedLevel ? selectedLevel.grades : [];
+});
+
+// Watch for level changes and reset student grade
+watch(
+  () => formData.value.level,
+  (newLevel, oldLevel) => {
+    // Reset student grade when level changes
+    if (newLevel !== oldLevel) {
+      formData.value.studentGrade = "";
+    }
+  }
+);
 
 // Validate Singapore postal code
 const isValidSGPostal = (v) => /^\d{6}$/.test((v || "").trim());
@@ -69,6 +93,7 @@ onMounted(async () => {
     subjects.value = await getSubjects();
     levels.value = await getLevels();
     locations.value = await getLocations();
+    levelsWithGrades.value = await getLevelsWithGrades();
   } catch (error) {
     console.error("Error loading form data:", error);
   }
@@ -236,12 +261,35 @@ const cancel = () => {
                 <div class="row g-3 mb-3">
                   <div class="col-md-6">
                     <label class="form-label">Student Grade</label>
-                    <input
+                    <select
                       v-model="formData.studentGrade"
-                      type="text"
-                      class="form-control"
-                      placeholder="e.g., Grade 9, JC1"
-                    />
+                      class="form-select"
+                      :disabled="
+                        !formData.level || formData.level === 'All Levels'
+                      "
+                    >
+                      <option value="">
+                        {{
+                          !formData.level || formData.level === "All Levels"
+                            ? "Select education level first"
+                            : "Select grade"
+                        }}
+                      </option>
+                      <option
+                        v-for="grade in availableGrades"
+                        :key="grade"
+                        :value="grade"
+                      >
+                        {{ grade }}
+                      </option>
+                    </select>
+                    <small
+                      v-if="!formData.level || formData.level === 'All Levels'"
+                      class="text-muted"
+                    >
+                      Please select an education level above to see available
+                      grades
+                    </small>
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Location</label>

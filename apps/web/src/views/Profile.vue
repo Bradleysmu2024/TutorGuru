@@ -42,7 +42,7 @@
                   </button>
                 </div>
               </div>
-              <div class="mb3 info">
+                <div class="mb-3 info">
                 <div class="subjects-list mb-3">
                   <h6>Subjects</h6>
                   <span
@@ -87,13 +87,30 @@
           </div>
         </div>
 
-        <!-- Documents -->
-        <div class="card shadow-sm">
+        <!-- Documents --> 
+        <!-- test needed -->
+        <div v-if="uploadedDocuments.length > 0" class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title mb-4">
               <i class="bi bi-file-earmark-text me-2"></i> Documents &
               Credentials
             </h5>
+
+            <div class="list-group">
+              <div v-for="(docItem, idx) in uploadedDocuments" :key="idx" class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
+                  <div>
+                    <div class="fw-semibold">{{ docItem.name }}</div>
+                    <small class="text-muted">Uploaded {{ docItem.uploadDate }}</small>
+                  </div>
+                </div>
+                <div>
+                  <a :href="docItem.url || '#'" target="_blank" class="btn btn-sm btn-outline-primary me-2"> <i class="bi bi-eye"></i> </a>
+                  <button class="btn btn-sm btn-outline-danger"> <i class="bi bi-trash"></i> </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -103,26 +120,12 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import FileUpload from "../components/FileUpload.vue";
-import { auth, db, getSubjects, getLevels } from "../services/firebase";
+import { auth, db } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-} from "firebase/storage";
-import router from "../router/routes";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { useRoute } from 'vue-router'
 
-const fileUploadRef = ref(null);
-const selectedFiles = ref([]);
-
 // Add Firebase data
-const subjects = ref([]);
-const levels = ref([]);
-
 const profile = ref({
   name: "",
   username: "",
@@ -136,6 +139,8 @@ const profile = ref({
   verified: false,
 });
 
+const uploadedDocuments = ref([])
+
 const route = useRoute()
 const isPublicView = ref(false)
 const currentUserId = ref(null)
@@ -148,94 +153,17 @@ const showMessageButton = computed(() => {
   return profileId.value && currentUserId.value && profileId.value !== currentUserId.value
 })
 
-
-onMounted(async () => {
-  try {
-    subjects.value = await getSubjects();
-    levels.value = await getLevels();
-  } catch (error) {
-    console.error("Error loading form data:", error);
-  }
-});
-
-const uploadedDocuments = ref([]);
-
-const addSubject = () => {
-  profile.value.teaching.push({ subject: "", levels: [] });
-};
-
-const removeSubject = (index) => {
-  profile.value.teaching.splice(index, 1);
-};
-
-const handleFilesSelected = (files) => {
-  selectedFiles.value = files;
-};
-
-const uploadDocuments = async () => {
-  const user = auth.currentUser;
-  if (!user) return alert("You must be logged in to upload documents!");
-
-  if (selectedFiles.value.length === 0) {
-    return alert("Please select at least one file.");
-  }
-
-  const storage = getStorage();
-  const tutorRef = doc(db, "tutorProfile", user.uid);
-  const newUploads = [];
-
-  try {
-    for (const file of selectedFiles.value) {
-      const fileRef = storageRef(
-        storage,
-        `tutors/${user.uid}/documents/${file.name}`
-      );
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
-
-      newUploads.push({
-        name: file.name,
-        uploadDate: new Date().toISOString().split("T")[0],
-        url,
-      });
-    }
-
-    uploadedDocuments.value.push(...newUploads);
-    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value });
-
-    alert("✅ Documents uploaded successfully!");
-    selectedFiles.value = [];
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Error uploading files. Please try again.");
-  }
-};
-
-const handleUploadComplete = (files) => {
-  files.forEach((file) => {
-    uploadedDocuments.value.push({
-      name: file.name,
-      uploadDate: new Date().toISOString().split("T")[0],
-      url: "#",
-    });
-  });
-  selectedFiles.value = [];
-  alert("Documents uploaded successfully!");
-};
-
 // Load profile when logged in
 onMounted(async () => {
-  // If route has username param, load that tutor's profile for public view
   const username = route.params.username || null
   if (username) {
     isPublicView.value = true
     try {
-  const q = query(collection(db, 'users'), where('username', '==', username))
+      const q = query(collection(db, 'users'), where('username', '==', username))
       const snap = await getDocs(q)
       if (!snap.empty) {
         const docRef = snap.docs[0]
         const docData = docRef.data()
-        // ensure we record the document id (owner uid) so comparisons work
         profile.value = { ...docData, id: docRef.id }
         uploadedDocuments.value = docData.uploadedDocuments || []
       } else {
@@ -247,31 +175,32 @@ onMounted(async () => {
     return
   }
 
-  // Otherwise load current user's profile as before
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const refDoc = doc(db, "users", user.uid);
-      const snap = await getDoc(refDoc);
-      if (snap.exists()) {
-        // include doc id for consistency
-        profile.value = { ...snap.data(), id: snap.id };
-        uploadedDocuments.value = snap.data().uploadedDocuments || [];
-      } else {
-        alert("Please log in to view your profile.");
-      }
+  // Otherwise load current user's profile
+  const loadProfile = async (uid) => {
+    const refDoc = doc(db, 'users', uid)
+    const snap = await getDoc(refDoc)
+    if (snap.exists()) {
+      profile.value = { ...snap.data(), id: snap.id }
+      uploadedDocuments.value = snap.data().uploadedDocuments || []
+    } else {
+      alert('Please log in to view your profile.')
     }
-  });
-});
+  }
 
-// Save profile to Firestore
-const saveProfile = async () => {
-  const user = auth.currentUser;
-  if (!user) return alert("You must be logged in!");
-
-  const tutorRef = doc(db, "users", user.uid);
-  await updateDoc(tutorRef, profile.value);
-  alert("Profile saved successfully!");
-};
+  const userNow = auth.currentUser
+  if (userNow) {
+    await loadProfile(userNow.uid)
+  } else {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await loadProfile(user.uid)
+      } else {
+        alert('Please log in to view your profile.')
+      }
+      if (typeof unsub === 'function') unsub()
+    })
+  }
+})
 
 // Start a chat with this tutor (navigates to /chat?tutorId=...)
 const messageTutor = () => {

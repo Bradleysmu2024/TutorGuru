@@ -176,7 +176,6 @@ onMounted(async () => {
     return
   }
 
-  // Otherwise load current user's profile
   const loadProfile = async (uid) => {
     const refDoc = doc(db, 'users', uid)
     const snap = await getDoc(refDoc)
@@ -203,10 +202,10 @@ onMounted(async () => {
   }
 })
 
-// Start a chat with this tutor (navigates to /chat?tutorId=...)
+// Start a chat with this tutor (navigates to /chat?tutorId=<username>)
 const messageTutor = () => {
-  if (!profileId.value) return alert('Unable to start chat: missing tutor id.');
-  router.push({ path: '/chat', query: { tutorId: profileId.value } });
+  if (!profile.value || !profile.value.username) return alert('Unable to start chat: missing tutor username.');
+  router.push({ path: '/chat', query: { tutor: profile.value.username } });
 }
 
 const editProfile = () => {

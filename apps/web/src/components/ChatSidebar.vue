@@ -25,10 +25,49 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore'
 import { db, auth } from '../services/firebase'
+const emit = defineEmits(['selectChat', 'initial-chats'])
 
 const search = ref('')
 const users = ref([])
 let unsubscribe = null
+const initialized = ref(false)
+
+const enrichItems = async (items) => {
+  return Promise.all(items.map(async (item) => {
+    if (!item || !item.id) return item
+    const needsEnrich = item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG'
+    if (!needsEnrich) return item
+    try {
+      const uSnap = await getDoc(doc(db, 'users', item.id))
+      if (uSnap && typeof uSnap.exists === 'function' && uSnap.exists()) {
+        const u = uSnap.data() || {}
+        return {
+          id: item.id,
+          name: u.name || item.name,
+          username: u.username || item.username || '',
+          avatar: u.avatar || item.avatar,
+          lastMessage: item.lastMessage || '',
+          bio: u.bio || item.bio || ''
+        }
+      }
+    } catch (e) {
+      console.error('Error enriching user', item.id, e)
+    }
+    return item
+  }))
+}
+
+const fetchUsersFallback = async () => {
+  const snap = await getDocs(collection(db, 'users'))
+  return snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), username: (d.data() && d.data().username) || '', avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
+}
+
+const emitInitialIfNeeded = (list) => {
+  if (!initialized.value && Array.isArray(list) && list.length > 0) {
+    if (typeof emit === 'function') emit('initial-chats', list[0])
+    initialized.value = true
+  }
+}
 
 const loadChats = async () => {
   try {
@@ -36,52 +75,42 @@ const loadChats = async () => {
     if (!currentUid) return
     const q = query(collection(db, 'chats', currentUid, 'chats'), orderBy('updatedAt', 'desc'))
     unsubscribe = onSnapshot(q, async (snap) => {
-      const items = snap.docs.map((d) => {
-        const data = d.data()
-        const otherUid = d.id
-        const participant = (data.participants && Array.isArray(data.participants))
-          ? data.participants.find((p) => p.id === otherUid) || { id: otherUid }
-          : { id: otherUid }
-
-        return {
-          id: otherUid,
-          name: participant.name || 'Unknown',
-          username: participant.username || '',
-          avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
-          lastMessage: data.lastMessage || '',
-          bio: participant.bio || ''
-        }
-      })
-
       try {
-        const enriched = await Promise.all(items.map(async (item) => {
-          if (item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG') {
-            try {
-              const uSnap = await getDoc(doc(db, 'users', item.id))
-              if (uSnap.exists()) {
-                const u = uSnap.data() || {}
-                item.name = u.name || item.name
-                item.username = u.username || item.username
-                item.avatar = u.avatar || item.avatar
-                item.bio = u.bio || item.bio
-              }
-            } catch (e) {
-              console.error('Error enriching user', item.id, e)
-            }
+        const items = snap.docs.map((d) => {
+          const data = d.data() || {}
+          const otherUid = d.id
+          const participant = (data.participants && Array.isArray(data.participants))
+            ? data.participants.find((p) => p.id === otherUid) || { id: otherUid }
+            : { id: otherUid }
+
+          return {
+            id: otherUid,
+            name: participant.name || 'Unknown',
+            username: participant.username || '',
+            avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
+            lastMessage: data.lastMessage || '',
+            bio: participant.bio || ''
           }
-          return item
-        }))
-        users.value = enriched
-      } catch (e) {
-        console.error('Error enriching chat items:', e)
-        users.value = items
+        })
+
+        try {
+          const enriched = await enrichItems(items)
+          users.value = enriched
+          emitInitialIfNeeded(users.value)
+        } catch (e) {
+          console.error('Error enriching chat items:', e)
+          users.value = items
+          emitInitialIfNeeded(users.value)
+        }
+      } catch (err) {
+        console.error('Error processing chat snapshot:', err)
       }
     })
   } catch (err) {
     console.error('Error loading chats:', err)
     try {
-      const snap = await getDocs(collection(db, 'users'))
-  users.value = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), username: (d.data() && d.data().username) || '', avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
+      users.value = await fetchUsersFallback()
+      emitInitialIfNeeded(users.value)
     } catch (e) {
       console.error('Fallback users load failed:', e)
     }

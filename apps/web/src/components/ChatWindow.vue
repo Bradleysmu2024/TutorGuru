@@ -16,10 +16,10 @@
       
   <div v-for="msg in messages" :key="msg.id" class="mb-3 d-flex"
      :class="msg.senderIsMe ? 'justify-content-end' : 'justify-content-start'">
-     <div :class="msg.senderIsMe ? 'bg-primary text-white' : 'bg-white border'"
+     <div :class="msg.senderIsMe ? 'bg-primary' : 'bg-white border'"
        class="p-2 rounded-3" style="max-width: 60%;">
           {{ msg.text }}
-          <div class="small text-end text-muted text-white">{{ formatTime(msg.timestamp) }}</div>
+          <div class="small text-end text-muted" :class="msg.senderIsMe ? 'text-white' : 'text-dark'">{{ formatTime(msg.timestamp) }}</div>
         </div>
       </div>
     </div>

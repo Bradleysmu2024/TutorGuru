@@ -10,8 +10,10 @@ import {
   orderBy,
   getDocs,
   updateDoc,
+  setDoc,
   deleteDoc,
   connectFirestoreEmulator,
+  serverTimestamp,  
 } from "firebase/firestore";
 import {
   getAuth,
@@ -19,6 +21,7 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   signInWithPopup,
+  GoogleAuthProvider,
   getAdditionalUserInfo,
   connectAuthEmulator,
   onAuthStateChanged,
@@ -33,7 +36,6 @@ import {
   getDownloadURL,
   connectStorageEmulator,
 } from "firebase/storage";
-import { GoogleAuthProvider } from "firebase/auth";
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
@@ -164,16 +166,22 @@ export const getParentAssignments = async (parentId) => {
   }
 };
 
-export const getAssignmentById = async (assignmentId) => {
+export const getAssignmentById = async (id) => {
   try {
-    if (!assignmentId) return null;
-    const docRef = doc(db, "assignments", assignmentId);
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() };
+    const docRef = doc(db, 'assignments', id)
+    const docSnap = await getDoc(docRef)
+    
+    if (docSnap.exists()) {
+      // IMPORTANT: Make sure ID is included
+      return {
+        id: docSnap.id, 
+        ...docSnap.data()
+      }
+    }
+    return null
   } catch (error) {
-    console.error("Error fetching assignment by id:", error);
-    return null;
+    console.error('Error getting assignment:', error)
+    return null
   }
 };
 
@@ -829,9 +837,75 @@ export const getUserRole = async (uid) => {
     console.error("Error fetching user role:", error);
     return null;
   }
-};
+}
 
-// Update user email in Firebase Auth
+// Payment functions
+export const createPaymentRecord = async (assignmentId, paymentData) => {
+  try {
+    const docRef = await addDoc(collection(db, 'payments'), {
+      assignmentId,
+      ...paymentData,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    })
+    return docRef.id
+  } catch (error) {
+    console.error('Error creating payment record:', error)
+    throw error
+  }
+}
+
+export const completePayment = async (assignmentId, sessionId) => {
+  try {
+    const paymentsRef = collection(db, 'payments')
+    
+    let q = query(paymentsRef, where('assignmentId', '==', assignmentId))
+    let querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      try {
+        const paymentDoc = await getDoc(doc(db, 'payments', assignmentId))
+        if (paymentDoc.exists()) {
+          await updateDoc(doc(db, 'payments', assignmentId), {
+            status: 'completed',
+            sessionId,
+            paidAt: serverTimestamp()
+          })
+          return { success: true }
+        }
+      } catch (docError) {
+        console.error('Payment not found by document ID')
+      }
+    }
+    
+    if (!querySnapshot.empty) {
+      const paymentDoc = querySnapshot.docs[0]
+      await updateDoc(doc(db, 'payments', paymentDoc.id), {
+        status: 'completed',
+        sessionId,
+        paidAt: serverTimestamp()
+      })
+      return { success: true }
+    }
+    
+    console.warn('Payment record not found, creating new completed record')
+    await addDoc(collection(db, 'payments'), {
+      assignmentId,
+      sessionId,
+      status: 'completed',
+      paidAt: serverTimestamp(),
+      createdAt: serverTimestamp()
+    })
+    
+    return { success: true }
+    
+  } catch (error) {
+    console.error('Error completing payment:', error)
+    throw error
+  }
+}
+
+// Update user email function (teammate's code)
 export const updateUserEmail = async (newEmail, currentPassword) => {
   try {
     const user = auth.currentUser;
@@ -839,23 +913,18 @@ export const updateUserEmail = async (newEmail, currentPassword) => {
       return { success: false, error: "No user is currently logged in" };
     }
 
-    // Step 1: Re-authenticate the user (Firebase requires this for security)
-    // We need to prove the user knows their current password
     const credential = EmailAuthProvider.credential(
       user.email,
       currentPassword
     );
     await reauthenticateWithCredential(user, credential);
 
-    // Step 2: Update the email in Firebase Authentication
     await updateEmail(user, newEmail);
 
-    // Step 3: Return success (you'll update Firestore in the component)
     return { success: true };
   } catch (error) {
     console.error("Error updating email:", error);
 
-    // Provide user-friendly error messages
     let errorMessage = "Failed to update email";
 
     if (error.code === "auth/wrong-password") {
@@ -872,5 +941,6 @@ export const updateUserEmail = async (newEmail, currentPassword) => {
     return { success: false, error: errorMessage };
   }
 };
+
 export { app as firebaseApp };
 export { db, auth, storage };

@@ -13,6 +13,7 @@ import Logout from "../views/Logout.vue"
 import TutorMaps from "../views/TutorMaps.vue"
 import { ref } from "vue"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
+import PaymentSuccess from '../views/PaymentSuccess.vue'
 
 const routes = [
   {
@@ -90,6 +91,12 @@ const routes = [
     name: "Profile",
     component: Profile,
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/payment-success",
+    name: "PaymentSuccess",
+    component: PaymentSuccess,
+    meta: { requiresAuth: true, allowedRoles: ['parent'] },
   },
 ]
 
@@ -171,6 +178,23 @@ router.beforeEach(async (to, from, next) => {
   }
 
   return next()
+})
+
+// Add global navigation guard
+router.beforeEach((to, from, next) => {
+  console.log('Navigation:', from.path, '→', to.path, 'Params:', to.params)
+  
+  // Prevent navigation to assignment detail with undefined ID
+  if (to.name === 'AssignmentDetail') {
+    if (!to.params.id || to.params.id === 'undefined') {
+      console.error('❌ Blocked navigation to assignment with undefined ID')
+      console.log('From:', from.path)
+      next('/parent-dashboard')
+      return
+    }
+  }
+  
+  next()
 })
 
 export default router

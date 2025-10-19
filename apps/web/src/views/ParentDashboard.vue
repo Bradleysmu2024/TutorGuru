@@ -281,10 +281,10 @@ const formatDate = (date) => {
                     {{ (assignment.files || []).length }} file{{ (assignment.files || []).length !== 1 ? 's' : '' }}
                   </small>
                 </div>
-                <button class="btn btn-sm btn-outline-primary">
+                <router-link class="btn btn-sm btn-outline-primary" :to="`/assignment/${assignment.id}`">
                   View Details
                   <i class="bi bi-arrow-right ms-2"></i>
-                </button>
+                </router-link>
               </div>
             </div>
           </div>

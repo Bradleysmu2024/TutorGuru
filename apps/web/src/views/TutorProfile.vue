@@ -53,7 +53,7 @@
               </div>
               <div class="stat-item d-flex justify-content-between">
                 <span class="text-muted">Rating</span>
-                <span class="fw-semibold">4.8 ⭐</span>
+                <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
               </div>
             </div>
           </div>

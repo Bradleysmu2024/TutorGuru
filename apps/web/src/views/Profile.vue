@@ -23,7 +23,7 @@
                 <span v-if="profile.verified" class="badge bg-success mb-3">
                   <i class="bi bi-check-circle me-1"></i> Verified Tutor
                 </span>
-                <div class="d-grid">
+                <div class="d-grid" v-if="!isPublicView">
                   <button
                     class="btn btn-outline-primary btn-sm"
                     @click="editProfile()"
@@ -72,7 +72,7 @@
             </div>
             <div class="stat-item d-flex justify-content-between">
               <span class="text-muted">Rating</span>
-              <span class="fw-semibold">4.8 ⭐</span>
+              <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
             </div>
           </div>
         </div>
@@ -96,7 +96,7 @@ import { ref, onMounted } from "vue";
 import FileUpload from "../components/FileUpload.vue";
 import { auth, db, getSubjects, getLevels } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import {
   getStorage,
   ref as storageRef,
@@ -104,6 +104,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import router from "../router/routes";
+import { useRoute } from 'vue-router'
 
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
@@ -124,6 +125,10 @@ const profile = ref({
   avatar: "",
   verified: false,
 });
+
+const route = useRoute()
+const isPublicView = ref(false)
+
 
 // Load Firebase data on mount
 onMounted(async () => {
@@ -215,7 +220,28 @@ const handleUploadComplete = (files) => {
 };
 
 // Load profile when logged in
-onMounted(() => {
+onMounted(async () => {
+  // If route has username param, load that tutor's profile for public view
+  const username = route.params.username || null
+  if (username) {
+    isPublicView.value = true
+    try {
+      const q = query(collection(db, 'tutorProfile'), where('username', '==', username))
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        const docData = snap.docs[0].data()
+        profile.value = docData
+        uploadedDocuments.value = docData.uploadedDocuments || []
+      } else {
+        console.warn('Tutor not found for username:', username)
+      }
+    } catch (err) {
+      console.error('Error loading public tutor profile:', err)
+    }
+    return
+  }
+
+  // Otherwise load current user's profile as before
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const refDoc = doc(db, "tutorProfile", user.uid);

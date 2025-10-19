@@ -54,16 +54,16 @@ onMounted(async () => {
   try {
     // Prefer resolving tutorId as a username (friendly URLs)
     const q = query(collection(db, 'users'), where('username', '==', tutorId))
-    const snap2 = await getDocs(q)
-    if (!snap2.empty) {
-      const d = snap2.docs[0]
+    const snap = await getDocs(q)
+    if (!snap.empty) {
+      const d = snap.docs[0]
       activeUser.value = { id: d.id, ...d.data() }
       return
     }
 
     // Fallback: attempt to treat tutorId as a user document id
     const refDoc = doc(db, 'users', tutorId)
-    const snap = await getDoc(refDoc)
+    snap = await getDoc(refDoc)
     if (snap.exists()) {
       activeUser.value = { id: snap.id, ...snap.data() }
       return

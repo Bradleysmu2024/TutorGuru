@@ -85,7 +85,7 @@ const loadChats = async () => {
 
           return {
             id: otherUid,
-            name: participant.name || 'Unknown',
+            name: participant.name || 'Unknown User',
             username: participant.username || '',
             avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
             lastMessage: data.lastMessage || '',

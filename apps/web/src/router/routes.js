@@ -201,8 +201,6 @@ router.beforeEach(async (to, from, next) => {
 
 // Add global navigation guard
 router.beforeEach((to, from, next) => {
-  console.log('Navigation:', from.path, '→', to.path, 'Params:', to.params)
-  
   // Prevent navigation to assignment detail with undefined ID
   if (to.name === 'AssignmentDetail') {
     if (!to.params.id || to.params.id === 'undefined') {

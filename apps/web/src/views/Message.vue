@@ -33,7 +33,17 @@ const router = useRouter()
 const route = useRoute()
 
 const selectChat = (user) => {
-  activeUser.value = user
+  // normalize minimal user objects that may come from sidebar
+  if (user && typeof user === 'object') {
+    activeUser.value = {
+      id: user.id || user.uid || user.userId || null,
+      name: user.name || user.displayName || '',
+      username: user.username || '',
+      avatar: user.avatar || ''
+    }
+  } else {
+    activeUser.value = user
+  }
 }
 
 const onInitialChats = (user) => {

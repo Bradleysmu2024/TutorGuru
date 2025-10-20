@@ -1,8 +1,8 @@
 <template>
   <div class="container-fluid d-flex bg-light flex-grow-1" style="min-height: 0;">
     <div class="col-3 p-3 border-end bg-white" style="min-height: 0;">
-  <MessageSidebar @selectChat="selectChat" @initial-chats="onInitialChats" />
-    </div>
+    <MessageSidebar :selectedId="activeUser && activeUser.id" @selectChat="selectChat" @initial-chats="onInitialChats" />
+      </div>
     <div class="col-9 d-flex flex-column" style="min-height: 0;">
       <template v-if="activeUser">
         <ChatWindow :activeUser="activeUser" />

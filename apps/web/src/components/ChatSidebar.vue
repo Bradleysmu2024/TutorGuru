@@ -10,7 +10,7 @@
     <ul class="list-group overflow-auto" style="max-height: 70vh;">
       <li v-for="user in filteredUsers" :key="user.id"
           @click="$emit('selectChat', user)"
-          class="list-group-item d-flex align-items-center list-group-item-action">
+          :class="['list-group-item d-flex align-items-center list-group-item-action', user.id === props.selectedId ? 'selected-chat' : '']">
             <img :src="user.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="40" height="40"/>
         <div>
           <strong>{{ user.name }}</strong>
@@ -27,6 +27,7 @@ import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'fi
 import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '../services/firebase'
 const emit = defineEmits(['selectChat', 'initial-chats'])
+const props = defineProps({ selectedId: [String, Number, null] })
 
 const search = ref('')
 const users = ref([])
@@ -164,3 +165,9 @@ const filteredUsers = computed(() => {
   })
 })
 </script>
+
+<style scoped>
+.selected-chat {
+  background-color: #e9f5ff; /* light blue */
+}
+</style>

@@ -1,21 +1,28 @@
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import FileUpload from "../components/FileUpload.vue";
 import {
   getSubjects,
   getLevels,
   getLocations,
   createAssignment,
+  updateAssignment,
+  getAssignmentById,
   getLevelsWithGrades,
 } from "../services/firebase";
 import { getCurrentUser } from "../router/routes";
 // import { createAssignment, uploadAssignmentFiles } from '../services/firebase'
 
 const router = useRouter();
+const route = useRoute();
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
 const submitting = ref(false);
+
+// Edit mode
+const isEditMode = ref(false);
+const assignmentId = ref(null);
 
 // Postal code validation states
 const geocoding = ref(false);
@@ -164,6 +171,49 @@ const getRegionFromPostalDistrict = (district) => {
 // Load data from Firebase on component mount
 onMounted(async () => {
   try {
+    // Check if we're in edit mode
+    if (route.query.edit && route.query.id) {
+      isEditMode.value = true;
+      assignmentId.value = route.query.id;
+      
+      // Load assignment data
+      const assignment = await getAssignmentById(assignmentId.value);
+      if (assignment) {
+        // Pre-fill form with existing data
+        formData.value = {
+          title: assignment.title || "",
+          subject: assignment.subject || "",
+          level: assignment.level || "",
+          studentGrade: assignment.studentGrade || "",
+          description: assignment.description || "",
+          requirements: Array.isArray(assignment.requirements) 
+            ? assignment.requirements.join("\n") 
+            : assignment.requirements || "",
+          sessionsPerWeek: assignment.sessionsPerWeek || 2,
+          duration: assignment.duration || "",
+          rate: assignment.rate || "",
+          location: assignment.location || "",
+          postalCode: assignment.postalCode || "",
+          formattedAddress: assignment.formattedAddress || "",
+        };
+        
+        // If we have coordinates, mark postal as validated
+        if (assignment.lat && assignment.lng) {
+          geocodedData.value = {
+            lat: assignment.lat,
+            lng: assignment.lng,
+            formattedAddress: assignment.formattedAddress,
+            postalCode: assignment.postalCode
+          };
+          postalSuccess.value = true;
+        }
+      } else {
+        alert("Assignment not found");
+        router.push("/parent-dashboard");
+      }
+    }
+    
+    // Load dropdown data
     subjects.value = await getSubjects();
     levels.value = await getLevels();
     locations.value = await getLocations();
@@ -217,21 +267,28 @@ const submitAssignment = async () => {
         : {}),
     };
 
-    // Save to Firestore
-    const result = await createAssignment(user.uid, assignmentData);
+    let result;
+    if (isEditMode.value && assignmentId.value) {
+      // Update existing assignment
+      result = await updateAssignment(assignmentId.value, assignmentData);
+    } else {
+      // Create new assignment
+      result = await createAssignment(user.uid, assignmentData);
+    }
+
     if (!result?.success) {
-      throw new Error(result?.error || "Failed to create assignment");
+      throw new Error(result?.error || `Failed to ${isEditMode.value ? 'update' : 'create'} assignment`);
     }
 
     submitting.value = false;
-    alert("Assignment posted successfully!");
+    alert(`Assignment ${isEditMode.value ? 'updated' : 'posted'} successfully!`);
     router.push({
       path: "/parent-dashboard",
       query: { refresh: Date.now().toString() },
     });
   } catch (error) {
-    console.error("Error posting assignment:", error);
-    alert(error?.message || "Failed to post assignment. Please try again.");
+    console.error(`Error ${isEditMode.value ? 'updating' : 'posting'} assignment:`, error);
+    alert(error?.message || `Failed to ${isEditMode.value ? 'update' : 'post'} assignment. Please try again.`);
     submitting.value = false;
   }
 };
@@ -270,10 +327,11 @@ const cancel = () => {
     <div class="container py-4">
       <div class="page-header mb-4">
         <h1 class="fw-bold mb-2">
-          <i class="bi bi-plus-circle me-2"></i>
-          Post New Assignment
+          <i class="bi bi-plus-circle me-2" v-if="!isEditMode"></i>
+          <i class="bi bi-pencil me-2" v-else></i>
+          {{ isEditMode ? 'Edit Assignment' : 'Post New Assignment' }}
         </h1>
-        <p class="text-muted">Create a new tutoring assignment posting</p>
+        <p class="text-muted">{{ isEditMode ? 'Update your tutoring assignment' : 'Create a new tutoring assignment posting' }}</p>
       </div>
 
       <div class="row">
@@ -519,11 +577,11 @@ const cancel = () => {
             >
               <span v-if="submitting">
                 <span class="spinner-border spinner-border-sm me-2"></span>
-                Posting...
+                {{ isEditMode ? 'Updating...' : 'Posting...' }}
               </span>
               <span v-else>
                 <i class="bi bi-check-circle me-2"></i>
-                Post Assignment
+                {{ isEditMode ? 'Update Assignment' : 'Post Assignment' }}
               </span>
             </button>
             <button

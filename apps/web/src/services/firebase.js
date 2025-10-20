@@ -51,7 +51,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const useEmulators = false;
+const useEmulators = true;
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
@@ -136,6 +136,32 @@ export const createAssignment = async (parentId, assignmentData) => {
   }
 };
 
+export const updateAssignment = async (assignmentId, assignmentData) => {
+  try {
+    const docRef = doc(db, "assignments", assignmentId);
+    const payload = {
+      ...assignmentData,
+      updatedAt: new Date().toISOString(),
+    };
+    await updateDoc(docRef, payload);
+    return { success: true, id: assignmentId };
+  } catch (error) {
+    console.error("Error updating assignment:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+export const deleteAssignment = async (assignmentId) => {
+  try {
+    const docRef = doc(db, "assignments", assignmentId);
+    await deleteDoc(docRef);
+    return { success: true, id: assignmentId };
+  } catch (error) {
+    console.error("Error deleting assignment:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const getParentAssignments = async (parentId) => {
   try {
     // Fetch assignments for parentId without server-side ordering to avoid composite index requirements.
@@ -151,14 +177,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-            ? a.createdAt.seconds * 1000
-            : 0;
+          ? a.createdAt.seconds * 1000
+          : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-            ? b.createdAt.seconds * 1000
-            : 0;
+          ? b.createdAt.seconds * 1000
+          : 0;
       return tb - ta;
     });
     return items;
@@ -170,20 +196,20 @@ export const getParentAssignments = async (parentId) => {
 
 export const getAssignmentById = async (id) => {
   try {
-    const docRef = doc(db, 'assignments', id)
-    const docSnap = await getDoc(docRef)
+    const docRef = doc(db, "assignments", id);
+    const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       // IMPORTANT: Make sure ID is included
       return {
         id: docSnap.id,
-        ...docSnap.data()
-      }
+        ...docSnap.data(),
+      };
     }
-    return null
+    return null;
   } catch (error) {
-    console.error('Error getting assignment:', error)
-    return null
+    console.error("Error getting assignment:", error);
+    return null;
   }
 };
 
@@ -295,7 +321,7 @@ export const signInWithGoogle = async () => {
       success: true,
       user: user,
       token: token,
-      expiry: new Date(expiryTime)
+      expiry: new Date(expiryTime),
     };
   } catch (error) {
     // Handle Errors here.
@@ -678,13 +704,13 @@ export const getEvent_ = async (type, userId) => {
   try {
     const userRef = doc(db, "users", userId);
     const response = await getDoc(userRef);
-    const data = response.data()
+    const data = response.data();
     // console.log(data.calendar)
     switch (type) {
-      case 'calendar': {
+      case "calendar": {
         return data.calendar;
       }
-      case 'google': {
+      case "google": {
         return data.googleCal;
       }
     }
@@ -698,35 +724,43 @@ export const getEvent_ = async (type, userId) => {
 };
 
 // add event
-export const addEvent_ = async (type, name, details, start, end, color, userId) => {
+export const addEvent_ = async (
+  type,
+  name,
+  details,
+  start,
+  end,
+  color,
+  userId
+) => {
   try {
     const userRef = doc(db, "users", userId);
     switch (type) {
-      case 'calendar': {
+      case "calendar": {
         const response = await updateDoc(userRef, {
           calendar: arrayUnion({
-            id: 'calendar_' + crypto.randomUUID(),
+            id: "calendar_" + crypto.randomUUID(),
             name: name,
             details: details,
             start: start,
             end: end,
             color: color,
             timed: true,
-          })
+          }),
         });
         return response;
       }
-      case 'google': {
+      case "google": {
         const response = await updateDoc(userRef, {
           googleCal: arrayUnion({
-            id: 'google_' + crypto.randomUUID(),
+            id: "google_" + crypto.randomUUID(),
             name: name,
             details: details,
             start: start,
             end: end,
             color: color,
             timed: true,
-          })
+          }),
         });
         return response;
       }
@@ -743,30 +777,30 @@ export const addEvent_ = async (type, name, details, start, end, color, userId) 
 // update event
 export const updateEvent_ = async (currentlyEditing, details, userId) => {
   try {
-    const userRef = doc(db, "users", userId)
-    const snap = await getDoc(userRef)
-    const type = currentlyEditing.split("_")[0]
+    const userRef = doc(db, "users", userId);
+    const snap = await getDoc(userRef);
+    const type = currentlyEditing.split("_")[0];
     switch (type) {
-      case 'calendar': {
-        const calendar = snap.data().calendar || []
-        let updateDetails = { details: details }
-        const updatedCalendar = calendar.map(event =>
+      case "calendar": {
+        const calendar = snap.data().calendar || [];
+        let updateDetails = { details: details };
+        const updatedCalendar = calendar.map((event) =>
           event.id === currentlyEditing ? { ...event, ...updateDetails } : event
-        )
+        );
         const response = await updateDoc(userRef, {
-          calendar: updatedCalendar
-        })
+          calendar: updatedCalendar,
+        });
         return response;
       }
-      case 'google': {
-        const calendar = snap.data().googleCal || []
-        let updateDetails = { details: details }
-        const updatedCalendar = calendar.map(event =>
+      case "google": {
+        const calendar = snap.data().googleCal || [];
+        let updateDetails = { details: details };
+        const updatedCalendar = calendar.map((event) =>
           event.id === currentlyEditing ? { ...event, ...updateDetails } : event
-        )
+        );
         const response = await updateDoc(userRef, {
-          googleCal: updatedCalendar
-        })
+          googleCal: updatedCalendar,
+        });
         return response;
       }
     }
@@ -783,20 +817,24 @@ export const updateEvent_ = async (currentlyEditing, details, userId) => {
 export const deleteEvent_ = async (ev, userId) => {
   try {
     // console.log(ev)
-    const userRef = doc(db, "users", userId)
-    const snap = await getDoc(userRef)
-    const type = ev.split("_")[0]
+    const userRef = doc(db, "users", userId);
+    const snap = await getDoc(userRef);
+    const type = ev.split("_")[0];
     switch (type) {
-      case 'calendar': {
-        const calendar = snap.data().calendar || []
-        const updatedCalendar = calendar.filter(e => e.id !== ev)
-        const response = await updateDoc(userRef, { calendar: updatedCalendar });
+      case "calendar": {
+        const calendar = snap.data().calendar || [];
+        const updatedCalendar = calendar.filter((e) => e.id !== ev);
+        const response = await updateDoc(userRef, {
+          calendar: updatedCalendar,
+        });
         return response;
       }
-      case 'google': {
-        const calendar = snap.data().googleCal || []
-        const updatedCalendar = calendar.filter(e => e.id !== ev)
-        const response = await updateDoc(userRef, { googleCal: updatedCalendar });
+      case "google": {
+        const calendar = snap.data().googleCal || [];
+        const updatedCalendar = calendar.filter((e) => e.id !== ev);
+        const response = await updateDoc(userRef, {
+          googleCal: updatedCalendar,
+        });
         return response;
       }
     }
@@ -813,16 +851,16 @@ export const deleteEvent_ = async (ev, userId) => {
 export const clearEvents_ = async (type, userId) => {
   try {
     const userRef = doc(db, "users", userId);
-    switch(type){
-      case 'calendar':{
+    switch (type) {
+      case "calendar": {
         await updateDoc(userRef, {
-          calendar: []
+          calendar: [],
         });
         break;
       }
-      case 'google':{
+      case "google": {
         await updateDoc(userRef, {
-          googleCal: []
+          googleCal: [],
         });
         break;
       }
@@ -835,7 +873,6 @@ export const clearEvents_ = async (type, userId) => {
     };
   }
 };
-
 
 export const getSubjects = async () => {
   try {
@@ -941,73 +978,72 @@ export const getUserRole = async (uid) => {
     console.error("Error fetching user role:", error);
     return null;
   }
-}
+};
 
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {
   try {
-    const docRef = await addDoc(collection(db, 'payments'), {
+    const docRef = await addDoc(collection(db, "payments"), {
       assignmentId,
       ...paymentData,
-      status: 'pending',
-      createdAt: serverTimestamp()
-    })
-    return docRef.id
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+    return docRef.id;
   } catch (error) {
-    console.error('Error creating payment record:', error)
-    throw error
+    console.error("Error creating payment record:", error);
+    throw error;
   }
-}
+};
 
 export const completePayment = async (assignmentId, sessionId) => {
   try {
-    const paymentsRef = collection(db, 'payments')
+    const paymentsRef = collection(db, "payments");
 
-    let q = query(paymentsRef, where('assignmentId', '==', assignmentId))
-    let querySnapshot = await getDocs(q)
+    let q = query(paymentsRef, where("assignmentId", "==", assignmentId));
+    let querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
       try {
-        const paymentDoc = await getDoc(doc(db, 'payments', assignmentId))
+        const paymentDoc = await getDoc(doc(db, "payments", assignmentId));
         if (paymentDoc.exists()) {
-          await updateDoc(doc(db, 'payments', assignmentId), {
-            status: 'completed',
+          await updateDoc(doc(db, "payments", assignmentId), {
+            status: "completed",
             sessionId,
-            paidAt: serverTimestamp()
-          })
-          return { success: true }
+            paidAt: serverTimestamp(),
+          });
+          return { success: true };
         }
       } catch (docError) {
-        console.error('Payment not found by document ID')
+        console.error("Payment not found by document ID");
       }
     }
 
     if (!querySnapshot.empty) {
-      const paymentDoc = querySnapshot.docs[0]
-      await updateDoc(doc(db, 'payments', paymentDoc.id), {
-        status: 'completed',
+      const paymentDoc = querySnapshot.docs[0];
+      await updateDoc(doc(db, "payments", paymentDoc.id), {
+        status: "completed",
         sessionId,
-        paidAt: serverTimestamp()
-      })
-      return { success: true }
+        paidAt: serverTimestamp(),
+      });
+      return { success: true };
     }
 
-    console.warn('Payment record not found, creating new completed record')
-    await addDoc(collection(db, 'payments'), {
+    console.warn("Payment record not found, creating new completed record");
+    await addDoc(collection(db, "payments"), {
       assignmentId,
       sessionId,
-      status: 'completed',
+      status: "completed",
       paidAt: serverTimestamp(),
-      createdAt: serverTimestamp()
-    })
+      createdAt: serverTimestamp(),
+    });
 
-    return { success: true }
-
+    return { success: true };
   } catch (error) {
-    console.error('Error completing payment:', error)
-    throw error
+    console.error("Error completing payment:", error);
+    throw error;
   }
-}
+};
 
 // Update user email function (teammate's code)
 export const updateUserEmail = async (newEmail, currentPassword) => {

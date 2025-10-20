@@ -5,6 +5,7 @@ import { dummyParentAssignments, dummyTutorProfiles } from "../data/dummyData";
 import {
   getAssignmentById,
   createPaymentRecord,
+  deleteAssignment,
   auth,
   db,
 } from "../services/firebase";
@@ -320,6 +321,63 @@ const goBack = () => {
     router.go(-1); // Go back to previous page
   } else {
     router.push("/parent-dashboard"); // Fallback to dashboard
+  }
+};
+
+const editAssignment = () => {
+  // Navigate to PostAssignment page with edit mode
+  router.push({
+    path: "/post-assignment",
+    query: {
+      edit: "true",
+      id: assignment.value.id || route.params.id
+    }
+  });
+};
+
+const deleteAssignmentHandler = async () => {
+  const assignmentTitle = assignment.value?.title || "this assignment";
+  
+  // Show confirmation dialog
+  if (!confirm(
+    `Are you sure you want to delete "${assignmentTitle}"?\n\n` +
+    `This action cannot be undone. All applicants and data will be permanently removed.`
+  )) {
+    return;
+  }
+
+  // Double confirmation for safety
+  if (!confirm(
+    `Final confirmation: Delete "${assignmentTitle}"?`
+  )) {
+    return;
+  }
+
+  try {
+    const assignmentId = assignment.value?.id || route.params.id;
+    
+    if (!assignmentId) {
+      alert("Assignment ID not found");
+      return;
+    }
+
+    // Delete from Firestore
+    const result = await deleteAssignment(assignmentId);
+    
+    if (!result?.success) {
+      throw new Error(result?.error || "Failed to delete assignment");
+    }
+
+    alert("Assignment deleted successfully!");
+    
+    // Redirect to parent dashboard
+    router.push({
+      path: "/parent-dashboard",
+      query: { refresh: Date.now().toString() }
+    });
+  } catch (error) {
+    console.error("Error deleting assignment:", error);
+    alert(`Failed to delete assignment: ${error.message}`);
   }
 };
 
@@ -829,11 +887,17 @@ onMounted(async () => {
                 </div>
                 <hr />
                 <div class="d-grid gap-2">
-                  <button class="btn btn-outline-primary btn-sm">
+                  <button 
+                    class="btn btn-outline-primary btn-sm"
+                    @click="editAssignment"
+                  >
                     <i class="bi bi-pencil me-2"></i>
                     Edit Assignment
                   </button>
-                  <button class="btn btn-outline-danger btn-sm">
+                  <button 
+                    class="btn btn-outline-danger btn-sm"
+                    @click="deleteAssignmentHandler"
+                  >
                     <i class="bi bi-trash me-2"></i>
                     Delete Assignment
                   </button>

@@ -55,7 +55,7 @@ const handleRegister = async () => {
         experience: 0,
         avatar: "",
         role: "tutor",
-        rating: 5,
+        rating: null,
         createdAt: new Date().toISOString(),
         verified: false
       }, { merge: true })

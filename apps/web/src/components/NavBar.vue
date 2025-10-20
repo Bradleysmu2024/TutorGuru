@@ -88,7 +88,7 @@
                 </router-link>
               </li>
               <li class="nav-item">
-                <router-link to="/parent-profile" class="nav-link" active-class="active" @click="closeNavbar">
+                <router-link to="/editprofile" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-person me-1"></i>
                   Profile
                 </router-link>

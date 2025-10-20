@@ -113,7 +113,7 @@ const handleRegister = async () => {
               <div class="text-center mb-4">
                 <i class="bi bi-person-plus text-primary fs-1 mb-3"></i>
                 <h2 class="fw-bold mb-2">Join TutorGuru</h2>
-                <p class="text-muted">Create your tutor account and start teaching</p>
+                <p class="text-muted">Create your account now</p>
               </div>
 
               <form @submit.prevent="handleRegister">
@@ -159,17 +159,17 @@ const handleRegister = async () => {
                   </div>
                   <div class="col-12 d-flex gap-4">
                     <div class="form-check form-check-inline">
-                      
-                      
-                      <input v-model="registerForm.role" type="radio" class="form-check-input" id="tutor" value="tutor" required />
-                      <label class="form-check-label" for="tutor">
-                        Tutor
+                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="parent" value="parent" required checked />
+                      <label class="form-check-label" for="parent">
+                        Parent/Guardian
                       </label>
                     </div>
                     <div class="form-check form-check-inline">
-                      <input v-model="registerForm.role" type="radio" class="form-check-input" id="parent" value="parent" required />
-                      <label class="form-check-label" for="parent">
-                        Parent/Guardian
+                      
+                      
+                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="tutor" value="tutor" required />
+                      <label class="form-check-label" for="tutor">
+                        Tutor
                       </label>
                     </div>
                     

@@ -209,7 +209,7 @@ const messageTutor = () => {
 }
 
 const editProfile = () => {
-  router.push("tutorProfile");
+  router.push('/editprofile')
 };
 </script>
 

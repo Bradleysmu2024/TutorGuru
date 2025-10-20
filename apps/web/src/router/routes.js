@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router"
 import Home from "../views/Home.vue"
 import TutorDashboard from "../views/TutorDashboard.vue"
 import TutorProfile from "../views/TutorProfile.vue"
+import EditProfile from "../views/EditProfile.vue"
 import TopTutors from "../views/TopTutors.vue"
 import ParentDashboard from "../views/ParentDashboard.vue"
 import ParentProfile from "../views/ParentProfile.vue"
@@ -53,14 +54,13 @@ const routes = [
     path: "/assignment/:id",
     name: "AssignmentDetail",
     component: AssignmentDetail,
-    // assignment detail can be viewed by both parents and tutors
-    meta: { requiresAuth: true, allowedRoles: ['parent', 'tutor'] },
+    meta: { requiresAuth: true },
   },
   {
-    path: "/tutorprofile",
-    name: "TutorProfile",
-    component: TutorProfile,
-    meta: { requiresAuth: true, allowedRoles: ['tutor'] },
+    path: "/editprofile",
+    name: "EditProfile",
+    component: EditProfile,
+    meta: { requiresAuth: true },
   },
   {
     path: "/tutor/:username",

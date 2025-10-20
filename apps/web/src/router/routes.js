@@ -54,8 +54,7 @@ const routes = [
     path: "/assignment/:id",
     name: "AssignmentDetail",
     component: AssignmentDetail,
-    // assignment detail can be viewed by both parents and tutors
-    meta: { requiresAuth: true, allowedRoles: ['parent', 'tutor'] },
+    meta: { requiresAuth: true },
   },
   {
     path: "/editprofile",

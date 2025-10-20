@@ -55,6 +55,12 @@
                   Assignment Map
                 </router-link>
               </li>
+              <li class="nav-item">
+                <router-link to="/chat" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-chat-left-text me-1"></i>
+                  Messages
+                </router-link>
+              </li>
             </template>
             <template v-else>
               <li class="nav-item">
@@ -85,6 +91,12 @@
                 <router-link to="/parent-profile" class="nav-link" active-class="active" @click="closeNavbar">
                   <i class="bi bi-person me-1"></i>
                   Profile
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/chat" class="nav-link" active-class="active" @click="closeNavbar">
+                  <i class="bi bi-chat-left-text me-1"></i>
+                  Messages
                 </router-link>
               </li>
             </template>

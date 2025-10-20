@@ -30,6 +30,9 @@ const postalError = ref("");
 const postalSuccess = ref(false);
 const geocodedData = ref(null);
 
+// Online mode
+const isOnline = ref(false);
+
 // Firebase data
 const subjects = ref([]);
 const levels = ref([]);
@@ -72,6 +75,22 @@ watch(
     }
   }
 );
+
+// Watch for online mode changes
+watch(isOnline, (newValue) => {
+  if (newValue) {
+    // When switching to online mode
+    formData.value.location = "Online";
+    formData.value.postalCode = "";
+    formData.value.formattedAddress = "";
+    geocodedData.value = null;
+    postalError.value = "";
+    postalSuccess.value = false;
+  } else {
+    // When switching to physical location
+    formData.value.location = "";
+  }
+});
 
 // Validate Singapore postal code
 const isValidSGPostal = (v) => /^\d{6}$/.test((v || "").trim());
@@ -143,20 +162,35 @@ const validateAndGeocodePostal = async () => {
 
 // Helper function to determine region from postal district
 const getRegionFromPostalDistrict = (district) => {
-  // Singapore postal district to region mapping
+  // Comprehensive Singapore postal district to region mapping
+  // Based on Singapore's official postal district system (Districts 01-82)
   const regionMap = {
-    // Central: 01-08
-    central: [1, 2, 3, 4, 5, 6, 7, 8],
-    // North: 25-28, 72-73, 77-78
-    north: [25, 26, 27, 28, 72, 73, 77, 78],
-    // Northeast: 19-20, 28, 53-55, 82
-    northeast: [19, 20, 28, 53, 54, 55, 82],
-    // East: 13-17, 38-42, 45-47, 48-52
+    // Central Region (Districts 01-11, 14-15)
+    // Includes: CBD, Orchard, Marina Bay, Chinatown, City Hall, River Valley, Novena
+    central: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15],
+    
+    // East Region (Districts 13, 16-18, 38-52)
+    // Includes: Katong, Marine Parade, Bedok, Tampines, Pasir Ris, Changi, Geylang
     east: [
-      13, 14, 15, 16, 17, 38, 39, 40, 41, 42, 45, 46, 47, 48, 49, 50, 51, 52,
+      13, 16, 17, 18, 
+      38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
     ],
-    // West: 21-24, 60-71
-    west: [21, 22, 23, 24, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71],
+    
+    // Northeast Region (Districts 19-20, 28, 53-57, 82)
+    // Includes: Hougang, Punggol, Sengkang, Serangoon, Ang Mo Kio, Bishan
+    northeast: [19, 20, 28, 53, 54, 55, 56, 57, 82],
+    
+    // North Region (Districts 25-27, 72-73, 77-78)
+    // Includes: Woodlands, Yishun, Sembawang, Admiralty, Kranji
+    north: [25, 26, 27, 72, 73, 77, 78],
+    
+    // West Region (Districts 12, 21-24, 60-71, 79-81)
+    // Includes: Jurong, Choa Chu Kang, Bukit Batok, Clementi, Bukit Panjang, Tuas
+    west: [
+      12, 21, 22, 23, 24, 
+      60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+      79, 80, 81
+    ],
   };
 
   for (const [region, districts] of Object.entries(regionMap)) {
@@ -165,7 +199,7 @@ const getRegionFromPostalDistrict = (district) => {
     }
   }
 
-  return "Central"; // Default fallback
+  return "Central"; // Default fallback for any unmapped districts
 };
 
 // Load data from Firebase on component mount
@@ -196,6 +230,11 @@ onMounted(async () => {
           postalCode: assignment.postalCode || "",
           formattedAddress: assignment.formattedAddress || "",
         };
+        
+        // Check if assignment is online
+        if (assignment.location === "Online") {
+          isOnline.value = true;
+        }
         
         // If we have coordinates, mark postal as validated
         if (assignment.lat && assignment.lng) {
@@ -242,8 +281,8 @@ const submitAssignment = async () => {
 
     // Convert postal code to coordinates (use already geocoded data if available)
     let geo = geocodedData.value;
-    if (!geo && formData.value.postalCode?.trim()) {
-      // Fallback: geocode if not already done
+    if (!isOnline.value && !geo && formData.value.postalCode?.trim()) {
+      // Fallback: geocode if not already done (only for physical locations)
       geo = await geocodePostalCode(formData.value.postalCode);
     }
 
@@ -257,7 +296,16 @@ const submitAssignment = async () => {
             .filter(Boolean)
         : [],
       files: [],
-      ...(geo
+      // Only add geo data for physical locations
+      ...(isOnline.value
+        ? {
+            location: "Online",
+            postalCode: null,
+            formattedAddress: null,
+            lat: null,
+            lng: null,
+          }
+        : geo
         ? {
             lat: geo.lat,
             lng: geo.lng,
@@ -303,15 +351,17 @@ const validateForm = () => {
     return false;
   }
 
-  // Require postal code verification
-  if (!formData.value.postalCode) {
-    alert("Please enter your postal code");
-    return false;
-  }
+  // Only require postal code verification for physical locations
+  if (!isOnline.value) {
+    if (!formData.value.postalCode) {
+      alert("Please enter your postal code or select 'Online' mode");
+      return false;
+    }
 
-  if (!postalSuccess.value) {
-    alert("Please verify your postal code by clicking the location button");
-    return false;
+    if (!postalSuccess.value) {
+      alert("Please verify your postal code by clicking the location button");
+      return false;
+    }
   }
 
   return true;
@@ -435,52 +485,80 @@ const cancel = () => {
 
                 <!-- Smart Postal Code Input -->
                 <div class="col-12 mb-3">
-                  <label class="form-label">
-                    Location (Postal Code)
-                    <span class="text-danger">*</span>
-                  </label>
-                  <div class="input-group">
-                    <input
-                      v-model="formData.postalCode"
-                      type="text"
-                      class="form-control"
-                      placeholder="Enter 6-digit postal code"
-                      @blur="validateAndGeocodePostal"
-                      @keyup.enter="validateAndGeocodePostal"
-                      maxlength="6"
-                      :class="{
-                        'is-invalid': postalError,
-                        'is-valid': postalSuccess,
-                      }"
-                    />
-                    <button
-                      class="btn btn-outline-secondary"
-                      type="button"
-                      @click="validateAndGeocodePostal"
-                      :disabled="geocoding || !formData.postalCode"
-                    >
-                      <span
-                        v-if="geocoding"
-                        class="spinner-border spinner-border-sm"
-                      ></span>
-                      <i v-else class="bi bi-geo-alt"></i>
-                    </button>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <label class="form-label mb-0">
+                      Location
+                      <span v-if="!isOnline" class="text-danger">*</span>
+                    </label>
+                    <div class="form-check form-switch">
+                      <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="onlineToggle"
+                        v-model="isOnline"
+                      />
+                      <label class="form-check-label" for="onlineToggle">
+                        <i class="bi bi-laptop me-1"></i>
+                        Online Tutoring
+                      </label>
+                    </div>
                   </div>
-                  <div v-if="postalError" class="invalid-feedback d-block">
-                    <i class="bi bi-exclamation-circle me-1"></i>
-                    {{ postalError }}
+
+                  <!-- Show postal code input only for physical locations -->
+                  <div v-if="!isOnline">
+                    <div class="input-group">
+                      <input
+                        v-model="formData.postalCode"
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter 6-digit postal code"
+                        @blur="validateAndGeocodePostal"
+                        @keyup.enter="validateAndGeocodePostal"
+                        maxlength="6"
+                        :class="{
+                          'is-invalid': postalError,
+                          'is-valid': postalSuccess,
+                        }"
+                      />
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        @click="validateAndGeocodePostal"
+                        :disabled="geocoding || !formData.postalCode"
+                      >
+                        <span
+                          v-if="geocoding"
+                          class="spinner-border spinner-border-sm"
+                        ></span>
+                        <i v-else class="bi bi-geo-alt"></i>
+                      </button>
+                    </div>
+                    <div v-if="postalError" class="invalid-feedback d-block">
+                      <i class="bi bi-exclamation-circle me-1"></i>
+                      {{ postalError }}
+                    </div>
+                    <div v-if="postalSuccess" class="valid-feedback d-block">
+                      <i class="bi bi-check-circle me-1"></i>
+                      <strong>{{ formData.formattedAddress }}</strong>
+                      <span class="ms-2 badge bg-success">{{
+                        formData.location
+                      }}</span>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-info-circle me-1"></i>
+                      We'll automatically detect your region and address
+                    </small>
                   </div>
-                  <div v-if="postalSuccess" class="valid-feedback d-block">
-                    <i class="bi bi-check-circle me-1"></i>
-                    <strong>{{ formData.formattedAddress }}</strong>
-                    <span class="ms-2 badge bg-success">{{
-                      formData.location
-                    }}</span>
+
+                  <!-- Show online mode message -->
+                  <div v-else class="alert alert-info mb-0">
+                    <i class="bi bi-laptop me-2"></i>
+                    <strong>Online Tutoring Selected</strong>
+                    <p class="mb-0 mt-1 small">
+                      This assignment will be conducted online via video call or chat.
+                      No physical location required.
+                    </p>
                   </div>
-                  <small class="text-muted d-block mt-1">
-                    <i class="bi bi-info-circle me-1"></i>
-                    We'll automatically detect your region and address
-                  </small>
                 </div>
 
                 <div class="mb-3">

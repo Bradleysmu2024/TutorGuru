@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="text-center mb-3">
-      <img src="/src/assets/images/profileplaceholder.JPG" class="rounded-circle mb-2" width="100" height="100"/>
-      <h5>Asiya Javayant</h5>
+      <img :src="currentProfile.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle mb-2" width="100" height="100"/>
+      <h5>{{ currentProfile.name || 'You' }}</h5>
     </div>
 
     <input v-model="search" type="text" class="form-control mb-3" placeholder="Search" />
@@ -24,6 +24,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore'
+import { onAuthStateChanged } from 'firebase/auth'
 import { db, auth } from '../services/firebase'
 const emit = defineEmits(['selectChat', 'initial-chats'])
 
@@ -31,6 +32,8 @@ const search = ref('')
 const users = ref([])
 let unsubscribe = null
 const initialized = ref(false)
+const currentProfile = ref({ name: '', avatar: '', username: '' })
+let authUnsubscribe = null
 
 const enrichItems = async (items) => {
   return Promise.all(items.map(async (item) => {
@@ -119,10 +122,36 @@ const loadChats = async () => {
 
 onMounted(() => {
   loadChats()
+  // load current user's profile for header
+  const tryLoadProfile = async (uid) => {
+    if (!uid) return
+    try {
+      const snap = await getDoc(doc(db, 'users', uid))
+      if (snap && snap.exists()) {
+        currentProfile.value = { id: snap.id, ...(snap.data() || {}) }
+      }
+    } catch (e) {
+      console.error('Error loading current profile:', e)
+    }
+  }
+
+  const userNow = auth.currentUser
+  if (userNow) {
+    tryLoadProfile(userNow.uid)
+  } else {
+    authUnsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u && u.uid) tryLoadProfile(u.uid)
+      if (typeof authUnsubscribe === 'function') { authUnsubscribe() ; authUnsubscribe = null }
+    })
+  }
 })
 
 onUnmounted(() => {
   if (typeof unsubscribe === 'function') unsubscribe()
+  if (typeof authUnsubscribe === 'function') {
+    try { authUnsubscribe() } catch (e) { /* ignore */ }
+    authUnsubscribe = null
+  }
 })
 
 const filteredUsers = computed(() => {

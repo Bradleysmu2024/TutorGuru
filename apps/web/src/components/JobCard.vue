@@ -3,9 +3,12 @@
     <div class="card-body d-flex flex-column">
       <div class="d-flex justify-content-between align-items-start mb-3">
         <h5 class="card-title mb-0">{{ job.title }}</h5>
-        <span class="badge bg-success">{{ job.status }}</span>
+        <span class="badge" :class="getStatusBadgeClass(job.status)">
+          <i :class="getStatusIcon(job.status)" class="me-1"></i>
+          {{ (job.status || "open").toUpperCase() }}
+        </span>
       </div>
-      
+
       <div class="job-meta mb-3">
         <span class="badge bg-primary me-2">
           <i class="bi bi-book me-1"></i>
@@ -20,9 +23,9 @@
           {{ job.location }}
         </span>
       </div>
-      
+
       <p class="card-text text-muted mb-3">{{ job.description }}</p>
-      
+
       <div class="job-details mb-3">
         <div class="detail-item">
           <i class="bi bi-cash text-success me-2"></i>
@@ -37,7 +40,7 @@
           <span>{{ job.duration }}</span>
         </div>
       </div>
-      
+
       <div class="requirements mb-3">
         <h6 class="small fw-semibold mb-2">Requirements:</h6>
         <ul class="small text-muted mb-0">
@@ -46,14 +49,14 @@
           </li>
         </ul>
       </div>
-      
+
       <div class="mt-auto">
         <div class="d-flex justify-content-between align-items-center">
           <small class="text-muted">
             <i class="bi bi-calendar3 me-1"></i>
             Posted {{ formatDate(job.postedDate) }}
           </small>
-          <button 
+          <button
             class="btn btn-primary btn-sm"
             @click="$emit('apply', job.id)"
           >
@@ -67,29 +70,47 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits } from "vue";
 
 defineProps({
   job: {
     type: Object,
-    required: true
-  }
-})
+    required: true,
+  },
+});
 
-defineEmits(['apply'])
+defineEmits(["apply"]);
+
+const getStatusBadgeClass = (status) => {
+  const classes = {
+    open: "bg-success",
+    pending: "bg-warning text-dark",
+    closed: "bg-secondary",
+  };
+  return classes[status] || "bg-success";
+};
+
+const getStatusIcon = (status) => {
+  const icons = {
+    open: "bi-circle",
+    pending: "bi-clock-history",
+    closed: "bi-check-circle",
+  };
+  return icons[status] || "bi-circle";
+};
 
 const formatDate = (date) => {
-  const now = new Date()
-  const posted = new Date(date)
-  const diffTime = Math.abs(now - posted)
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
-  if (diffDays === 0) return 'today'
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
-  return `${Math.floor(diffDays / 30)} months ago`
-}
+  const now = new Date();
+  const posted = new Date(date);
+  const diffTime = Math.abs(now - posted);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return `${Math.floor(diffDays / 30)} months ago`;
+};
 </script>
 
 <style scoped>

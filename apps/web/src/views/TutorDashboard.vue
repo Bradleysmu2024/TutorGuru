@@ -67,26 +67,16 @@
           <div class="modal-body">
             <div v-if="selectedJob">
               <h6 class="fw-semibold mb-3">{{ selectedJob.title }}</h6>
-              <form @submit.prevent="submitApplication">
+              <form @submit.prevent="handleSubmitApplication">
                 <div class="mb-3">
                   <label class="form-label">Cover Letter</label>
                   <textarea
                     v-model="application.coverLetter"
                     class="form-control"
                     rows="4"
-                    placeholder="Tell the student why you're a great fit..."
+                    placeholder="Tell the parent why you're a great fit for this assignment..."
                     required
                   ></textarea>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label">Expected Rate (per hour)</label>
-                  <input
-                    v-model="application.rate"
-                    type="text"
-                    class="form-control"
-                    placeholder="e.g., $40"
-                    required
-                  />
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Available Start Date</label>
@@ -111,7 +101,7 @@
             <button
               type="button"
               class="btn btn-primary"
-              @click="submitApplication"
+              @click="handleSubmitApplication"
             >
               <i class="bi bi-send me-2"></i>
               Submit Application
@@ -124,15 +114,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Modal } from 'bootstrap'
-import SearchFilter from '../components/SearchFilter.vue'
-import JobCard from '../components/JobCard.vue'
-import { dummyJobPostings } from '../data/dummyData'
-import { getSubjects, getLevels, getLocations } from '../services/firebase'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../services/firebase'
-// import { getJobPostings, applyToJob } from '../services/firebase'
+import { ref, computed, onMounted } from "vue";
+import { Modal } from "bootstrap";
+import SearchFilter from "../components/SearchFilter.vue";
+import JobCard from "../components/JobCard.vue";
+import { dummyJobPostings } from "../data/dummyData";
+import {
+  getSubjects,
+  getLevels,
+  getLocations,
+  submitApplication,
+} from "../services/firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { db, auth } from "../services/firebase";
+import { getCurrentUser } from "../router/routes";
 
 const subjects = ref([]);
 const levels = ref([]);
@@ -156,7 +151,6 @@ const filters = ref({
 const selectedJob = ref(null);
 const application = ref({
   coverLetter: "",
-  rate: "",
   startDate: "",
 });
 
@@ -175,26 +169,28 @@ const loadJobs = async () => {
   loading.value = true;
   try {
     // Load from Firestore 'assignments' collection
-    const snap = await getDocs(collection(db, 'assignments'))
-    const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
+    const snap = await getDocs(collection(db, "assignments"));
+    const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
 
     // Sort client-side by createdAt (handle ISO strings and Firestore timestamps)
     items.sort((a, b) => {
-      const ta = a.createdAt && typeof a.createdAt === 'string'
-        ? Date.parse(a.createdAt)
-        : a.createdAt && a.createdAt.seconds
-        ? a.createdAt.seconds * 1000
-        : 0
-      const tb = b.createdAt && typeof b.createdAt === 'string'
-        ? Date.parse(b.createdAt)
-        : b.createdAt && b.createdAt.seconds
-        ? b.createdAt.seconds * 1000
-        : 0
-      return tb - ta
-    })
+      const ta =
+        a.createdAt && typeof a.createdAt === "string"
+          ? Date.parse(a.createdAt)
+          : a.createdAt && a.createdAt.seconds
+          ? a.createdAt.seconds * 1000
+          : 0;
+      const tb =
+        b.createdAt && typeof b.createdAt === "string"
+          ? Date.parse(b.createdAt)
+          : b.createdAt && b.createdAt.seconds
+          ? b.createdAt.seconds * 1000
+          : 0;
+      return tb - ta;
+    });
 
-    jobs.value = items
-    loading.value = false
+    jobs.value = items;
+    loading.value = false;
   } catch (error) {
     console.error("Error loading jobs:", error);
     loading.value = false;
@@ -228,27 +224,58 @@ const handleApply = (jobId) => {
   selectedJob.value = jobs.value.find((job) => job.id === jobId);
   application.value = {
     coverLetter: "",
-    rate: "",
     startDate: "",
   };
   applicationModal.show();
 };
 
-const submitApplication = async () => {
+// validation so ppl wont submit empty or past dates
+const handleSubmitApplication = async () => {
+  // Validate inputs
+  if (!application.value.coverLetter.trim()) {
+    alert("Please write a cover letter.");
+    return;
+  }
+
+  if (!application.value.startDate) {
+    alert("Please select an available start date.");
+    return;
+  }
+
+  // Validate that start date is not in the past
+  const selectedDate = new Date(application.value.startDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset time to beginning of day for comparison
+
+  if (selectedDate < today) {
+    alert("Start date cannot be in the past.");
+    return;
+  }
+
   try {
-    // TODO: Replace with Firebase call
-    // const result = await applyToJob(selectedJob.value.id, 'currentUserId', application.value)
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user || !user.uid) {
+      alert("You must be logged in to apply for assignments.");
+      return;
+    }
 
-    console.log("Submitting application:", {
-      jobId: selectedJob.value.id,
-      ...application.value,
-    });
+    // Submit application to Firebase
+    const result = await submitApplication(
+      selectedJob.value.id,
+      user.uid,
+      application.value
+    );
 
-    // Simulate API call
-    setTimeout(() => {
+    if (result.success) {
       alert("Application submitted successfully!");
       applicationModal.hide();
-    }, 500);
+
+      // Reload jobs to reflect updated status
+      await loadJobs();
+    } else {
+      alert(`Failed to submit application: ${result.error}`);
+    }
   } catch (error) {
     console.error("Error submitting application:", error);
     alert("Failed to submit application. Please try again.");

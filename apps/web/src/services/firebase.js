@@ -162,6 +162,159 @@ export const deleteAssignment = async (assignmentId) => {
   }
 };
 
+// ============= APPLICATION FUNCTIONS =============
+
+/**
+ * Submit an application for a tutoring assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} tutorId - The ID of the tutor applying
+ * @param {Object} applicationData - Application details (coverLetter, startDate)
+ * @returns {Promise<Object>} Result with success status
+ */
+export const submitApplication = async (
+  assignmentId,
+  tutorId,
+  applicationData
+) => {
+  try {
+    // Get tutor details for the application
+    const tutorDoc = await getDoc(doc(db, "users", tutorId));
+    if (!tutorDoc.exists()) {
+      throw new Error("Tutor profile not found");
+    }
+    const tutorData = tutorDoc.data();
+
+    // Create the application document
+    const application = {
+      assignmentId,
+      tutorId,
+      tutorName: tutorData.name || "Unknown",
+      tutorEmail: tutorData.email || "",
+      tutorAvatar: tutorData.avatar || "",
+      tutorExperience: tutorData.experience || 0,
+      tutorRating: tutorData.rating || null,
+      coverLetter: applicationData.coverLetter,
+      startDate: applicationData.startDate,
+      status: "pending", // pending, approved, rejected
+      appliedAt: new Date().toISOString(),
+    };
+
+    // Add to applications subcollection
+    const appRef = await addDoc(
+      collection(db, "assignments", assignmentId, "applications"),
+      application
+    );
+
+    // Update assignment status to "pending" if it's currently "open"
+    const assignmentDoc = await getDoc(doc(db, "assignments", assignmentId));
+    if (assignmentDoc.exists() && assignmentDoc.data().status === "open") {
+      await updateDoc(doc(db, "assignments", assignmentId), {
+        status: "pending",
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return { success: true, applicationId: appRef.id };
+  } catch (error) {
+    console.error("Error submitting application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get all applications for a specific assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @returns {Promise<Array>} List of applications
+ */
+export const getAssignmentApplications = async (assignmentId) => {
+  try {
+    const q = query(
+      collection(db, "assignments", assignmentId, "applications"),
+      orderBy("appliedAt", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error("Error getting applications:", error);
+    return [];
+  }
+};
+
+/**
+ * Approve a tutor application and close the assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} applicationId - The ID of the approved application
+ * @param {string} tutorId - The ID of the approved tutor
+ * @returns {Promise<Object>} Result with success status
+ */
+export const approveApplication = async (
+  assignmentId,
+  applicationId,
+  tutorId
+) => {
+  try {
+    // Update the approved application status
+    await updateDoc(
+      doc(db, "assignments", assignmentId, "applications", applicationId),
+      {
+        status: "approved",
+        approvedAt: new Date().toISOString(),
+      }
+    );
+
+    // Update assignment status to "closed" and add selectedTutorId
+    await updateDoc(doc(db, "assignments", assignmentId), {
+      status: "closed",
+      selectedTutorId: tutorId,
+      closedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Get all other applications and reject them
+    const applications = await getAssignmentApplications(assignmentId);
+    const rejectPromises = applications
+      .filter((app) => app.id !== applicationId)
+      .map((app) =>
+        updateDoc(
+          doc(db, "assignments", assignmentId, "applications", app.id),
+          {
+            status: "rejected",
+            rejectedAt: new Date().toISOString(),
+          }
+        )
+      );
+
+    await Promise.all(rejectPromises);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error approving application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Reject a tutor application
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} applicationId - The ID of the application to reject
+ * @returns {Promise<Object>} Result with success status
+ */
+export const rejectApplication = async (assignmentId, applicationId) => {
+  try {
+    await updateDoc(
+      doc(db, "assignments", assignmentId, "applications", applicationId),
+      {
+        status: "rejected",
+        rejectedAt: new Date().toISOString(),
+      }
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Error rejecting application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const getParentAssignments = async (parentId) => {
   try {
     // Fetch assignments for parentId without server-side ordering to avoid composite index requirements.

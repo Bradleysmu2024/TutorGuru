@@ -12,7 +12,7 @@ import {
   getLevelsWithGrades,
 } from "../services/firebase";
 import { getCurrentUser } from "../router/routes";
-// import { createAssignment, uploadAssignmentFiles } from '../services/firebase'
+import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 
 const router = useRouter();
 const route = useRoute();
@@ -24,11 +24,15 @@ const submitting = ref(false);
 const isEditMode = ref(false);
 const assignmentId = ref(null);
 
-// Postal code validation states
-const geocoding = ref(false);
-const postalError = ref("");
-const postalSuccess = ref(false);
-const geocodedData = ref(null);
+// Use postal code geocoding composable
+const {
+  geocoding,
+  postalError,
+  postalSuccess,
+  geocodedData,
+  validateAndGeocode,
+  resetValidation,
+} = usePostalCodeGeocoding();
 
 // Online mode
 const isOnline = ref(false);
@@ -83,123 +87,24 @@ watch(isOnline, (newValue) => {
     formData.value.location = "Online";
     formData.value.postalCode = "";
     formData.value.formattedAddress = "";
-    geocodedData.value = null;
-    postalError.value = "";
-    postalSuccess.value = false;
+    resetValidation();
   } else {
     // When switching to physical location
     formData.value.location = "";
   }
 });
 
-// Validate Singapore postal code
-const isValidSGPostal = (v) => /^\d{6}$/.test((v || "").trim());
-
-//OneMap geocoding helper
-const geocodePostalCode = async (postal) => {
-  const cleaned = (postal || "").trim();
-  if (!isValidSGPostal(cleaned)) {
-    throw new Error("Please enter a valid 6-digit Singapore postal code.");
-  }
-
-  const url = `https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${cleaned}&returnGeom=Y&getAddrDetails=Y&pageNum=1`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to contact OneMap API.");
-
-  const data = await res.json();
-  if (!data.results || data.results.length === 0) {
-    throw new Error("No location found for that postal code.");
-  }
-
-  const result = data.results[0];
-  const lat = parseFloat(result.LATITUDE);
-  const lng = parseFloat(result.LONGITUDE);
-  const address =
-    result.ADDRESS ||
-    `${result.BUILDING || ""} ${result.ROAD_NAME || ""}`.trim();
-
-  return { lat, lng, formattedAddress: address, postalCode: cleaned };
-};
-
 // Auto-validate and geocode postal code
 const validateAndGeocodePostal = async () => {
-  postalError.value = "";
-  postalSuccess.value = false;
-  geocodedData.value = null;
+  const result = await validateAndGeocode(formData.value.postalCode, {
+    includeCoordinates: true,
+  });
 
-  const postal = formData.value.postalCode?.trim();
-
-  if (!postal) {
-    postalError.value = "Please enter a postal code";
-    return;
+  if (result.success) {
+    // Update form data with geocoded information
+    formData.value.formattedAddress = result.data.formattedAddress;
+    formData.value.location = result.data.location;
   }
-
-  if (!isValidSGPostal(postal)) {
-    postalError.value = "Please enter a valid 6-digit Singapore postal code";
-    return;
-  }
-
-  geocoding.value = true;
-
-  try {
-    const result = await geocodePostalCode(postal);
-    geocodedData.value = result;
-    postalSuccess.value = true;
-
-    // Auto-fill formatted address
-    formData.value.formattedAddress = result.formattedAddress;
-
-    // Auto-detect and fill location/region from postal code
-    const postalDistrict = parseInt(postal.substring(0, 2));
-    formData.value.location = getRegionFromPostalDistrict(postalDistrict);
-  } catch (error) {
-    postalError.value = error.message;
-    geocodedData.value = null;
-  } finally {
-    geocoding.value = false;
-  }
-};
-
-// Helper function to determine region from postal district
-const getRegionFromPostalDistrict = (district) => {
-  // Comprehensive Singapore postal district to region mapping
-  // Based on Singapore's official postal district system (Districts 01-82)
-  const regionMap = {
-    // Central Region (Districts 01-11, 14-15)
-    // Includes: CBD, Orchard, Marina Bay, Chinatown, City Hall, River Valley, Novena
-    central: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15],
-    
-    // East Region (Districts 13, 16-18, 38-52)
-    // Includes: Katong, Marine Parade, Bedok, Tampines, Pasir Ris, Changi, Geylang
-    east: [
-      13, 16, 17, 18, 
-      38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52
-    ],
-    
-    // Northeast Region (Districts 19-20, 28, 53-57, 82)
-    // Includes: Hougang, Punggol, Sengkang, Serangoon, Ang Mo Kio, Bishan
-    northeast: [19, 20, 28, 53, 54, 55, 56, 57, 82],
-    
-    // North Region (Districts 25-27, 72-73, 77-78)
-    // Includes: Woodlands, Yishun, Sembawang, Admiralty, Kranji
-    north: [25, 26, 27, 72, 73, 77, 78],
-    
-    // West Region (Districts 12, 21-24, 60-71, 79-81)
-    // Includes: Jurong, Choa Chu Kang, Bukit Batok, Clementi, Bukit Panjang, Tuas
-    west: [
-      12, 21, 22, 23, 24, 
-      60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
-      79, 80, 81
-    ],
-  };
-
-  for (const [region, districts] of Object.entries(regionMap)) {
-    if (districts.includes(district)) {
-      return region.charAt(0).toUpperCase() + region.slice(1); // Capitalize
-    }
-  }
-
-  return "Central"; // Default fallback for any unmapped districts
 };
 
 // Load data from Firebase on component mount
@@ -209,7 +114,7 @@ onMounted(async () => {
     if (route.query.edit && route.query.id) {
       isEditMode.value = true;
       assignmentId.value = route.query.id;
-      
+
       // Load assignment data
       const assignment = await getAssignmentById(assignmentId.value);
       if (assignment) {
@@ -220,8 +125,8 @@ onMounted(async () => {
           level: assignment.level || "",
           studentGrade: assignment.studentGrade || "",
           description: assignment.description || "",
-          requirements: Array.isArray(assignment.requirements) 
-            ? assignment.requirements.join("\n") 
+          requirements: Array.isArray(assignment.requirements)
+            ? assignment.requirements.join("\n")
             : assignment.requirements || "",
           sessionsPerWeek: assignment.sessionsPerWeek || 2,
           duration: assignment.duration || "",
@@ -230,19 +135,19 @@ onMounted(async () => {
           postalCode: assignment.postalCode || "",
           formattedAddress: assignment.formattedAddress || "",
         };
-        
+
         // Check if assignment is online
         if (assignment.location === "Online") {
           isOnline.value = true;
         }
-        
+
         // If we have coordinates, mark postal as validated
         if (assignment.lat && assignment.lng) {
           geocodedData.value = {
             lat: assignment.lat,
             lng: assignment.lng,
             formattedAddress: assignment.formattedAddress,
-            postalCode: assignment.postalCode
+            postalCode: assignment.postalCode,
           };
           postalSuccess.value = true;
         }
@@ -251,7 +156,7 @@ onMounted(async () => {
         router.push("/parent-dashboard");
       }
     }
-    
+
     // Load dropdown data
     subjects.value = await getSubjects();
     levels.value = await getLevels();
@@ -325,18 +230,31 @@ const submitAssignment = async () => {
     }
 
     if (!result?.success) {
-      throw new Error(result?.error || `Failed to ${isEditMode.value ? 'update' : 'create'} assignment`);
+      throw new Error(
+        result?.error ||
+          `Failed to ${isEditMode.value ? "update" : "create"} assignment`
+      );
     }
 
     submitting.value = false;
-    alert(`Assignment ${isEditMode.value ? 'updated' : 'posted'} successfully!`);
+    alert(
+      `Assignment ${isEditMode.value ? "updated" : "posted"} successfully!`
+    );
     router.push({
       path: "/parent-dashboard",
       query: { refresh: Date.now().toString() },
     });
   } catch (error) {
-    console.error(`Error ${isEditMode.value ? 'updating' : 'posting'} assignment:`, error);
-    alert(error?.message || `Failed to ${isEditMode.value ? 'update' : 'post'} assignment. Please try again.`);
+    console.error(
+      `Error ${isEditMode.value ? "updating" : "posting"} assignment:`,
+      error
+    );
+    alert(
+      error?.message ||
+        `Failed to ${
+          isEditMode.value ? "update" : "post"
+        } assignment. Please try again.`
+    );
     submitting.value = false;
   }
 };
@@ -379,9 +297,15 @@ const cancel = () => {
         <h1 class="fw-bold mb-2">
           <i class="bi bi-plus-circle me-2" v-if="!isEditMode"></i>
           <i class="bi bi-pencil me-2" v-else></i>
-          {{ isEditMode ? 'Edit Assignment' : 'Post New Assignment' }}
+          {{ isEditMode ? "Edit Assignment" : "Post New Assignment" }}
         </h1>
-        <p class="text-muted">{{ isEditMode ? 'Update your tutoring assignment' : 'Create a new tutoring assignment posting' }}</p>
+        <p class="text-muted">
+          {{
+            isEditMode
+              ? "Update your tutoring assignment"
+              : "Create a new tutoring assignment posting"
+          }}
+        </p>
       </div>
 
       <div class="row">
@@ -485,7 +409,9 @@ const cancel = () => {
 
                 <!-- Smart Postal Code Input -->
                 <div class="col-12 mb-3">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
+                  <div
+                    class="d-flex justify-content-between align-items-center mb-2"
+                  >
                     <label class="form-label mb-0">
                       Location
                       <span v-if="!isOnline" class="text-danger">*</span>
@@ -555,8 +481,8 @@ const cancel = () => {
                     <i class="bi bi-laptop me-2"></i>
                     <strong>Online Tutoring Selected</strong>
                     <p class="mb-0 mt-1 small">
-                      This assignment will be conducted online via video call or chat.
-                      No physical location required.
+                      This assignment will be conducted online via video call or
+                      chat. No physical location required.
                     </p>
                   </div>
                 </div>
@@ -655,11 +581,11 @@ const cancel = () => {
             >
               <span v-if="submitting">
                 <span class="spinner-border spinner-border-sm me-2"></span>
-                {{ isEditMode ? 'Updating...' : 'Posting...' }}
+                {{ isEditMode ? "Updating..." : "Posting..." }}
               </span>
               <span v-else>
                 <i class="bi bi-check-circle me-2"></i>
-                {{ isEditMode ? 'Update Assignment' : 'Post Assignment' }}
+                {{ isEditMode ? "Update Assignment" : "Post Assignment" }}
               </span>
             </button>
             <button

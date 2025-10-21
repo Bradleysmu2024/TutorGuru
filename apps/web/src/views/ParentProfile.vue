@@ -4,16 +4,23 @@ import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
 import { getCurrentUser } from "../router/routes";
 import { getParentAssignments } from "../services/firebase";
+import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 
 const profile = ref({
   name: "",
   email: "",
   phone: "",
   location: "",
+  postalCode: "",
+  formattedAddress: "",
   children: [],
 });
 const assignments = ref([]);
 const levelsWithGrades = ref([]); // Add this for nested grades structure
+
+// Use postal code geocoding composable
+const { geocoding, postalError, postalSuccess, validateAndGeocode } =
+  usePostalCodeGeocoding();
 
 const showEmailModal = ref(false);
 const newEmail = ref("");
@@ -41,8 +48,8 @@ const saveProfile = async () => {
       alert("You must be logged in to save your profile");
       return;
     }
-  // write profile into users/{uid}
-  await setDoc(doc(db, "users", user.uid), profile.value, { merge: true });
+    // write profile into users/{uid}
+    await setDoc(doc(db, "users", user.uid), profile.value, { merge: true });
     alert("Profile saved successfully!");
   } catch (err) {
     console.error("Error saving profile:", err);
@@ -56,6 +63,19 @@ const addChild = () => {
 
 const removeChild = (index) => {
   profile.value.children.splice(index, 1);
+};
+
+// Auto-validate and geocode postal code
+const validateAndGeocodePostal = async () => {
+  const result = await validateAndGeocode(profile.value.postalCode, {
+    includeCoordinates: false, // Profile doesn't need lat/lng
+  });
+
+  if (result.success) {
+    // Update profile data with geocoded information
+    profile.value.formattedAddress = result.data.formattedAddress;
+    profile.value.location = result.data.location;
+  }
 };
 
 onMounted(loadProfile);
@@ -258,12 +278,49 @@ onMounted(async () => {
                     />
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Location</label>
-                    <input
-                      v-model="profile.location"
-                      type="text"
-                      class="form-control"
-                    />
+                    <label class="form-label">Location (Postal Code)</label>
+                    <div class="input-group">
+                      <input
+                        v-model="profile.postalCode"
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter 6-digit postal code"
+                        @blur="validateAndGeocodePostal"
+                        @keyup.enter="validateAndGeocodePostal"
+                        maxlength="6"
+                        :class="{
+                          'is-invalid': postalError,
+                          'is-valid': postalSuccess,
+                        }"
+                      />
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        @click="validateAndGeocodePostal"
+                        :disabled="geocoding || !profile.postalCode"
+                      >
+                        <span
+                          v-if="geocoding"
+                          class="spinner-border spinner-border-sm"
+                        ></span>
+                        <i v-else class="bi bi-geo-alt"></i>
+                      </button>
+                    </div>
+                    <div v-if="postalError" class="invalid-feedback d-block">
+                      <i class="bi bi-exclamation-circle me-1"></i>
+                      {{ postalError }}
+                    </div>
+                    <div v-if="postalSuccess" class="valid-feedback d-block">
+                      <i class="bi bi-check-circle me-1"></i>
+                      <strong>{{ profile.formattedAddress }}</strong>
+                      <span class="ms-2 badge bg-success">{{
+                        profile.location
+                      }}</span>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-info-circle me-1"></i>
+                      We'll automatically detect your region and address
+                    </small>
                   </div>
                 </div>
                 <div class="mt-3">

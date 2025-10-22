@@ -1,31 +1,44 @@
 <script setup>
-console.log("Tutor map component script loaded ✅")
+console.log("Tutor Google Map with Mode Toggle ✅")
+
 import { ref, onMounted } from "vue"
 import { db } from "../services/firebase"
-import { collection, getDocs, query, where} from "firebase/firestore"
-import * as L from "leaflet"
-import "leaflet/dist/leaflet.css"
-
+import { collection, getDocs, query, where } from "firebase/firestore"
+import { useRouter } from "vue-router"
+const router = useRouter()
 const map = ref(null)
 const postalCode = ref("")
 const tutorMarker = ref(null)
+let directionsService = null
+let directionsRenderer = null
 
-// Fetch assignments from Firestore
+// --- Load Google Maps script dynamically using .env key ---
+async function loadGoogleMapsScript() {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) {
+      resolve(window.google.maps)
+      return
+    }
+    const script = document.createElement("script")
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${
+      import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    }&libraries=places`
+    script.async = true
+    script.defer = true
+    script.onload = () => resolve(window.google.maps)
+    script.onerror = () => reject(new Error("Google Maps failed to load"))
+    document.head.appendChild(script)
+  })
+}
+
+// --- Firestore: fetch OPEN assignments ---
 async function getAllAssignments() {
   try {
-    // Define the collection reference
-    const assignmentsRef = collection(db, "assignments")
-
-    // Create a query to only fetch documents where status == "open"
-    const q = query(assignmentsRef, where("status", "==", "open"))
-
-    // Run the query
+    const q = query(collection(db, "assignments"), where("status", "==", "open"))
     const snapshot = await getDocs(q)
-
-    // Map the results into an array
-    return snapshot.docs.map(doc => ({
+    return snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }))
   } catch (error) {
     console.error("Error fetching assignments:", error)
@@ -33,114 +46,183 @@ async function getAllAssignments() {
   }
 }
 
-// Convert postal code to lat/lng via OneMap API
+// --- Search bar: convert postal code -> lat/lng and show red marker ---
 async function searchTutorLocation() {
-  if (!postalCode.value) {
-    alert("Please enter a postal code.")
-    return
-  }
+  if (!postalCode.value) return alert("Please enter a postal code.")
+  if (!map.value) return console.error("Map not initialized.")
 
-  // Ensure map is ready
-  if (!map.value) {
-    console.error("Map is not initialized yet.")
-    return
-  }
-
-  const url = `https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${postalCode.value}&returnGeom=Y&getAddrDetails=Y&pageNum=1`
-  const res = await fetch(url)
-  const data = await res.json()
-
-  if (data.results && data.results.length > 0) {
-    const result = data.results[0]
-    const lat = parseFloat(result.LATITUDE)
-    const lng = parseFloat(result.LONGITUDE)
-
-    // Combine readable address (if any)
-    const fullAddress = [
-      result.BLK_NO,
-      result.ROAD_NAME,
-      result.BUILDING,
-      "Singapore " + result.POSTAL,
-    ]
-      .filter(Boolean) // remove empty strings
-      .join(", ")
-
-    // If marker already exists, just move & update popup
-    if (tutorMarker.value) {
-      tutorMarker.value.setLatLng([lat, lng])
-      tutorMarker.value.setPopupContent(
-        `<b>Your Location</b><br>${fullAddress}`
-      )
+  const geocoder = new google.maps.Geocoder()
+  geocoder.geocode({ address: postalCode.value }, (results, status) => {
+    if (status === "OK" && results[0]) {
+      const location = results[0].geometry.location
+      if (tutorMarker.value) {
+        tutorMarker.value.setPosition(location)
+      } else {
+        tutorMarker.value = new google.maps.Marker({
+          map: map.value,
+          position: location,
+          icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+          title: "Your Location",
+        })
+      }
+      map.value.setCenter(location)
+      map.value.setZoom(15)
+      if (directionsRenderer) directionsRenderer.setMap(null)
     } else {
-      // create only once
-      const redIcon = new L.Icon({
-        iconUrl:
-          "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-        shadowUrl:
-          "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41],
-      })
-
-      tutorMarker.value = L.marker([lat, lng], { icon: redIcon })
-        .addTo(map.value)
-        .bindPopup(`<b>Your Location</b><br>${fullAddress}`)
-        .openPopup()
+      alert("Postal code not found.")
     }
+  })
+  // Save location locally
+localStorage.setItem(
+  "tutorLocation",
+  JSON.stringify({
+    lat: location.lat(),
+    lng: location.lng(),
+    postal: postalCode.value
+  })
+)
+console.log("Tutor location saved locally:", location.lat(), location.lng())
 
-    // Center map on marker
-    map.value.setView([lat, lng], 15)
-  } else {
-    alert("Postal code not found.")
-  }
 }
 
+// --- Draw route and update travel info for selected mode ---
+function showRoute(tutorLoc, assignLoc, travelInfoId, mode) {
+  if (!tutorLoc || !assignLoc) return
 
-// Initialize the Leaflet map
+  if (!directionsService || !directionsRenderer) {
+    directionsService = new google.maps.DirectionsService()
+    directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: false })
+  }
+  directionsRenderer.setMap(map.value)
+
+  directionsService.route(
+    {
+      origin: tutorLoc,
+      destination: assignLoc,
+      travelMode: mode,
+    },
+    (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result)
+        const route = result.routes[0].legs[0]
+        const distance = route.distance.text
+        const duration = route.duration.text
+
+        const infoDiv = document.getElementById(travelInfoId)
+        if (infoDiv) {
+          infoDiv.innerHTML = `
+            <hr>
+            <b>Mode:</b> ${mode}<br>
+            <b>Distance:</b> ${distance}<br>
+            <b>Duration:</b> ${duration}
+          `
+        }
+      } else {
+        alert("Directions request failed: " + status)
+      }
+    }
+  )
+}
+
+// --- Initialize map and markers ---
 onMounted(async () => {
-  console.log("Initializing tutor map...")
-  map.value = L.map("tutor-map").setView([1.3521, 103.8198], 11)
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(map.value)
+  // Restore saved tutor location if available
+  const savedLoc = localStorage.getItem("tutorLocation")
+  if (savedLoc) {
+    const { lat, lng, postal } = JSON.parse(savedLoc)
+    postalCode.value = postal
+    const savedLatLng = new google.maps.LatLng(lat, lng)
+    tutorMarker.value = new google.maps.Marker({
+      map: map.value,
+      position: savedLatLng,
+      icon: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
+      title: "Your Saved Location",
+    })
+    map.value.setCenter(savedLatLng)
+    map.value.setZoom(15)
+    console.log("Restored tutor location from localStorage:", lat, lng)
+  }
+
+  console.log("Loading Google Maps API...")
+  await loadGoogleMapsScript()
+  console.log("Google Maps loaded successfully.")
+
+  map.value = new google.maps.Map(document.getElementById("tutor-map"), {
+    center: { lat: 1.3521, lng: 103.8198 },
+    zoom: 11,
+  })
 
   const assignments = await getAllAssignments()
-  assignments.forEach(a => {
+  console.log("Assignments fetched:", assignments)
+
+  // Add markers for open assignments
+  assignments.forEach((a) => {
     if (a.lat && a.lng) {
-      const marker = L.marker([a.lat, a.lng]).addTo(map.value)
+      const assignPos = { lat: a.lat, lng: a.lng }
+      const marker = new google.maps.Marker({
+        position: assignPos,
+        map: map.value,
+        title: a.title || "Assignment",
+      })
 
-      const popupHTML = `
-        <div>
-          <b>Subject:</b> ${a.subject || ""}<br>
-          <b>Level:</b> ${a.level || ""}<br>
-          <b>Title:</b> ${a.title || ""}<br>
-          <b>Address:</b> ${a.formattedAddress || ""}<br><br>
-          <button id="apply-btn-${a.id}" class="btn btn-primary">Click to apply</button>
-        </div>
-      `
-      marker.bindPopup(popupHTML)
+      const travelInfoId = `travel-info-${a.id}`
 
-      // Attach Vue router click listener once popup opens
-      marker.on("popupopen", () => {
-        const btn = document.getElementById(`apply-btn-${a.id}`)
-        if (btn) {
-          btn.addEventListener("click", () => {
-            console.log("Navigating to dashboard...")
-            // Use Vue Router programmatically
-            window.location.href = "/dashboard"
-            // or if you have router imported:
-            // router.push("/dashboard")
-          })
-        }
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="font-size:14px;">
+            <b>Subject:</b> ${a.subject || ""}<br>
+            <b>Level:</b> ${a.level || ""}<br>
+            <b>Title:</b> ${a.title || ""}<br>
+            <b>Address:</b> ${a.formattedAddress || ""}<br><br>
+
+            <div style="margin-bottom:8px;">
+              <button id="drive-btn-${a.id}" class="btn btn-sm btn-outline-primary me-1">🚗 Drive</button>
+              <button id="walk-btn-${a.id}" class="btn btn-sm btn-outline-success me-1">🚶 Walk</button>
+              <button id="transit-btn-${a.id}" class="btn btn-sm btn-outline-info">🚇 Transit</button>
+              <button id="apply-btn-${a.id}" class="btn btn-sm btn-outline-info" @click="router.push{path: '/dashboard'}">Apply</button>
+            </div>
+
+            <div id="${travelInfoId}" style="margin-top:8px;"></div>
+          </div>
+        `,
+      })
+
+      marker.addListener("click", () => {
+        infoWindow.open(map.value, marker)
+
+        // Attach button event listeners once popup DOM is rendered
+        setTimeout(() => {
+          const driveBtn = document.getElementById(`drive-btn-${a.id}`)
+          const walkBtn = document.getElementById(`walk-btn-${a.id}`)
+          const transitBtn = document.getElementById(`transit-btn-${a.id}`)
+
+          if (!tutorMarker.value) {
+            [driveBtn, walkBtn, transitBtn].forEach((btn) => {
+              if (btn) btn.addEventListener("click", () => alert("Set your tutor location first."))
+            })
+            return
+          }
+
+          const tutorLoc = tutorMarker.value.getPosition()
+
+          if (driveBtn)
+            driveBtn.addEventListener("click", () =>
+              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.DRIVING)
+            )
+          if (walkBtn)
+            walkBtn.addEventListener("click", () =>
+              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.WALKING)
+            )
+          if (transitBtn)
+            transitBtn.addEventListener("click", () =>
+              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.TRANSIT)
+            )
+        }, 300)
       })
     }
   })
 })
-
 </script>
-
 
 <template>
   <div id="tutor-map-container">
@@ -148,9 +230,9 @@ onMounted(async () => {
     <div class="tutor-search-bar shadow">
       <div class="input-group">
         <input
+          v-model="postalCode"
           type="text"
           class="form-control"
-          v-model="postalCode"
           placeholder="Enter your postal code (e.g. 650123)"
         />
         <button class="btn btn-primary" @click="searchTutorLocation">
@@ -159,11 +241,10 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Actual map -->
+    <!-- Google Map -->
     <div id="tutor-map"></div>
   </div>
 </template>
-
 
 <style scoped>
 #tutor-map-container {
@@ -179,7 +260,7 @@ onMounted(async () => {
 
 .tutor-search-bar {
   position: absolute;
-  top: 80px; /* adjust to clear navbar */
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -189,5 +270,9 @@ onMounted(async () => {
   border-radius: 8px;
   padding: 8px;
 }
-</style>
 
+button {
+  font-size: 13px;
+  padding: 4px 8px;
+}
+</style>

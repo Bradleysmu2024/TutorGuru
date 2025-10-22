@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { uploadUserAvatar } from '../services/firebase'
 import { getCurrentUser } from '../services/firebase'
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
@@ -60,37 +61,17 @@ const handleAvatarChange = async (e) => {
 const uploadAvatar = async (file) => {
   const user = await getCurrentUser();
   if (!user || !user.uid) return alert('You must be logged in to change your photo.');
-  const oldUrl = profile.value.avatar;
 
   avatarUploading.value = true;
   try {
-    const storage = getStorage();
-    const ext = (file.name || '').split('.').pop();
-    const filename = `parents/${user.uid}/avatar_${Date.now()}.${ext}`;
-    const sRef = storageRef(storage, filename);
-    await uploadBytes(sRef, file);
-    const url = await getDownloadURL(sRef);
-
-    // save to users/{uid}
-    await setDoc(doc(db, 'users', user.uid), { avatar: url }, { merge: true });
-    profile.value.avatar = url;
-
-    if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
-      try {
-        const parts = oldUrl.split('/o/');
-        if (parts.length > 1) {
-          const pathAndQuery = parts[1];
-          const encodedPath = pathAndQuery.split('?')[0];
-          const storagePath = decodeURIComponent(encodedPath);
-          const oldRef = storageRef(storage, storagePath);
-          await deleteObject(oldRef);
-        }
-      } catch (delErr) {
-        console.warn('Failed to delete old parent avatar:', delErr);
-      }
+    const res = await uploadUserAvatar(user.uid, file, 'parents');
+    if (res.success) {
+      profile.value.avatar = res.url;
+      alert('Profile photo updated successfully!');
+    } else {
+      console.error('uploadUserAvatar failed:', res.error);
+      alert('Failed to upload avatar. Please try again.');
     }
-
-    alert('Profile photo updated successfully!');
   } catch (err) {
     console.error('Parent avatar upload error:', err);
     alert('Failed to upload avatar. Please try again.');

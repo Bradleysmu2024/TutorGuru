@@ -18,7 +18,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
             <div class="card-body text-center">
                           <div class="profile-avatar mb-3">
                             <img
-                              :src="profile.avator || profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
+                              :src="profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
                               alt="Profile"
                               class="rounded-circle img-fluid"
                               style="width: 150px; height: 150px; object-fit: cover"
@@ -414,6 +414,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
+import { uploadUserAvatar } from "../services/firebase";
 
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
@@ -463,21 +464,17 @@ const handleAvatarChange = async (e) => {
 const uploadAvatar = async (file) => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in to change your photo.");
-  const oldUrl = profile.value.avatar;
 
   avatarUploading.value = true;
   try {
-    const storage = getStorage();
-    const ext = (file.name || "").split('.').pop();
-    const filename = `tutors/${user.uid}/avatar_${Date.now()}.${ext}`;
-    const sRef = storageRef(storage, filename);
-    await uploadBytes(sRef, file);
-    const url = await getDownloadURL(sRef);
-
-    await setUserDoc(user.uid, { avatar: url }, { merge: true });
-    profile.value.avatar = url;
-
-    alert('Profile photo updated successfully!');
+    const res = await uploadUserAvatar(user.uid, file, 'tutors');
+    if (res.success) {
+      profile.value.avatar = res.url;
+      alert('Profile photo updated successfully!');
+    } else {
+      console.error('uploadUserAvatar failed:', res.error);
+      alert('Failed to upload avatar. Please try again.');
+    }
   } catch (err) {
     console.error('Avatar upload error:', err);
     alert('Failed to upload avatar. Please try again.');

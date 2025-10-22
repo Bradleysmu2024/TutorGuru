@@ -44,8 +44,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../services/firebase'
+import { listAllUsers } from '../services/firebase'
 
 const tutors = ref([])
 const loading = ref(false)
@@ -53,13 +52,10 @@ const loading = ref(false)
 onMounted(async () => {
   loading.value = true
   try {
-  const snap = await getDocs(collection(db, 'users'))
-  const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
-  // filter to only tutors
-  const tutorsOnly = items.filter(i => i.role === 'tutor')
+    const items = await listAllUsers('tutor')
     // sort by rating desc (missing rating => 0)
-  tutorsOnly.sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0))
-  tutors.value = tutorsOnly
+    items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    tutors.value = items
   } catch (err) {
     console.error('Error loading tutors:', err)
   } finally {

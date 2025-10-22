@@ -1159,6 +1159,62 @@ export const getCurrentUser = async () => {
   }
 };
 
+// Convenience wrappers for user document operations
+export const getUserDoc = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  } catch (err) {
+    console.error('Error fetching user doc:', err);
+    return null;
+  }
+};
+
+export const setUserDoc = async (uid, data, options = { merge: true }) => {
+  try {
+    if (!uid) throw new Error('Missing uid');
+    await setDoc(doc(db, 'users', uid), data, options);
+    return { success: true };
+  } catch (err) {
+    console.error('Error setting user doc:', err);
+    return { success: false, error: err };
+  }
+};
+
+export const findUserByUsername = async (username) => {
+  try {
+    if (!username) return null;
+    const q = query(collection(db, 'users'), where('username', '==', username));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const docRef = snap.docs[0];
+    return { id: docRef.id, ...docRef.data() };
+  } catch (err) {
+    console.error('Error finding user by username:', err);
+    return null;
+  }
+};
+
+export const listAllUsers = async (role = null) => {
+  try {
+    let snap;
+    if (role) {
+      const q = query(collection(db, 'users'), where('role', '==', role));
+      snap = await getDocs(q);
+    } else {
+      snap = await getDocs(collection(db, 'users'));
+    }
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error('Error listing users:', err);
+    return [];
+  }
+};
+
+
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {
   try {

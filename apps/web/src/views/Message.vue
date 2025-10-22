@@ -25,8 +25,7 @@ import { ref, onUnmounted, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import ChatWindow from '../components/ChatWindow.vue'
 import MessageSidebar from '../components/ChatSidebar.vue'
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '../services/firebase'
+import { getUserDoc, findUserByUsername } from '../services/firebase'
 
 const activeUser = ref(null)
 const router = useRouter()
@@ -63,19 +62,16 @@ onMounted(async () => {
   const tutorId = String(tutorRaw).trim()
   try {
     // Prefer resolving tutorId as a username (friendly URLs)
-    const q = query(collection(db, 'users'), where('username', '==', tutorId))
-    const snap = await getDocs(q)
-    if (!snap.empty) {
-      const d = snap.docs[0]
-      activeUser.value = { id: d.id, ...d.data() }
+    const userByName = await findUserByUsername(tutorId)
+    if (userByName) {
+      activeUser.value = userByName
       return
     }
 
     // Fallback: attempt to treat tutorId as a user document id
-    const refDoc = doc(db, 'users', tutorId)
-    snap = await getDoc(refDoc)
-    if (snap.exists()) {
-      activeUser.value = { id: snap.id, ...snap.data() }
+    const userById = await getUserDoc(tutorId)
+    if (userById) {
+      activeUser.value = userById
       return
     }
   } catch (err) {

@@ -11,6 +11,7 @@ import {
   rejectApplication,
   auth,
   db,
+  getUsernameById,
 } from "../services/firebase";
 import { createPaymentSession } from "../services/stripe";
 import {
@@ -171,6 +172,22 @@ const viewTutorProfile = (application) => {
 const closeProfileModal = () => {
   showTutorProfileModal.value = false;
   selectedApplicant.value = null;
+};
+
+// Start a chat with the selected applicant from the modal
+const messageTutorFromModal = async () => {
+  const app = selectedApplicant.value;
+  const tutorIdentifier = await getUsernameById(app.tutorId);
+  if (!app) return alert('No tutor selected');
+
+  if (!tutorIdentifier) {
+    return alert('Unable to start chat: missing tutor identifier.');
+  }
+
+  // Close modal then navigate to chat view with tutor query parameter
+  showTutorProfileModal.value = false;
+  selectedApplicant.value = null;
+  router.push({ path: '/chat', query: { tutor: tutorIdentifier } });
 };
 
 const selectTutorForAssignment = async (application) => {
@@ -1063,14 +1080,22 @@ onMounted(async () => {
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary text-white"
               @click="closeProfileModal"
             >
               Close
             </button>
             <button
               type="button"
-              class="btn btn-success"
+              class="btn btn-primary text-white"
+              @click="messageTutorFromModal"
+            >
+              <i class="bi bi-chat-left-text me-2"></i>
+              Message Tutor
+            </button>
+            <button
+              type="button"
+              class="btn btn-success text-white"
               @click="
                 selectTutorForAssignment(selectedApplicant);
                 closeProfileModal();

@@ -2,6 +2,8 @@
 import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
+import { uploadUserAvatar } from '../services/firebase'
 import { getCurrentUser } from '../services/firebase'
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
@@ -38,6 +40,43 @@ const loadProfile = async () => {
     }
   } catch (err) {
     console.error("Error loading parent profile:", err);
+  }
+};
+
+// Avatar upload state for parent
+const avatarInputRef = ref(null);
+const avatarUploading = ref(false);
+
+const triggerAvatarInput = () => {
+  if (avatarInputRef.value) avatarInputRef.value.click();
+};
+
+const handleAvatarChange = async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  await uploadAvatar(file);
+  e.target.value = "";
+};
+
+const uploadAvatar = async (file) => {
+  const user = await getCurrentUser();
+  if (!user || !user.uid) return alert('You must be logged in to change your photo.');
+
+  avatarUploading.value = true;
+  try {
+    const res = await uploadUserAvatar(user.uid, file, 'parents');
+    if (res.success) {
+      profile.value.avatar = res.url;
+      alert('Profile photo updated successfully!');
+    } else {
+      console.error('uploadUserAvatar failed:', res.error);
+      alert('Failed to upload avatar. Please try again.');
+    }
+  } catch (err) {
+    console.error('Parent avatar upload error:', err);
+    alert('Failed to upload avatar. Please try again.');
+  } finally {
+    avatarUploading.value = false;
   }
 };
 
@@ -187,7 +226,7 @@ onMounted(async () => {
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
                 <img
-                  src="../assets/images/profileplaceholder.JPG"
+                  :src="profile.avatar || '../assets/images/profileplaceholder.JPG'"
                   alt="Profile"
                   class="rounded-circle img-fluid"
                   style="width: 150px; height: 150px; object-fit: cover"
@@ -200,10 +239,28 @@ onMounted(async () => {
                 Verified Parent
               </span>
               <div class="d-grid">
-                <button class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-camera me-2"></i>
-                  Change Photo
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  type="button"
+                  @click="triggerAvatarInput"
+                  :disabled="avatarUploading"
+                >
+                  <template v-if="avatarUploading">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Uploading...
+                  </template>
+                  <template v-else>
+                    <i class="bi bi-camera me-2"></i>
+                    Change Photo
+                  </template>
                 </button>
+                <input
+                  ref="avatarInputRef"
+                  type="file"
+                  accept="image/*"
+                  style="display: none"
+                  @change="handleAvatarChange"
+                />
               </div>
             </div>
           </div>

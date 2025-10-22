@@ -36,6 +36,7 @@ import {
   ref,
   uploadBytes,
   getDownloadURL,
+  deleteObject,
   connectStorageEmulator,
 } from "firebase/storage";
 import { ref as vueRef } from 'vue'
@@ -1183,6 +1184,68 @@ export const setUserDoc = async (uid, data, options = { merge: true }) => {
     return { success: false, error: err };
   }
 };
+
+// Convert a user id (uid) to their username (if present). Returns username string or null.
+export const getUsernameById = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data && data.username ? data.username : null;
+  } catch (err) {
+    console.error('Error fetching username by id:', err);
+    return null;
+  }
+};
+
+  /**
+   * Upload user avatar to Storage, update users/{uid}.avatar and delete previous avatar file if present.
+   * @param {string} uid
+   * @param {File} file
+   * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
+   */
+  export const uploadUserAvatar = async (uid, file, folder = 'users') => {
+    try {
+      if (!uid) throw new Error('Missing uid');
+      if (!file) throw new Error('Missing file');
+
+      // get previous avatar URL (if any)
+      const userDoc = await getUserDoc(uid);
+      const oldUrl = userDoc ? (userDoc.avatar || userDoc.avator) : null;
+
+      const ext = (file.name || '').split('.').pop();
+      const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, path);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+
+      // update user doc
+      await setUserDoc(uid, { avatar: url }, { merge: true });
+
+      // attempt to delete old avatar if it looks like a firebase storage URL
+      if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          const parts = oldUrl.split('/o/');
+          if (parts.length > 1) {
+            const pathAndQuery = parts[1];
+            const encodedPath = pathAndQuery.split('?')[0];
+            const storagePath = decodeURIComponent(encodedPath);
+            const oldRef = ref(storage, storagePath);
+            await deleteObject(oldRef);
+          }
+        } catch (delErr) {
+          console.warn('Failed to delete old avatar from storage:', delErr);
+        }
+      }
+
+      return { success: true, url };
+    } catch (err) {
+      console.error('Error in uploadUserAvatar:', err);
+      return { success: false, error: err.message || err };
+    }
+  };
 
 export const findUserByUsername = async (username) => {
   try {

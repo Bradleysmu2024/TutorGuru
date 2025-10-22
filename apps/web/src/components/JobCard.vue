@@ -54,9 +54,10 @@
         <div class="d-flex justify-content-between align-items-center">
           <small class="text-muted">
             <i class="bi bi-calendar3 me-1"></i>
-            Posted {{ formatDate(job.postedDate) }}
+            Posted {{ formatDate(job.createdAt) }}
           </small>
           <button
+            v-if="job.status !== 'closed'"
             class="btn btn-primary btn-sm"
             @click="$emit('apply', job.id)"
           >
@@ -99,11 +100,36 @@ const getStatusIcon = (status) => {
   return icons[status] || "bi-circle";
 };
 
-const formatDate = (date) => {
+const formatDate = (dateVal) => {
+  if (!dateVal) return "unknown";
+  let postedDate = NaN;
+
+  try {
+    if (typeof dateVal === 'object') {
+      if (typeof dateVal.toDate === 'function') {
+        postedDate = dateVal.toDate();
+      } else if (dateVal.seconds) {
+        postedDate = new Date(dateVal.seconds * 1000);
+      } else if (dateVal instanceof Date) {
+        postedDate = dateVal;
+      }
+    }
+
+    if (!postedDate && typeof dateVal === 'string') {
+      const ts = Date.parse(dateVal);
+      if (!isNaN(ts)) postedDate = new Date(ts);
+    }
+
+    if (!postedDate) {
+      const d = new Date(dateVal);
+      if (!isNaN(d)) postedDate = d;
+    }
+  } catch (e) {}
+
   const now = new Date();
-  const posted = new Date(date);
-  const diffTime = Math.abs(now - posted);
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // Zero out hours for day-diff consistency
+  const diffTime = Math.abs(now - postedDate);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays === 0) return "today";
   if (diffDays === 1) return "yesterday";

@@ -52,7 +52,8 @@ const formData = ref({
   description: '',
   requirements: [],
   contractDuration: 1, 
-  sessionDuration: 1, 
+  sessionDuration: 1,
+  sessionStartTime: '12:00',
   rate: 40,
   selectedDays: [], // Array of day names ['Monday', 'Wednesday']
   location: '',
@@ -158,6 +159,7 @@ onMounted(async () => {
             : assignment.requirements || "",
           contractDuration: assignment.contractDuration || 1,
           sessionDuration: assignment.sessionDuration || 1,
+          sessionStartTime: assignment.sessionStartTime || '12:00',
           rate: assignment.rate || 40,
           selectedDays: assignment.selectedDays || [], // Load selected days
           location: assignment.location || "",
@@ -355,6 +357,7 @@ const validateForm = () => {
       !formData.value.level ||
       !formData.value.contractDuration ||
       !formData.value.sessionDuration ||
+      !formData.value.sessionStartTime ||
       !formData.value.rate) {
     alert('Please fill in all required fields')
     return false
@@ -381,6 +384,11 @@ const validateForm = () => {
 
   if (formData.value.sessionDuration < 0.5 || formData.value.sessionDuration > 4) {
     alert('Session duration must be between 0.5 and 4 hours')
+    return false
+  }
+
+  if (formData.value.sessionStartTime < "09:00" || formData.value.sessionStartTime > "18:00"){
+    alert('Session start time must be between 9 am and 6 pm inclusive')
     return false
   }
 
@@ -688,7 +696,26 @@ const cancel = () => {
                 </div>
 
                 <!-- Hourly Rate -->
-                <div class="mb-3">
+                 <div class="row g-3">
+                 <div class="mb-3 col-md-6">
+                  <label for="rate" class="form-label">
+                    Session Start Time (Time)
+                  </label>
+                  <div class="input-group">
+                    <input
+                      v-model="formData.sessionStartTime"
+                      type="time"
+                      min="09:00"
+                      max="18:00"         
+                      step="1800"          
+                      class="form-control"
+                      id="sessionStartTime"
+                      required
+                    />
+                  </div>
+                  <small class="text-muted">The start time for each session</small>
+                </div>
+                <div class="mb-3 col-md-6">
                   <label for="rate" class="form-label">
                     Hourly Rate (SGD) <span class="text-danger">*</span>
                   </label>
@@ -708,6 +735,7 @@ const cancel = () => {
                     <span class="input-group-text">/hr</span>
                   </div>
                   <small class="text-muted">Your budget per hour</small>
+                </div>
                 </div>
               </form>
             </div>

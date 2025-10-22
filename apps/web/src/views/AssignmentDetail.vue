@@ -11,6 +11,7 @@ import {
   approveApplication,
   rejectApplication,
   getUsernameById,
+  addEvent_,
 } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
@@ -204,6 +205,92 @@ const selectTutorForAssignment = async (application) => {
       alert("Tutor selected successfully! The assignment has been closed.");
       // Reload assignment to reflect changes
       await loadAssignment();
+
+  // console.log('app', application)
+  // console.log('assignment', assignment.value)
+  // application.tutorName
+  // application.tutorId
+  // application.tutorEmail
+  //assignment.selectedDays ['Monday', 'Tuesday']
+  //assignment.sessionDuration 2 (hour(s))
+  //assignment.sessionsPerWeek 2 (visual data)
+  //assignment.contractDuration 1 (month(s))
+
+  function getWeekdayDatesInRange(startDate, endDate, weekdays) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const result = [];
+
+        // Normalize to remove time
+        start.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        // Loop through all days in range
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          // getDay(): Sunday=0, Monday=1, ..., Saturday=6
+          if (weekdays.includes(d.getDay())) {
+            result.push(new Date(d)); // copy date
+          }
+        }
+
+        return result;
+      }
+
+  function convertInput(input) {
+    const date = new Date(input);
+
+    // Format output
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}+08:00`;
+  }
+
+      const start = new Date(application.startDate)
+      const end = new Date(start)
+      end.setDate(start.getDate() + 30 * assignment.value.contractDuration)
+      const days_obj = {
+        'Sunday': 0,
+        'Monday': 1,
+        'Tuesday': 2,
+        'Wednesday': 3,
+        'Thursday': 4,
+        'Friday': 5,
+        'Saturday': 6
+      }
+      // console.log('test',assignment.value.selectedDays)
+      const selected_days = assignment.value.selectedDays.map(day => days_obj[day]);
+      let days = getWeekdayDatesInRange(start, end, selected_days);
+      days = days.map(d => d.toDateString());
+      console.log(days)
+
+      const colors_obj = {
+      default: "#039be5",   // blue (peacock)
+      1: "#7986cb",         // soft purple (lavender)
+      2: "#33b679",         // light green (sage)
+      3: "#8e24aa",         // purple (grape)
+      4: "#e67c73",         // pinkish red (flamingo)
+      5: "#f6bf26",         // yellow (banana)
+      6: "#f4511e",         // orange (tangerine)
+      8: "#616161",         // grey (graphite)
+      9: "#3f51b5",         // indigo blue (blueberry)
+      10: "#0b8043",        // dark green (basil)
+      11: "#d50000",        // bright red (tomato)
+      };
+      let randomColor = Object.values(colors_obj)[Math.floor(Math.random() * Object.values(colors_obj).length)];
+      for (let d of days){
+        let startDate = new Date(d)
+        const timeStr = assignment.value.sessionStartTime || "12:00"; // default to "12:00"
+        const [hours, minutes] = timeStr.split(":").map(Number)
+        startDate.setHours(hours, minutes, 0, 0); // set hours, minutes, seconds, ms
+        let endDate = new Date(d)
+        endDate.setHours(startDate.getHours() + assignment.value.sessionDuration) // add session Duration to find out ending time
+        startDate = convertInput(startDate)
+        endDate = convertInput(endDate)
+        console.log(startDate)
+        console.log(endDate)
+        await addEvent_('calendar', `${assignment.value.title} + ${assignment.value.subject}`, assignment.value.description, startDate, endDate, randomColor, assignment.value.parentId)
+        await addEvent_('calendar', `${assignment.value.title} + ${assignment.value.subject}`, assignment.value.description, startDate, endDate, randomColor, application.tutorId)
+      }
+
     } else {
       alert(`Failed to select tutor: ${result.error}`);
     }
@@ -507,7 +594,7 @@ onMounted(async () => {
 
                 <div class="row g-3 mb-4">
                   <!-- Student Grade, Hourly Rate -->
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <div class="detail-box">
                       <i class="bi bi-person text-info me-2"></i>
                       <div>
@@ -516,7 +603,16 @@ onMounted(async () => {
                       </div>
                     </div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-4">
+                    <div class="detail-box">
+                      <i class="bi bi-cash text-success me-2"></i>
+                      <div>
+                        <small class="text-muted d-block">Session Start Time</small>
+                        <strong>{{ assignment.sessionStartTime }}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
                     <div class="detail-box">
                       <i class="bi bi-cash text-success me-2"></i>
                       <div>

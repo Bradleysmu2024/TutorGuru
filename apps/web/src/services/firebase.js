@@ -134,6 +134,7 @@ export const createAssignment = async (parentId, assignmentData) => {
       rate: Number(assignmentData.rate) || 0,
       contractDuration: Number(assignmentData.contractDuration) || 1,
       sessionDuration: Number(assignmentData.sessionDuration) || 1,
+      sessionStartTime: assignmentData.sessionStartTime || '12:00',
       sessionsPerWeek: assignmentData.selectedDays?.length || Number(assignmentData.sessionsPerWeek) || 1,
       selectedDays: Array.isArray(assignmentData.selectedDays) ? assignmentData.selectedDays : [],
       status: 'open',
@@ -168,6 +169,7 @@ export const updateAssignment = async (assignmentId, updates) => {
     if ('rate' in updates) normalizedUpdates.rate = Number(updates.rate) || 0
     if ('contractDuration' in updates) normalizedUpdates.contractDuration = Number(updates.contractDuration) || 1
     if ('sessionDuration' in updates) normalizedUpdates.sessionDuration = Number(updates.sessionDuration) || 1
+    if ('sessionStartTime' in updates) normalizedUpdates.sessionStartTime = updates.sessionStartTime || '12:00'
     if ('selectedDays' in updates) {
       normalizedUpdates.selectedDays = Array.isArray(updates.selectedDays) ? updates.selectedDays : []
       normalizedUpdates.sessionsPerWeek = normalizedUpdates.selectedDays.length

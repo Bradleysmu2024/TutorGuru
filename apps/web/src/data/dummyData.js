@@ -8,7 +8,8 @@ export const dummyJobPostings = [
     location: "Online",
     rate: 45, 
     contractDuration: 3, 
-    sessionDuration: 1.5, 
+    sessionDuration: 1.5,
+    sessionStartTime: '12:00',
     selectedDays: ['Monday', 'Wednesday'], 
     sessionsPerWeek: 2,
     description:
@@ -31,6 +32,7 @@ export const dummyJobPostings = [
     rate: 35, 
     contractDuration: 6,
     sessionDuration: 1,
+    sessionStartTime: '09:00',
     selectedDays: ['Monday', 'Wednesday', 'Friday'],
     sessionsPerWeek: 3,
     description:
@@ -53,6 +55,7 @@ export const dummyJobPostings = [
     rate: 40, 
     contractDuration: 4,
     sessionDuration: 1.5,
+    sessionStartTime: '10:00',
     selectedDays: ['Tuesday', 'Thursday'],
     sessionsPerWeek: 2,
     description:
@@ -75,6 +78,7 @@ export const dummyJobPostings = [
     rate: 70, 
     contractDuration: 6,
     sessionDuration: 2,
+    sessionStartTime: '14:00',
     selectedDays: ['Tuesday', 'Friday'],
     sessionsPerWeek: 2,
     description:
@@ -97,6 +101,7 @@ export const dummyJobPostings = [
     rate: 40, 
     contractDuration: 5,
     sessionDuration: 1,
+    sessionStartTime: '15:00',
     selectedDays: ['Wednesday', 'Saturday'],
     sessionsPerWeek: 2,
     description:
@@ -119,6 +124,7 @@ export const dummyJobPostings = [
     rate: 50, 
     contractDuration: 4,
     sessionDuration: 1.5,
+    sessionStartTime: '14:00',
     selectedDays: ['Monday', 'Thursday'],
     sessionsPerWeek: 2,
     description:

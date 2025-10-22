@@ -11,6 +11,9 @@ const postalCode = ref("")
 const tutorMarker = ref(null)
 let directionsService = null
 let directionsRenderer = null
+let activeInfoWindow = null
+let activeAssignmentId = null
+
 
 // --- Load Google Maps script dynamically using .env key ---
 async function loadGoogleMapsScript() {
@@ -88,7 +91,10 @@ console.log("Tutor location saved locally:", location.lat(), location.lng())
 // --- Draw route and update travel info for selected mode ---
 function showRoute(tutorLoc, assignLoc, travelInfoId, mode) {
   if (!tutorLoc || !assignLoc) return
-
+  if (directionsRenderer) {
+  directionsRenderer.setMap(null)
+  directionsRenderer = null
+  }
   if (!directionsService || !directionsRenderer) {
     directionsService = new google.maps.DirectionsService()
     directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: false })
@@ -163,6 +169,7 @@ onMounted(async () => {
         position: assignPos,
         map: map.value,
         title: a.title || "Assignment",
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
       })
 
       const travelInfoId = `travel-info-${a.id}`
@@ -186,39 +193,50 @@ onMounted(async () => {
           </div>
         `,
       })
-
-      marker.addListener("click", () => {
-        infoWindow.open(map.value, marker)
-
-        // Attach button event listeners once popup DOM is rendered
-        setTimeout(() => {
-          const driveBtn = document.getElementById(`drive-btn-${a.id}`)
-          const walkBtn = document.getElementById(`walk-btn-${a.id}`)
-          const transitBtn = document.getElementById(`transit-btn-${a.id}`)
-
-          if (!tutorMarker.value) {
-            [driveBtn, walkBtn, transitBtn].forEach((btn) => {
-              if (btn) btn.addEventListener("click", () => alert("Set your tutor location first."))
-            })
-            return
-          }
-
-          const tutorLoc = tutorMarker.value.getPosition()
-
-          if (driveBtn)
-            driveBtn.addEventListener("click", () =>
-              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.DRIVING)
-            )
-          if (walkBtn)
-            walkBtn.addEventListener("click", () =>
-              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.WALKING)
-            )
-          if (transitBtn)
-            transitBtn.addEventListener("click", () =>
-              showRoute(tutorLoc, assignPos, travelInfoId, google.maps.TravelMode.TRANSIT)
-            )
-        }, 300)
+      // ✅ Clear route when InfoWindow closes
+      infoWindow.addListener("closeclick", () => {
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null)
+          directionsRenderer = null
+          console.log("Route cleared after closing popup ❌")
+        }
       })
+
+      if (activeInfoWindow) activeInfoWindow.close()
+      activeInfoWindow = infoWindow
+      activeAssignmentId = a.id
+
+
+          marker.addListener("click", () => {
+      infoWindow.open(map.value, marker)
+
+      setTimeout(() => {
+        const driveBtn = document.getElementById(`drive-btn-${a.id}`)
+        const walkBtn = document.getElementById(`walk-btn-${a.id}`)
+        const transitBtn = document.getElementById(`transit-btn-${a.id}`)
+        const applyBtn = document.getElementById(`apply-btn-${a.id}`)
+
+        // attach handlers dynamically so they re-check tutorMarker at click time
+        const addModeHandler = (btn, mode) => {
+          if (!btn) return
+          btn.addEventListener("click", () => {
+            if (!tutorMarker.value) {
+              alert("Set your tutor location first.")
+              return
+            }
+            const tutorLoc = tutorMarker.value.getPosition()
+            showRoute(tutorLoc, assignPos, travelInfoId, mode)
+          })
+        }
+
+        addModeHandler(driveBtn, google.maps.TravelMode.DRIVING)
+        addModeHandler(walkBtn, google.maps.TravelMode.WALKING)
+        addModeHandler(transitBtn, google.maps.TravelMode.TRANSIT)
+
+        if (applyBtn) applyBtn.addEventListener("click", () => router.push("/dashboard"))
+      }, 300)
+    })
+
     }
   })
 })

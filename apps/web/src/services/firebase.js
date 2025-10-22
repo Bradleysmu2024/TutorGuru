@@ -179,6 +179,15 @@ export const submitApplication = async (
   applicationData
 ) => {
   try {
+    // Prevent duplicate applications from the same tutor
+    const existingQuery = query(
+      collection(db, "assignments", assignmentId, "applications"),
+      where("tutorId", "==", tutorId)
+    );
+    const existingSnap = await getDocs(existingQuery);
+    if (!existingSnap.empty) {
+      return { success: false, error: "Tutor has already applied to this assignment" };
+    }
     // Get tutor details for the application
     const tutorDoc = await getDoc(doc(db, "users", tutorId));
     if (!tutorDoc.exists()) {

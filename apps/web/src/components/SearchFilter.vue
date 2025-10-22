@@ -58,6 +58,25 @@
           </select>
         </div>
 
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label small fw-semibold">Status</label>
+            <select
+              v-model="localFilters.status"
+              class="form-select"
+              @change="emitFilters"
+            >
+              <option :value="''">All</option>
+              <option :value="'open'">Open</option>
+              <!-- 'Applied' shows postings the current tutor has applied to -->
+              <option :value="'applied'">Applied</option>
+              <!-- 'Rejected' shows postings where the current tutor's application was rejected -->
+              <option :value="'rejected'">Rejected</option>
+            </select>
+              <div v-if="localFilters.status === 'rejected'" class="mt-2 small text-muted">
+                Showing closed assignments where your application was rejected. Other closed assignments remain hidden.
+              </div>
+          </div>
+
         <div class="col-md-6 col-lg-3">
           <label class="form-label small fw-semibold">Search</label>
           <div class="input-group">
@@ -111,6 +130,7 @@ const localFilters = ref({
   subject: props.filters.subject || "",
   level: props.filters.level || "",
   location: props.filters.location || "",
+  status: props.filters.status || "",
   search: props.filters.search || "",
 });
 

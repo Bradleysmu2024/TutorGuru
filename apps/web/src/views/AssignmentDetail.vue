@@ -746,13 +746,8 @@ onMounted(async () => {
                     {{ (assignment.status || "unknown").toUpperCase() }}
                   </span>
                 </div>
-                <div
-                  v-if="assignment.status === 'pending'"
-                  class="info-item mb-3"
-                >
-                  <small class="text-muted d-block"
-                    >Applications Received</small
-                  >
+                <div class="info-item mb-3">
+                  <small class="text-muted d-block">Applications Received</small>
                   <strong>{{ applications.length }}</strong>
                 </div>
                 <hr />

@@ -112,9 +112,9 @@ const loadAssignment = async () => {
       // Load applications from Firebase subcollection
       applications.value = await getAssignmentApplications(assignmentId);
 
-      // If assignment has a tutorId or selectedTutorId, fetch tutor details
-      if (remote.tutorId || remote.selectedTutorId) {
-        await loadTutorDetails(remote.tutorId || remote.selectedTutorId);
+      // If assignment has selectedTutorId, fetch tutor details
+      if (remote.selectedTutorId) {
+        await loadTutorDetails(remote.selectedTutorId);
       }
     } else {
       // fallback to local dummy data for development
@@ -267,7 +267,8 @@ const initiatePayment = async () => {
     return;
   }
 
-  if (!assignment.value?.tutorId) {
+  const selectedTutorId = assignment.value?.selectedTutorId;
+  if (!selectedTutorId) {
     alert("No tutor has been selected for this assignment.");
     return;
   }
@@ -282,9 +283,8 @@ const initiatePayment = async () => {
     let tutor = selectedTutor.value;
 
     if (!tutor) {
-      // Try to find from applicants list
-      tutor = (assignment.value.applicants || []).find(
-        (app) => app.id === assignment.value.tutorId
+      tutor = applications.value.find(
+        (app) => app.tutorId === selectedTutorId
       );
 
       if (!tutor) {
@@ -317,11 +317,11 @@ const initiatePayment = async () => {
       console.log("Reusing existing payment record:", paymentId);
     } else {
       paymentId = await createPaymentRecord(assignmentId, {
-        tutorId: tutor.id,
+        tutorId: selectedTutorId,
         parentId: currentUser.uid,
         amount: totalAmount,
         assignmentTitle: assignment.value.title,
-        tutorName: tutor.name || "Unknown Tutor",
+        tutorName: tutor.name || tutor.tutorName || "Unknown Tutor",
         tutorRate: tutor.rate || assignment.value.rate,
       });
       console.log("Created new payment record:", paymentId);
@@ -330,7 +330,7 @@ const initiatePayment = async () => {
     // Pass both paymentId AND assignmentId
     await createPaymentSession({
       paymentId: paymentId,
-      assignmentId: assignmentId, // Add this
+      assignmentId: assignmentId,
       totalAmount: totalAmount,
       title: assignment.value.title,
       selectedTutor: tutor,
@@ -716,7 +716,7 @@ onMounted(async () => {
             <div
               v-if="
                 assignment.status === 'closed' &&
-                assignment.tutorId &&
+                assignment.selectedTutorId &&
                 !isPaymentCompleted
               "
               class="card shadow-sm mb-4 border-warning"

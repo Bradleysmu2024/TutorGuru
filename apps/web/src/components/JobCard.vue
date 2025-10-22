@@ -57,6 +57,7 @@
             Posted {{ formatDate(job.postedDate) }}
           </small>
           <button
+            v-if="job.status !== 'closed'"
             class="btn btn-primary btn-sm"
             @click="$emit('apply', job.id)"
           >

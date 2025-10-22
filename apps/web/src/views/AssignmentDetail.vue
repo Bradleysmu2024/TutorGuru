@@ -1,5 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { useRoute, useRouter } from "vue-router";
 import { dummyParentAssignments, dummyTutorProfiles } from "../data/dummyData";
 import {
@@ -153,15 +155,55 @@ const getStatusBadgeClass = (status) => {
 };
 
 const downloadFile = (file) => {
-  // TODO: Implement actual file download
-  console.log("Downloading file:", file.name);
-  alert(`Downloading ${file.name}...`);
+  try {
+    if (file && file.url) {
+      // Open the file URL in a new tab/window
+      window.open(file.url, '_blank')
+    } else {
+      alert('File not available for download.')
+    }
+  } catch (err) {
+    console.error('Error downloading file:', err)
+    alert('Failed to download file')
+  }
 };
 
-const downloadAllFiles = () => {
-  // TODO: Implement zip download
-  console.log("Downloading all files as zip");
-  alert("Downloading all files as ZIP...");
+const downloadAllFiles = async () => {
+  try {
+    const files = assignment.value.files || [];
+    if (files.length === 0) return alert('No files to download');
+
+    const zip = new JSZip();
+    const folder = zip.folder(`assignment_${assignment.value.id || 'files'}`) || zip;
+
+    const fetchPromises = (files || []).map(async (f) => {
+      if (!f || !f.url) return null;
+      try {
+        const resp = await fetch(f.url);
+        if (!resp.ok) throw new Error(`Failed to fetch ${f.name}`);
+        const blob = await resp.blob();
+        const filename = f.name || `file_${Date.now()}`;
+        folder.file(filename, blob);
+        return true;
+      } catch (err) {
+        console.warn('Failed to fetch file for zipping', f, err);
+        return false;
+      }
+    });
+
+    const results = await Promise.all(fetchPromises);
+
+    if (!results.some(Boolean)) {
+      return alert('Failed to fetch any files for download');
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const zipName = `${(assignment.value.title || 'assignment').replace(/[^a-z0-9_-]/gi, '_')}_files.zip`;
+    saveAs(content, zipName);
+  } catch (err) {
+    console.error('Error downloading all files as zip:', err);
+    alert('Failed to create ZIP of files');
+  }
 };
 
 const viewTutorProfile = (application) => {
@@ -549,7 +591,10 @@ onMounted(async () => {
                     <i class="bi bi-cash me-2"></i>
                     {{ assignment.rate }}
                   </span>
-                  <span class="badge bg-warning">
+                  <span 
+                    v-if="assignment.location !== 'Online'"
+                    class="badge bg-warning me-2"
+                  >
                     <i class="bi bi-geo me-1"></i>
                     {{ assignment.postalCode }}
                   </span>

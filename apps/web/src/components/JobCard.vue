@@ -3,10 +3,16 @@
     <div class="card-body d-flex flex-column">
       <div class="d-flex justify-content-between align-items-start mb-3">
         <h5 class="card-title mb-0">{{ job.title }}</h5>
-        <span class="badge" :class="getStatusBadgeClass(job.status)">
-          <i :class="getStatusIcon(job.status)" class="me-1"></i>
-          {{ (job.status || "open").toUpperCase() }}
-        </span>
+        <div class="d-flex align-items-center gap-2">
+          <span v-if="job.files && job.files.length > 0" class="badge bg-light text-dark">
+            <i class="bi bi-paperclip me-1"></i>
+            {{ job.files.length }} file{{ job.files.length !== 1 ? 's' : '' }}
+          </span>
+          <span class="badge" :class="getStatusBadgeClass(job.status)">
+            <i :class="getStatusIcon(job.status)" class="me-1"></i>
+            {{ (job.status || "open").toUpperCase() }}
+          </span>
+        </div>
       </div>
 
       <div class="job-meta mb-3">
@@ -56,14 +62,26 @@
             <i class="bi bi-calendar3 me-1"></i>
             Posted {{ formatDate(job.createdAt) }}
           </small>
-          <button
-            v-if="job.status !== 'closed'"
-            class="btn btn-primary btn-sm"
-            @click="$emit('apply', job.id)"
-          >
-            <i class="bi bi-send me-1"></i>
-            Apply Now
-          </button>
+          <div class="d-flex gap-2 align-items-center">
+            <button
+              v-if="job.files && job.files.length > 0"
+              class="btn btn-outline-secondary btn-sm"
+              @click.stop.prevent="downloadFiles"
+              title="Download attached files"
+            >
+              <i class="bi bi-download me-1"></i>
+              Download
+            </button>
+
+            <button
+              v-if="job.status !== 'closed'"
+              class="btn btn-primary btn-sm"
+              @click="$emit('apply', job.id)"
+            >
+              <i class="bi bi-send me-1"></i>
+              Apply Now
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -72,8 +90,10 @@
 
 <script setup>
 import { defineProps, defineEmits } from "vue";
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
-defineProps({
+const props = defineProps({
   job: {
     type: Object,
     required: true,
@@ -81,6 +101,9 @@ defineProps({
 });
 
 defineEmits(["apply"]);
+
+// expose `job` for use inside the script (and template already uses `job`)
+const job = props.job;
 
 const getStatusBadgeClass = (status) => {
   const classes = {
@@ -136,6 +159,45 @@ const formatDate = (dateVal) => {
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return `${Math.floor(diffDays / 30)} months ago`;
+};
+
+const downloadFiles = async () => {
+  try {
+    if (!job.files || job.files.length === 0) return alert('No files attached');
+
+    const zip = new JSZip();
+    const folder = zip.folder(`assignment_${job.id || 'files'}`) || zip;
+
+    // Fetch each file as a blob and add to the zip
+    const fetchPromises = (job.files || []).map(async (f) => {
+      if (!f || !f.url) return null;
+      try {
+        const resp = await fetch(f.url);
+        if (!resp.ok) throw new Error(`Failed to fetch ${f.name}`);
+        const blob = await resp.blob();
+        // Use original filename if present, otherwise use generated name
+        const filename = f.name || `file_${Date.now()}`;
+        folder.file(filename, blob);
+        return true;
+      } catch (err) {
+        console.warn('Failed to fetch file for zipping', f, err);
+        return false;
+      }
+    });
+
+    const results = await Promise.all(fetchPromises);
+
+    if (!results.some(Boolean)) {
+      return alert('Failed to fetch any files for download');
+    }
+
+    const content = await zip.generateAsync({ type: 'blob' });
+    const zipName = `${(job.title || 'assignment').replace(/[^a-z0-9_-]/gi, '_')}_files.zip`;
+    saveAs(content, zipName);
+  } catch (err) {
+    console.error('Error creating zip:', err);
+    alert('Failed to create ZIP of files');
+  }
 };
 </script>
 

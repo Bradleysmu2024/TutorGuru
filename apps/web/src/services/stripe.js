@@ -37,7 +37,7 @@ export const createPaymentSession = async (assignmentData) => {
       assignmentId: String(assignmentId),
       amount: Math.round(Number(totalAmount) * 100),
       assignmentTitle: String(title || 'Assignment'),
-      tutorName: String(selectedTutor?.name || 'Tutor')
+      tutorName: String(selectedTutor?.name || 'Tutor'),
     }
     
     console.log('Payment Request:', requestBody)

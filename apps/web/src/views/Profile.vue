@@ -235,7 +235,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { auth, db, getUserRole } from "../services/firebase";
+import { auth, db, getUserRole, findUserByUsername, getUserDoc } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
@@ -297,22 +297,16 @@ onMounted(async () => {
   if (username) {
     isPublicView.value = true;
     try {
-      const q = query(
-        collection(db, "users"),
-        where("username", "==", username)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        const docRef = snap.docs[0];
-        const docData = docRef.data();
-        profile.value = { ...docData, id: docRef.id };
-        uploadedDocuments.value = docData.uploadedDocuments || [];
-        userRole.value = docData.role || "tutor"; // Get role from profile data
+      const u = await findUserByUsername(username)
+      if (u) {
+        profile.value = u
+        uploadedDocuments.value = u.uploadedDocuments || []
+        userRole.value = u.role || 'tutor'
       } else {
-        console.warn("User not found for username:", username);
+        console.warn('User not found for username:', username)
       }
     } catch (err) {
-      console.error("Error loading public profile:", err);
+      console.error('Error loading public profile:', err)
     }
     return;
   }
@@ -321,15 +315,14 @@ onMounted(async () => {
     // Get user role first
     userRole.value = await getUserRole(uid);
 
-    const refDoc = doc(db, "users", uid);
-    const snap = await getDoc(refDoc);
-    if (snap.exists()) {
-      profile.value = { ...snap.data(), id: snap.id };
-      uploadedDocuments.value = snap.data().uploadedDocuments || [];
+    const u = await getUserDoc(uid)
+    if (u) {
+      profile.value = u
+      uploadedDocuments.value = u.uploadedDocuments || []
     } else {
-      alert("Please log in to view your profile.");
+      alert('Please log in to view your profile.')
     }
-  };
+  }
 
   const userNow = auth.currentUser;
   if (userNow) {

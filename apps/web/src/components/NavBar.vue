@@ -204,7 +204,7 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { loginStatus, getCurrentUser } from "../router/routes";
+import { loginStatus, getCurrentUser } from '../services/firebase'
 import { getDoc, doc as fsDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
 

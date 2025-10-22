@@ -16,6 +16,7 @@ import TutorMaps from "../views/TutorMaps.vue"
 import Profile from "../views/Profile.vue"
 import { ref } from "vue"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
+import { getCurrentUser, loginStatus } from '../services/firebase'
 import PaymentSuccess from '../views/PaymentSuccess.vue'
 import { getUserRole } from '../services/firebase'
 import Message from "../views/Message.vue"
@@ -134,44 +135,9 @@ const router = createRouter({
   },
 })
 
-//check if there is user session
-export const loginStatus = ref(false);
+// loginStatus and auth listener are provided by services/firebase
 
-try {
-  const auth = getAuth();
-  onAuthStateChanged(auth, (user) => {
-    loginStatus.value = !!user;
-    // keep localStorage consistent with Firebase
-    if (user) {
-      if (!localStorage.getItem('user')) {
-        localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
-      }
-    } else {
-      localStorage.removeItem('user');
-    }
-  });
-} catch (err) {
-  console.warn('Auth listener not initialized:', err);
-}
-
-export const getCurrentUser = async () => {
-  try{
-    return new Promise((resolve, reject) => {
-      // Use the observer to get the current user and then unsubscribe immediately
-      const removeListener = onAuthStateChanged(
-        getAuth(),
-        (user) => {
-          removeListener();
-          resolve(user);
-        },
-        reject
-      );
-    });
-  } catch (error){
-    console.error("Error getting currentUser:", error)
-    return false;
-  }
-};
+// getCurrentUser is now provided by services/firebase
 
 
 router.beforeEach(async (to, from, next) => {

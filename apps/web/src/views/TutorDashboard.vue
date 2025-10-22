@@ -127,7 +127,7 @@ import {
 } from "../services/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
-import { getCurrentUser } from "../router/routes";
+import { getCurrentUser } from '../services/firebase'
 
 const subjects = ref([]);
 const levels = ref([]);

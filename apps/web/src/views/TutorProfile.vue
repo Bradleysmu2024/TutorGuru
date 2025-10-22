@@ -523,6 +523,8 @@ const handleUploadComplete = (files) => {
   });
 });
 
+import { findUserByUsername, setUserDoc, getCurrentUser } from '../services/firebase'
+
 // Save profile to Firestore
 const saveProfile = async () => {
   const user = auth.currentUser;
@@ -532,15 +534,10 @@ const saveProfile = async () => {
   const desiredUsername = (profile.value.username || "").trim();
   if (desiredUsername) {
     try {
-      const q = query(collection(db, 'users'), where('username', '==', desiredUsername));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        // if any matching doc belongs to someone else, block save
-        const takenByOther = snap.docs.some(d => d.id !== user.uid);
-        if (takenByOther) {
-          alert('That username is already taken. Please choose another.');
-          return;
-        }
+      const existing = await findUserByUsername(desiredUsername)
+      if (existing && existing.id !== user.uid) {
+        alert('That username is already taken. Please choose another.');
+        return;
       }
     } catch (err) {
       console.error('Error validating username uniqueness:', err);
@@ -549,9 +546,13 @@ const saveProfile = async () => {
     }
   }
 
-  const tutorRef = doc(db, "users", user.uid);
-  await updateDoc(tutorRef, profile.value);
-  alert("Profile saved successfully!");
+  // Persist to users/{uid}
+  const result = await setUserDoc(user.uid, profile.value, { merge: true })
+  if (result && result.success) {
+    alert('Profile saved successfully!')
+  } else {
+    alert('Failed to save profile. Please try again.')
+  }
 };
 
 const openEmailChangeModal = () => {
@@ -587,11 +588,11 @@ const changeEmail = async () => {
 
     // Step 2: Update Firestore profile
     const user = await getCurrentUser();
-    if (user && user.uid) {
-      await setDoc(doc(db, "tutorProfile", user.uid), {
+      if (user && user.uid) {
+      await setUserDoc(user.uid, {
         ...profile.value,
         email: newEmail.value,
-      });
+      }, { merge: true });
 
       // Update local state
       profile.value.email = newEmail.value;

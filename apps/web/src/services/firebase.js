@@ -38,6 +38,7 @@ import {
   getDownloadURL,
   connectStorageEmulator,
 } from "firebase/storage";
+import { ref as vueRef } from 'vue'
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
@@ -406,15 +407,18 @@ export const loginUser = async (email, password) => {
   }
 };
 
+// Reactive login status shared across the app
+export const loginStatus = vueRef(false);
+
+// Keep loginStatus and localStorage in sync with Firebase Auth
 onAuthStateChanged(auth, (user) => {
+  loginStatus.value = !!user;
   if (user) {
-    // User is signed in.
-    console.log("User is logged in:", user.uid);
-    // Here you can store the user data in a global state (e.g., Pinia, Vuex, or a reactive variable)
+    if (!localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
+    }
   } else {
-    // User is signed out.
-    console.log("User is logged out");
-    // Clear the user data from your global state here
+    localStorage.removeItem('user');
   }
 });
 
@@ -1132,6 +1136,84 @@ export const getUserRole = async (uid) => {
     return null;
   }
 };
+
+// Small helper to obtain the current authenticated user via an observer
+export const getCurrentUser = async () => {
+  try {
+    return new Promise((resolve, reject) => {
+      const removeListener = onAuthStateChanged(
+        auth,
+        (user) => {
+          // unsubscribe immediately after receiving the value
+          if (typeof removeListener === 'function') removeListener();
+          resolve(user);
+        },
+        (err) => {
+          reject(err);
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Error getting currentUser:', error);
+    return null;
+  }
+};
+
+// Convenience wrappers for user document operations
+export const getUserDoc = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  } catch (err) {
+    console.error('Error fetching user doc:', err);
+    return null;
+  }
+};
+
+export const setUserDoc = async (uid, data, options = { merge: true }) => {
+  try {
+    if (!uid) throw new Error('Missing uid');
+    await setDoc(doc(db, 'users', uid), data, options);
+    return { success: true };
+  } catch (err) {
+    console.error('Error setting user doc:', err);
+    return { success: false, error: err };
+  }
+};
+
+export const findUserByUsername = async (username) => {
+  try {
+    if (!username) return null;
+    const q = query(collection(db, 'users'), where('username', '==', username));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const docRef = snap.docs[0];
+    return { id: docRef.id, ...docRef.data() };
+  } catch (err) {
+    console.error('Error finding user by username:', err);
+    return null;
+  }
+};
+
+export const listAllUsers = async (role = null) => {
+  try {
+    let snap;
+    if (role) {
+      const q = query(collection(db, 'users'), where('role', '==', role));
+      snap = await getDocs(q);
+    } else {
+      snap = await getDocs(collection(db, 'users'));
+    }
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error('Error listing users:', err);
+    return [];
+  }
+};
+
 
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {

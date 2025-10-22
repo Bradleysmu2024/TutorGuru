@@ -10,6 +10,7 @@ import {
   updateAssignment,
   getAssignmentById,
   getLevelsWithGrades,
+  uploadFile,
 } from "../services/firebase";
 import { getCurrentUser } from '../services/firebase'
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
@@ -141,7 +142,7 @@ onMounted(async () => {
           isOnline.value = true;
         }
 
-        // If we have coordinates, mark postal as validated
+  // If we have coordinates, mark postal as validated
         if (assignment.lat && assignment.lng) {
           geocodedData.value = {
             lat: assignment.lat,
@@ -150,6 +151,10 @@ onMounted(async () => {
             postalCode: assignment.postalCode,
           };
           postalSuccess.value = true;
+        }
+        // Preload existing files into the upload component and into selectedFiles so they can be removed/kept
+        if (Array.isArray(assignment.files) && assignment.files.length > 0) {
+          selectedFiles.value = assignment.files.map((f) => ({ ...f }));
         }
       } else {
         alert("Assignment not found");
@@ -221,19 +226,75 @@ const submitAssignment = async () => {
     };
 
     let result;
-    if (isEditMode.value && assignmentId.value) {
-      // Update existing assignment
-      result = await updateAssignment(assignmentId.value, assignmentData);
-    } else {
-      // Create new assignment
-      result = await createAssignment(user.uid, assignmentData);
-    }
 
-    if (!result?.success) {
-      throw new Error(
-        result?.error ||
-          `Failed to ${isEditMode.value ? "update" : "create"} assignment`
-      );
+    if (isEditMode.value && assignmentId.value) {
+      // Edit flow: upload any newly selected files first, then update assignment with combined files
+      try {
+        // Determine which existing files the user kept (selectedFiles contains both metadata and File objects)
+        const keptExisting = (selectedFiles.value || []).filter((f) => f && f.url);
+
+        // Files to upload are the File objects in selectedFiles
+        const newFilesMeta = [];
+        const filesToUpload = (selectedFiles.value || []).filter((f) => f && f instanceof File);
+
+        for (const f of filesToUpload) {
+          const safeName = `${Date.now()}_${f.name}`;
+          const path = `assignments/${assignmentId.value}/${safeName}`;
+          const uploadRes = await uploadFile(f, path);
+          if (uploadRes.success) {
+            newFilesMeta.push({ name: f.name, size: f.size, url: uploadRes.url });
+          } else {
+            console.warn('Failed to upload file', f.name, uploadRes.error);
+          }
+        }
+
+        // Combined result is kept existing files plus newly uploaded file metadata
+        assignmentData.files = [...keptExisting, ...newFilesMeta];
+
+        // Update assignment doc
+        result = await updateAssignment(assignmentId.value, assignmentData);
+      } catch (err) {
+        console.error('Error uploading files during update:', err);
+        throw err;
+      }
+    } else {
+      // Create new assignment: create doc first to obtain id, then upload files and patch the doc with file metadata
+      result = await createAssignment(user.uid, assignmentData);
+
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to create assignment');
+      }
+
+      const createdId = result.id;
+
+      try {
+        const uploadedFiles = [];
+        for (const f of selectedFiles.value || []) {
+          if (f && f instanceof File) {
+            const safeName = `${Date.now()}_${f.name}`;
+            const path = `assignments/${createdId}/${safeName}`;
+            const uploadRes = await uploadFile(f, path);
+            if (uploadRes.success) {
+              uploadedFiles.push({ name: f.name, size: f.size, url: uploadRes.url });
+            } else {
+              console.warn('Failed to upload file', f.name, uploadRes.error);
+            }
+          }
+        }
+
+        // Also include any metadata items that might already be present in selectedFiles
+        const existingMeta = (selectedFiles.value || []).filter((f) => f && f.url);
+        const finalFiles = [...existingMeta, ...uploadedFiles];
+
+        if (finalFiles.length > 0) {
+          // Patch assignment with uploaded files and any existing metadata
+          await updateAssignment(createdId, { files: finalFiles });
+        }
+      } catch (err) {
+        console.error('Error uploading files after create:', err);
+        // We don't fail the whole create flow here but inform user
+        alert('Assignment created but some files failed to upload.');
+      }
     }
 
     submitting.value = false;
@@ -561,6 +622,7 @@ const cancel = () => {
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                 :multiple="true"
                 :max-size="10485760"
+                :initial-files="selectedFiles"
                 @files-selected="handleFilesSelected"
               />
 

@@ -90,13 +90,19 @@ const props = defineProps({
   maxSize: {
     type: Number,
     default: 5 * 1024 * 1024 // 5MB
+  },
+  // initialFiles: array of { name, size, url } for files already uploaded
+  initialFiles: {
+    type: Array,
+    default: () => []
   }
 })
 
 const emit = defineEmits(['files-selected', 'upload-complete'])
 
 const fileInput = ref(null)
-const files = ref([])
+// files will contain both File objects (new) and uploaded file metadata { name, size, url }
+const files = ref([...props.initialFiles])
 const isDragging = ref(false)
 const uploading = ref(false)
 const uploadProgress = ref(0)
@@ -108,6 +114,8 @@ const triggerFileInput = () => {
 const handleFileSelect = (event) => {
   const selectedFiles = Array.from(event.target.files)
   addFiles(selectedFiles)
+  // reset input so the same file can be selected again later
+  try { event.target.value = '' } catch (e) {}
 }
 
 const handleDrop = (event) => {
@@ -137,6 +145,14 @@ const addFiles = (newFiles) => {
 const removeFile = (index) => {
   files.value.splice(index, 1)
   emit('files-selected', files.value)
+}
+
+const downloadFile = (file) => {
+  if (file && file.url) {
+    window.open(file.url, '_blank')
+  } else {
+    alert('File not yet uploaded. Save the assignment to upload files.')
+  }
 }
 
 const formatFileSize = (bytes) => {

@@ -45,21 +45,48 @@ const locations = ref([]);
 const levelsWithGrades = ref([]);
 
 const formData = ref({
-  title: "",
-  subject: "",
-  level: "",
-  studentGrade: "",
-  description: "",
-  requirements: "",
-  sessionsPerWeek: 2,
-  duration: "",
-  rate: "",
-  location: "",
-  postalCode: "",
-  formattedAddress: "",
-});
+  title: '',
+  subject: '',
+  level: '',
+  studentGrade: '',
+  description: '',
+  requirements: [],
+  contractDuration: 1, 
+  sessionDuration: 1, 
+  rate: 40,
+  selectedDays: [], // Array of day names ['Monday', 'Wednesday']
+  location: '',
+  postalCode: '',
+  lat: null,
+  lng: null,
+  files: []
+})
 
-// Computed property to get grades for selected level
+// Days of the week options
+const daysOfWeek = [
+  { value: 'Monday', label: 'Mon', fullLabel: 'Monday' },
+  { value: 'Tuesday', label: 'Tue', fullLabel: 'Tuesday' },
+  { value: 'Wednesday', label: 'Wed', fullLabel: 'Wednesday' },
+  { value: 'Thursday', label: 'Thu', fullLabel: 'Thursday' },
+  { value: 'Friday', label: 'Fri', fullLabel: 'Friday' },
+  { value: 'Saturday', label: 'Sat', fullLabel: 'Saturday' },
+  { value: 'Sunday', label: 'Sun', fullLabel: 'Sunday' }
+]
+
+// Toggle day selection
+const toggleDay = (day) => {
+  const index = formData.value.selectedDays.indexOf(day)
+  if (index > -1) {
+    formData.value.selectedDays.splice(index, 1)
+  } else {
+    formData.value.selectedDays.push(day)
+  }
+}
+
+// Computed: sessions per week (derived from selected days)
+const sessionsPerWeek = computed(() => formData.value.selectedDays.length)
+
+
 const availableGrades = computed(() => {
   if (!formData.value.level || formData.value.level === "All Levels") {
     return [];
@@ -129,9 +156,10 @@ onMounted(async () => {
           requirements: Array.isArray(assignment.requirements)
             ? assignment.requirements.join("\n")
             : assignment.requirements || "",
-          sessionsPerWeek: assignment.sessionsPerWeek || 2,
-          duration: assignment.duration || "",
-          rate: assignment.rate || "",
+          contractDuration: assignment.contractDuration || 1,
+          sessionDuration: assignment.sessionDuration || 1,
+          rate: assignment.rate || 40,
+          selectedDays: assignment.selectedDays || [], // Load selected days
           location: assignment.location || "",
           postalCode: assignment.postalCode || "",
           formattedAddress: assignment.formattedAddress || "",
@@ -199,6 +227,7 @@ const submitAssignment = async () => {
     // Construct data to save
     const assignmentData = {
       ...formData.value,
+      sessionsPerWeek: sessionsPerWeek.value, // Derived from selectedDays
       requirements: formData.value.requirements
         ? formData.value.requirements
             .split("\n")
@@ -321,13 +350,14 @@ const submitAssignment = async () => {
 };
 
 const validateForm = () => {
-  if (
-    !formData.value.title ||
-    !formData.value.subject ||
-    !formData.value.level
-  ) {
-    alert("Please fill in all required fields");
-    return false;
+  if (!formData.value.title || 
+      !formData.value.subject || 
+      !formData.value.level ||
+      !formData.value.contractDuration ||
+      !formData.value.sessionDuration ||
+      !formData.value.rate) {
+    alert('Please fill in all required fields')
+    return false
   }
 
   // Only require postal code verification for physical locations
@@ -341,6 +371,28 @@ const validateForm = () => {
       alert("Please verify your postal code by clicking the location button");
       return false;
     }
+  }
+  
+    // Validate number fields
+  if (formData.value.contractDuration < 1 || formData.value.contractDuration > 24) {
+    alert('Contract duration must be between 1 and 24 months')
+    return false
+  }
+
+  if (formData.value.sessionDuration < 0.5 || formData.value.sessionDuration > 4) {
+    alert('Session duration must be between 0.5 and 4 hours')
+    return false
+  }
+
+  if (formData.value.rate < 20 || formData.value.rate > 200) {
+    alert('Hourly rate must be between $20 and $200')
+    return false
+  }
+
+  // Validate at least one day is selected
+  if (formData.value.selectedDays.length === 0) {
+    alert('Please select at least one day per week for tutoring sessions')
+    return false
   }
 
   return true;
@@ -574,35 +626,88 @@ const cancel = () => {
                   >
                 </div>
 
+              <!-- Day Picker -->
+              <div class="mb-3">
+                <label class="form-label">
+                  Tutoring Days <span class="text-danger">*</span>
+                </label>
+                <div class="day-picker">
+                  <button
+                    v-for="day in daysOfWeek"
+                    :key="day.value"
+                    type="button"
+                    class="day-btn"
+                    :class="{ active: formData.selectedDays.includes(day.value) }"
+                    @click="toggleDay(day.value)"
+                  >
+                    <span class="day-label">{{ day.label }}</span>
+                    <span class="day-full">{{ day.fullLabel }}</span>
+                  </button>
+                </div>
+                <small class="text-muted d-block mt-2">
+                  <i class="bi bi-info-circle me-1"></i>
+                  Selected: 
+                  <strong v-if="formData.selectedDays.length > 0">
+                    {{ formData.selectedDays.join(', ') }} 
+                    ({{ sessionsPerWeek }} session{{ sessionsPerWeek !== 1 ? 's' : '' }}/week)
+                  </strong>
+                  <span v-else class="text-danger">No days selected</span>
+                </small>
+              </div>
+
                 <div class="row g-3 mb-3">
-                  <div class="col-md-4">
-                    <label class="form-label">Sessions per Week</label>
+                  <div class="col-md-6">
+                    <label class="form-label">Contract Duration (Months)</label>
                     <input
-                      v-model.number="formData.sessionsPerWeek"
+                      v-model.number="formData.contractDuration"
                       type="number"
-                      class="form-control"
                       min="1"
-                      max="7"
-                    />
-                  </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Duration</label>
-                    <input
-                      v-model="formData.duration"
-                      type="text"
+                      max="24"
                       class="form-control"
-                      placeholder="e.g., 3 months"
+                      id="contractDuration"
+                      placeholder="Enter duration in months (e.g., 3)"
+                      required
                     />
+                    <small class="text-muted">How many months do you need tutoring?</small>
                   </div>
-                  <div class="col-md-4">
-                    <label class="form-label">Hourly Rate</label>
+                  <div class="col-md-6">
+                    <label class="form-label">Session Duration (Hours)</label>
                     <input
-                      v-model="formData.rate"
-                      type="text"
+                      v-model.number="formData.sessionDuration"
+                      type="number"
+                      min="0.5"
+                      max="4"
+                      step="0.5"
                       class="form-control"
-                      placeholder="e.g., $40-50"
+                      id="sessionDuration"
+                      placeholder="Enter hours per session (e.g., 1.5)"
+                      required
                     />
+                    <small class="text-muted">Duration of each tutoring session</small>
                   </div>
+                </div>
+
+                <!-- Hourly Rate -->
+                <div class="mb-3">
+                  <label for="rate" class="form-label">
+                    Hourly Rate (SGD) <span class="text-danger">*</span>
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input
+                      v-model.number="formData.rate"
+                      type="number"
+                      min="20"
+                      max="200"
+                      step="5"
+                      class="form-control"
+                      id="rate"
+                      placeholder="Enter hourly rate (e.g., 50)"
+                      required
+                    />
+                    <span class="input-group-text">/hr</span>
+                  </div>
+                  <small class="text-muted">Your budget per hour</small>
                 </div>
               </form>
             </div>
@@ -710,11 +815,64 @@ const cancel = () => {
   color: #dc3545;
 }
 
-@media (max-width: 991px) {
-  .sticky-top {
-    position: relative !important;
-    top: 0 !important;
-    margin-top: 1rem;
+/* Day Picker Styles */
+.day-picker {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.day-btn {
+  flex: 1;
+  min-width: 60px;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid #dee2e6;
+  background: white;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.day-btn:hover {
+  border-color: #0d6efd;
+  background: #f8f9fa;
+}
+
+.day-btn.active {
+  border-color: #0d6efd;
+  background: #0d6efd;
+  color: white;
+}
+
+.day-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: block;
+}
+
+.day-full {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .day-full {
+    display: block;
+  }
+  .day-label {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .day-btn {
+    min-width: 45px;
+    padding: 0.5rem 0.25rem;
   }
 }
 </style>

@@ -6,7 +6,11 @@ export const dummyJobPostings = [
     subject: "Mathematics",
     level: "Secondary",
     location: "Online",
-    rate: "$40-50/hour",
+    rate: 45, 
+    contractDuration: 3, 
+    sessionDuration: 1.5, 
+    selectedDays: ['Monday', 'Wednesday'], 
+    sessionsPerWeek: 2,
     description:
       "Looking for an experienced mathematics tutor for O-Level preparation. Student needs help with algebra, geometry, and calculus.",
     requirements: [
@@ -14,10 +18,8 @@ export const dummyJobPostings = [
       "Experience with O-Level curriculum",
       "Patient and encouraging teaching style",
     ],
-    postedDate: new Date("2024-01-15"),
+    postedDate: "2024-01-15T00:00:00.000Z",
     studentGrade: "Grade 10",
-    sessionsPerWeek: 2,
-    duration: "3 months",
     status: "open",
   },
   {
@@ -26,14 +28,20 @@ export const dummyJobPostings = [
     subject: "English",
     level: "Primary",
     location: "Tampines",
-    rate: "$30-40/hour",
+    rate: 35, 
+    contractDuration: 6,
+    sessionDuration: 1,
+    selectedDays: ['Monday', 'Wednesday', 'Friday'],
+    sessionsPerWeek: 3,
     description:
       "Seeking a dedicated English tutor to help improve reading comprehension and writing skills for a Primary 5 student.",
-    requirements: ["Strong command of English", "Experience with primary school students", "Creative teaching methods"],
-    postedDate: new Date("2024-01-18"),
+    requirements: [
+      "Strong command of English",
+      "Experience with primary school students",
+      "Creative teaching methods"
+    ],
+    postedDate: "2024-01-18T00:00:00.000Z",
     studentGrade: "Grade 5",
-    sessionsPerWeek: 3,
-    duration: "6 months",
     status: "open",
   },
   {
@@ -42,14 +50,20 @@ export const dummyJobPostings = [
     subject: "Science",
     level: "Primary",
     location: "Jurong",
-    rate: "$35-45/hour",
+    rate: 40, 
+    contractDuration: 4,
+    sessionDuration: 1.5,
+    selectedDays: ['Tuesday', 'Thursday'],
+    sessionsPerWeek: 2,
     description:
       "Need an experienced science tutor to prepare student for PSLE examinations. Focus on practical experiments and concept understanding.",
-    requirements: ["PSLE teaching experience", "Science degree preferred", "Able to explain complex concepts simply"],
-    postedDate: new Date("2024-01-20"),
+    requirements: [
+      "PSLE teaching experience",
+      "Science degree preferred",
+      "Able to explain complex concepts simply"
+    ],
+    postedDate: "2024-01-20T00:00:00.000Z",
     studentGrade: "Grade 6",
-    sessionsPerWeek: 2,
-    duration: "4 months",
     status: "open",
   },
   {
@@ -58,14 +72,20 @@ export const dummyJobPostings = [
     subject: "Physics",
     level: "Junior College",
     location: "Online",
-    rate: "$60-80/hour",
+    rate: 70, 
+    contractDuration: 6,
+    sessionDuration: 2,
+    selectedDays: ['Tuesday', 'Friday'],
+    sessionsPerWeek: 2,
     description:
       "Looking for a highly qualified physics tutor for A-Level preparation. Student needs help with mechanics, electricity, and modern physics.",
-    requirements: ["Degree in Physics", "A-Level teaching experience", "Strong problem-solving skills"],
-    postedDate: new Date("2024-01-22"),
+    requirements: [
+      "Degree in Physics",
+      "A-Level teaching experience",
+      "Strong problem-solving skills"
+    ],
+    postedDate: "2024-01-22T00:00:00.000Z",
     studentGrade: "JC2",
-    sessionsPerWeek: 2,
-    duration: "6 months",
     status: "open",
   },
   {
@@ -74,7 +94,11 @@ export const dummyJobPostings = [
     subject: "Chinese",
     level: "Secondary",
     location: "Bishan",
-    rate: "$35-45/hour",
+    rate: 40, 
+    contractDuration: 5,
+    sessionDuration: 1,
+    selectedDays: ['Wednesday', 'Saturday'],
+    sessionsPerWeek: 2,
     description:
       "Seeking a patient Chinese language tutor to help improve oral and written Chinese for Secondary 2 student.",
     requirements: [
@@ -82,10 +106,8 @@ export const dummyJobPostings = [
       "Experience with secondary students",
       "Engaging teaching style",
     ],
-    postedDate: new Date("2024-01-25"),
+    postedDate: "2024-01-25T00:00:00.000Z",
     studentGrade: "Grade 8",
-    sessionsPerWeek: 2,
-    duration: "5 months",
     status: "open",
   },
   {
@@ -94,14 +116,20 @@ export const dummyJobPostings = [
     subject: "Chemistry",
     level: "Secondary",
     location: "Woodlands",
-    rate: "$45-55/hour",
+    rate: 50, 
+    contractDuration: 4,
+    sessionDuration: 1.5,
+    selectedDays: ['Monday', 'Thursday'],
+    sessionsPerWeek: 2,
     description:
       "Need a chemistry tutor for O-Level preparation. Focus on organic chemistry, chemical bonding, and practical applications.",
-    requirements: ["Chemistry degree", "O-Level teaching experience", "Lab experience preferred"],
-    postedDate: new Date("2024-01-28"),
+    requirements: [
+      "Chemistry degree",
+      "O-Level teaching experience",
+      "Lab experience preferred"
+    ],
+    postedDate: "2024-01-28T00:00:00.000Z",
     studentGrade: "Grade 9",
-    sessionsPerWeek: 2,
-    duration: "4 months",
     status: "open",
   },
 ]

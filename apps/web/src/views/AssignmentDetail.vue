@@ -470,14 +470,27 @@ onMounted(async () => {
                 </div>
 
                 <div class="row g-3 mb-4">
+                  <!-- Contract Duration, Tutoring Days, Session Duration -->
+                  <div class="col-md-4">
+                    <div class="detail-box">
+                      <i class="bi bi-calendar-range text-info me-2"></i>
+                      <div>
+                        <small class="text-muted d-block">Contract Duration</small>
+                        <strong>{{ assignment.contractDuration || assignment.duration }} month(s)</strong>
+                      </div>
+                    </div>
+                  </div>
                   <div class="col-md-4">
                     <div class="detail-box">
                       <i class="bi bi-calendar-week text-primary me-2"></i>
                       <div>
-                        <small class="text-muted d-block"
-                          >Sessions per Week</small
-                        >
-                        <strong>{{ assignment.sessionsPerWeek }}x</strong>
+                        <small class="text-muted d-block">Tutoring Days</small>
+                        <strong v-if="assignment.selectedDays && assignment.selectedDays.length > 0">
+                          {{ assignment.selectedDays.join(', ') }} ({{ assignment.selectedDays.length }})
+                        </strong>
+                        <strong v-else>
+                          {{ assignment.sessionsPerWeek || 1 }}x per week
+                        </strong>
                       </div>
                     </div>
                   </div>
@@ -485,17 +498,30 @@ onMounted(async () => {
                     <div class="detail-box">
                       <i class="bi bi-clock text-warning me-2"></i>
                       <div>
-                        <small class="text-muted d-block">Duration</small>
-                        <strong>{{ assignment.duration }}</strong>
+                        <small class="text-muted d-block">Session Duration</small>
+                        <strong>{{ assignment.sessionDuration || assignment.hoursPerSession || 1 }} hour(s)</strong>
                       </div>
                     </div>
                   </div>
-                  <div class="col-md-4">
+                </div>
+
+                <div class="row g-3 mb-4">
+                  <!-- Student Grade, Hourly Rate -->
+                  <div class="col-md-6">
                     <div class="detail-box">
                       <i class="bi bi-person text-info me-2"></i>
                       <div>
                         <small class="text-muted d-block">Student Grade</small>
                         <strong>{{ assignment.studentGrade }}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="detail-box">
+                      <i class="bi bi-cash text-success me-2"></i>
+                      <div>
+                        <small class="text-muted d-block">Hourly Rate</small>
+                        <strong>${{ assignment.rate }}/hr</strong>
                       </div>
                     </div>
                   </div>

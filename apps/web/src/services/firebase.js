@@ -124,34 +124,75 @@ export const applyToJob = async (jobId, tutorId, applicationData) => {
 // Assignments
 export const createAssignment = async (parentId, assignmentData) => {
   try {
-    const payload = {
-      parentId,
-      ...assignmentData,
-      createdAt: new Date().toISOString(),
-      status: "open",
-    };
-    const docRef = await addDoc(collection(db, "assignments"), payload);
-    return { success: true, id: docRef.id };
-  } catch (error) {
-    console.error("Error creating assignment:", error);
-    return { success: false, error: error.message };
-  }
-};
+    const user = auth.currentUser
+    if (!user) throw new Error('User not authenticated')
 
-export const updateAssignment = async (assignmentId, assignmentData) => {
-  try {
-    const docRef = doc(db, "assignments", assignmentId);
-    const payload = {
+    // Normalize data with new fields
+    const normalizedData = {
       ...assignmentData,
+      parentId: parentId || user.uid,
+      rate: Number(assignmentData.rate) || 0,
+      contractDuration: Number(assignmentData.contractDuration) || 1,
+      sessionDuration: Number(assignmentData.sessionDuration) || 1,
+      sessionsPerWeek: assignmentData.selectedDays?.length || Number(assignmentData.sessionsPerWeek) || 1,
+      selectedDays: Array.isArray(assignmentData.selectedDays) ? assignmentData.selectedDays : [],
+      status: 'open',
+      createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    };
-    await updateDoc(docRef, payload);
-    return { success: true, id: assignmentId };
+    }
+
+    // Remove any undefined/null values
+    Object.keys(normalizedData).forEach(key => {
+      if (normalizedData[key] === undefined || normalizedData[key] === null) {
+        delete normalizedData[key]
+      }
+    })
+
+    const docRef = await addDoc(
+      collection(db, 'assignments'),
+      normalizedData
+    )
+
+    return { success: true, id: docRef.id, data: normalizedData }
   } catch (error) {
-    console.error("Error updating assignment:", error);
-    return { success: false, error: error.message };
+    console.error('Error creating assignment:', error)
+    return { success: false, error: error.message }
   }
-};
+}
+
+export const updateAssignment = async (assignmentId, updates) => {
+  try {
+    // Normalize numeric fields if present
+    const normalizedUpdates = { ...updates }
+    
+    if ('rate' in updates) normalizedUpdates.rate = Number(updates.rate) || 0
+    if ('contractDuration' in updates) normalizedUpdates.contractDuration = Number(updates.contractDuration) || 1
+    if ('sessionDuration' in updates) normalizedUpdates.sessionDuration = Number(updates.sessionDuration) || 1
+    if ('selectedDays' in updates) {
+      normalizedUpdates.selectedDays = Array.isArray(updates.selectedDays) ? updates.selectedDays : []
+      normalizedUpdates.sessionsPerWeek = normalizedUpdates.selectedDays.length
+    }
+    
+    normalizedUpdates.updatedAt = new Date().toISOString()
+    
+    // Remove any undefined/null values
+    Object.keys(normalizedUpdates).forEach(key => {
+      if (normalizedUpdates[key] === undefined || normalizedUpdates[key] === null) {
+        delete normalizedUpdates[key]
+      }
+    })
+
+    await updateDoc(
+      doc(db, 'assignments', assignmentId),
+      normalizedUpdates
+    )
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating assignment:', error)
+    return { success: false, error: error.message }
+  }
+}
 
 export const deleteAssignment = async (assignmentId) => {
   try {

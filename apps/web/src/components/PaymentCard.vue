@@ -62,21 +62,19 @@ const isPaymentCompleted = computed(() => {
 })
 
 const calculateTotalSessions = () => {
-  const sessionsPerWeek = Number(props.assignment?.sessionsPerWeek || 1)
-  const durationMonths = Number(props.assignment?.duration || 1)
-  return sessionsPerWeek * 4 * durationMonths
+  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1
+  const contractDuration = props.assignment?.contractDuration || 1
+  return sessionsPerWeek * 4 * contractDuration
 }
 
 const calculateTotalAmount = () => {
-  const hourlyRate = Number(
-    props.selectedTutor?.rate || props.assignment?.rate || 0
-  )
-  const sessionsPerWeek = Number(props.assignment?.sessionsPerWeek || 1)
-  const durationMonths = Number(props.assignment?.duration || 1)
-  const hoursPerSession = Number(props.assignment?.hoursPerSession || 1)
+  const hourlyRate = props.selectedTutor?.rate || props.assignment?.rate || 0
+  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1
+  const contractDuration = props.assignment?.contractDuration || 1
+  const sessionDuration = props.assignment?.sessionDuration || 1
 
-  const totalSessions = sessionsPerWeek * 4 * durationMonths
-  return hourlyRate * totalSessions * hoursPerSession
+  const totalSessions = sessionsPerWeek * 4 * contractDuration
+  return hourlyRate * totalSessions * sessionDuration
 }
 
 const initiatePayment = async () => {
@@ -111,7 +109,6 @@ const initiatePayment = async () => {
     if (!currentUser) {
       throw new Error('User not authenticated. Please log in.')
     }
-
 
     const existingPayment = await checkPaymentStatus()
 
@@ -191,14 +188,9 @@ const initiatePayment = async () => {
           <i class="bi bi-credit-card"></i> Payment Details
         </h4>
 
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Payment to: {{ selectedTutor?.name || 'Selected Tutor' }}</strong>
-            <p class="text-muted mb-0">
-              ${{ selectedTutor?.rate || assignment.rate || 0 }}/hr
-            </p>
-          </div>
-        </div>
+        <p class="mb-3">
+          <strong>Payment to: {{ selectedTutor?.name || 'Selected Tutor' }}</strong>
+        </p>
 
         <table class="table">
           <tbody>
@@ -210,21 +202,20 @@ const initiatePayment = async () => {
             </tr>
             <tr>
               <td>Total Sessions:</td>
-              <td class="text-end">{{ calculateTotalSessions() }}</td>
+              <td class="text-end">
+                {{ assignment.selectedDays.length }} × 4 × {{ assignment.contractDuration }} = 
+                <strong>{{ calculateTotalSessions() }}</strong>
+                <br>
+                <small class="text-muted">
+                  ({{ assignment.selectedDays.join(', ') }} × 4 weeks/month × {{ assignment.contractDuration }} months)
+                </small>
+              </td>
             </tr>
             <tr>
               <td>Duration per Session:</td>
               <td class="text-end">
-                {{ assignment.hoursPerSession || 1 }} hour(s)
+                {{ assignment.sessionDuration }} hour(s)
               </td>
-            </tr>
-            <tr>
-              <td>Contract Duration:</td>
-              <td class="text-end">{{ assignment.duration }} month(s)</td>
-            </tr>
-            <tr>
-              <td>Sessions per Week:</td>
-              <td class="text-end">{{ assignment.sessionsPerWeek || 1 }}</td>
             </tr>
             <tr class="table-success">
               <td><strong>Total Amount:</strong></td>

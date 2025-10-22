@@ -2,7 +2,7 @@
 console.log("Tutor map component script loaded ✅")
 import { ref, onMounted } from "vue"
 import { db } from "../services/firebase"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, query, where} from "firebase/firestore"
 import * as L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
@@ -13,7 +13,16 @@ const tutorMarker = ref(null)
 // Fetch assignments from Firestore
 async function getAllAssignments() {
   try {
-    const snapshot = await getDocs(collection(db, "assignments"))
+    // Define the collection reference
+    const assignmentsRef = collection(db, "assignments")
+
+    // Create a query to only fetch documents where status == "open"
+    const q = query(assignmentsRef, where("status", "==", "open"))
+
+    // Run the query
+    const snapshot = await getDocs(q)
+
+    // Map the results into an array
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()

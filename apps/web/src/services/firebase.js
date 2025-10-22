@@ -1133,6 +1133,28 @@ export const getUserRole = async (uid) => {
   }
 };
 
+// Small helper to obtain the current authenticated user via an observer
+export const getCurrentUser = async () => {
+  try {
+    return new Promise((resolve, reject) => {
+      const removeListener = onAuthStateChanged(
+        auth,
+        (user) => {
+          // unsubscribe immediately after receiving the value
+          if (typeof removeListener === 'function') removeListener();
+          resolve(user);
+        },
+        (err) => {
+          reject(err);
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Error getting currentUser:', error);
+    return null;
+  }
+};
+
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {
   try {

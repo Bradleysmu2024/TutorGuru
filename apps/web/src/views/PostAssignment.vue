@@ -11,7 +11,7 @@ import {
   getAssignmentById,
   getLevelsWithGrades,
 } from "../services/firebase";
-import { getCurrentUser } from "../router/routes";
+import { getCurrentUser } from '../services/firebase'
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 
 const router = useRouter();

@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
-import { getCurrentUser } from "../router/routes";
+import { getCurrentUser } from '../services/firebase'
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 

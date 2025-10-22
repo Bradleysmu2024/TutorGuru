@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { getCurrentUser } from "../router/routes";
+import { getCurrentUser } from '../services/firebase'
 import { db, getAssignmentApplications } from "../services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 

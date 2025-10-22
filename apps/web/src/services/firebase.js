@@ -38,6 +38,7 @@ import {
   getDownloadURL,
   connectStorageEmulator,
 } from "firebase/storage";
+import { ref as vueRef } from 'vue'
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
@@ -406,15 +407,18 @@ export const loginUser = async (email, password) => {
   }
 };
 
+// Reactive login status shared across the app
+export const loginStatus = vueRef(false);
+
+// Keep loginStatus and localStorage in sync with Firebase Auth
 onAuthStateChanged(auth, (user) => {
+  loginStatus.value = !!user;
   if (user) {
-    // User is signed in.
-    console.log("User is logged in:", user.uid);
-    // Here you can store the user data in a global state (e.g., Pinia, Vuex, or a reactive variable)
+    if (!localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
+    }
   } else {
-    // User is signed out.
-    console.log("User is logged out");
-    // Clear the user data from your global state here
+    localStorage.removeItem('user');
   }
 });
 

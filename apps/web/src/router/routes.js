@@ -16,7 +16,7 @@ import TutorMaps from "../views/TutorMaps.vue"
 import Profile from "../views/Profile.vue"
 import { ref } from "vue"
 import { getAuth, onAuthStateChanged } from "firebase/auth"
-import { getCurrentUser } from '../services/firebase'
+import { getCurrentUser, loginStatus } from '../services/firebase'
 import PaymentSuccess from '../views/PaymentSuccess.vue'
 import { getUserRole } from '../services/firebase'
 import Message from "../views/Message.vue"
@@ -135,25 +135,7 @@ const router = createRouter({
   },
 })
 
-//check if there is user session
-export const loginStatus = ref(false);
-
-try {
-  const auth = getAuth();
-  onAuthStateChanged(auth, (user) => {
-    loginStatus.value = !!user;
-    // keep localStorage consistent with Firebase
-    if (user) {
-      if (!localStorage.getItem('user')) {
-        localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
-      }
-    } else {
-      localStorage.removeItem('user');
-    }
-  });
-} catch (err) {
-  console.warn('Auth listener not initialized:', err);
-}
+// loginStatus and auth listener are provided by services/firebase
 
 // getCurrentUser is now provided by services/firebase
 

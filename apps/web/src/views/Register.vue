@@ -17,18 +17,23 @@ const registerForm = ref({
   role:'parent'
 })
 
+const loading = ref(false)
+
 const handleRegister = async () => {
+  if (loading.value) return
   if (registerForm.value.password !== registerForm.value.confirmPassword) {
     alert('Passwords do not match!')
     return
   }
 
+  loading.value = true
   try {
     //Create user in Firebase Authentication
     const result = await registerUser(registerForm.value.email, registerForm.value.password)
 
     if (!result.success) {
       alert(`Registration failed: ${result.error}`)
+      loading.value = false
       return
     }
 
@@ -95,23 +100,30 @@ const handleRegister = async () => {
   } catch (error) {
     console.error('Registration error:', error)
     alert('Unexpected error. Please try again.')
+  } finally {
+    loading.value = false
   }
 }
 
 const handleGoogleRegister = async () => {
+  if (loading.value) return
+  loading.value = true
   try {
     console.log(registerForm.value.role)
     if (registerForm.value.agreeTerms !== true) {
     alert('Please agree to the terms.')
+    loading.value = false
     return
     }
     if (registerForm.value.role == null){
     alert('Please select a Role.')
+    loading.value = false
     return  
     }
     const response = await signInWithGoogle()
     if (!response.success) {
       alert(`Google register failed: ${response.error}`)
+      loading.value = false
       return
     }
     const user = response.user
@@ -193,6 +205,8 @@ const handleGoogleRegister = async () => {
   } catch (error) {
     console.error('Registration error:', error)
     alert('Unexpected error. Please try again.')
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -215,34 +229,34 @@ const handleGoogleRegister = async () => {
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label">First Name</label>
-                    <input v-model="registerForm.firstName" type="text" class="form-control" required>
+                    <input v-model="registerForm.firstName" type="text" class="form-control" required :disabled="loading">
                   </div>
 
                   <div class="col-md-6">
                     <label class="form-label">Last Name</label>
-                    <input v-model="registerForm.lastName" type="text" class="form-control" required>
+                    <input v-model="registerForm.lastName" type="text" class="form-control" required :disabled="loading">
                   </div>
 
                   <div class="col-12">
                     <label class="form-label">Email Address</label>
-                    <input v-model="registerForm.email" type="email" class="form-control" required>
+                    <input v-model="registerForm.email" type="email" class="form-control" required :disabled="loading">
                   </div>
 
                   <div class="col-12">
                     <label class="form-label">Password</label>
-                    <input v-model="registerForm.password" type="password" class="form-control" required minlength="6">
+                    <input v-model="registerForm.password" type="password" class="form-control" required minlength="6" :disabled="loading">
                     <small class="text-muted">Minimum 6 characters</small>
                   </div>
 
                   <div class="col-12">
                     <label class="form-label">Confirm Password</label>
-                    <input v-model="registerForm.confirmPassword" type="password" class="form-control" required>
+                    <input v-model="registerForm.confirmPassword" type="password" class="form-control" required :disabled="loading">
                   </div>
 
                   <div class="col-12">
                     <div class="form-check">
                       <input v-model="registerForm.agreeTerms" type="checkbox" class="form-check-input" id="agreeTerms"
-                        required>
+                        required :disabled="loading">
                       <label class="form-check-label" for="agreeTerms">
                         I agree to the Terms of Service and Privacy Policy
                       </label>
@@ -254,7 +268,7 @@ const handleGoogleRegister = async () => {
                   </div>
                   <div class="col-12 d-flex gap-4">
                     <div class="form-check form-check-inline">
-                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="parent" value="parent" required checked />
+                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="parent" value="parent" required checked :disabled="loading" />
                       <label class="form-check-label" for="parent">
                         Parent/Guardian
                       </label>
@@ -262,7 +276,7 @@ const handleGoogleRegister = async () => {
                     <div class="form-check form-check-inline">
                       
                       
-                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="tutor" value="tutor" required />
+                      <input v-model="registerForm.role" name="role" type="radio" class="form-check-input" id="tutor" value="tutor" required :disabled="loading" />
                       <label class="form-check-label" for="tutor">
                         Tutor
                       </label>
@@ -272,11 +286,15 @@ const handleGoogleRegister = async () => {
                 
 
                 <div class="d-grid mt-4 mb-3">
-                  <button type="submit" class="btn btn-primary btn-lg text-light">
+                  <button type="submit" class="btn btn-primary btn-lg text-light" :disabled="loading">
                     <i class="bi bi-person-check me-2"></i>
-                    Create Account
+                    <span v-if="!loading">Create Account</span>
+                    <span v-else>
+                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Creating...
+                    </span>
                   </button>
-                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleRegister">
+                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleRegister" :disabled="loading">
                     <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google logo"

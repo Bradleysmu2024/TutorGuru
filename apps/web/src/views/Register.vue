@@ -61,8 +61,6 @@ const handleRegister = async () => {
         verified: false
       }, { merge: true })
 
-      console.log("✅ Tutor user created in Firestore for:", user.email)
-
       localStorage.setItem('user', JSON.stringify({
         uid: user.uid,
         email: user.email,
@@ -84,8 +82,6 @@ const handleRegister = async () => {
         role: "parent",
         createdAt: new Date().toISOString(),
       }, { merge: true })
-
-      console.log("✅ Parent user created in Firestore for:", user.email)
 
       localStorage.setItem('parent', JSON.stringify({
         uid: user.uid,
@@ -118,7 +114,6 @@ const handleGoogleRegister = async () => {
       alert(`Google register failed: ${response.error}`)
       return
     }
-    console.log(response.user)
     const user = response.user
     const displayName = user.displayName
     const normalizedEmail = user.email.trim().toLowerCase();

@@ -199,12 +199,20 @@ const loadJobs = async () => {
 
 const filteredJobs = computed(() => {
   return jobs.value.filter((job) => {
+    // Exclude closed assignments from tutor view
+    if (job.status === 'closed') return false;
+    const norm = (s) => (s || '').toString().toLowerCase().trim();
     const matchesSubject =
-      !filters.value.subject || job.subject === filters.value.subject;
+      !filters.value.subject || norm(job.subject) === norm(filters.value.subject);
     const matchesLevel =
-      !filters.value.level || job.level === filters.value.level;
-    const matchesLocation =
-      !filters.value.location || job.location === filters.value.location;
+      !filters.value.level || norm(job.level) === norm(filters.value.level);
+    const matchesLocation = (() => {
+      const f = (filters.value.location || '').toString().trim();
+      if (!f) return true;
+      const jobLoc = (job.location || '').toString();
+      // match when filter is a substring of job location (case-insensitive)
+      return norm(jobLoc).includes(norm(f));
+    })();
     const matchesSearch =
       !filters.value.search ||
       job.title.toLowerCase().includes(filters.value.search.toLowerCase()) ||

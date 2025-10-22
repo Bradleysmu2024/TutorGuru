@@ -93,14 +93,14 @@
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary text-white"
               data-bs-dismiss="modal"
             >
               Cancel
             </button>
             <button
               type="button"
-              class="btn btn-primary"
+              class="btn btn-primary text-white"
               @click="handleSubmitApplication"
             >
               <i class="bi bi-send me-2"></i>
@@ -282,15 +282,3 @@ const handleSubmitApplication = async () => {
   }
 };
 </script>
-
-<style scoped>
-.dashboard-header {
-  padding: 1rem 0;
-}
-
-@media (max-width: 768px) {
-  .dashboard-header h1 {
-    font-size: 1.75rem;
-  }
-}
-</style>

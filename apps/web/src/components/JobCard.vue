@@ -130,10 +130,17 @@ const getStatusIcon = (status) => {
 
 // Compute display status for this card. If current user has applied and it's not rejected, show 'applied'.
 const displayStatus = computed(() => {
+  // If current user has an application for this job, show a per-user state
   if (props.appliedStatus) {
-    if (props.appliedStatus !== 'rejected') return 'applied';
-    return 'rejected';
+    if (props.appliedStatus === 'approved') return 'approved';
+    if (props.appliedStatus === 'rejected') return 'rejected';
+    return 'applied';
   }
+
+  // User hasn't applied. For tutors we prefer to keep jobs visible as 'open'
+  // even when assignment.status === 'pending' (so other tutors still see Open).
+  if (job.status === 'pending') return 'open';
+
   return job.status || 'open';
 });
 
@@ -143,6 +150,7 @@ const getBadgeClass = (status) => {
   const extras = {
     applied: 'bg-primary text-white',
     rejected: 'bg-danger text-white',
+    approved: 'bg-success text-white',
   };
   return extras[status] || base;
 };
@@ -151,6 +159,7 @@ const getIcon = (status) => {
   const extras = {
     applied: 'bi-person-check',
     rejected: 'bi-person-x',
+    approved: 'bi-check-circle',
   };
   return extras[status] || getStatusIcon(status);
 };

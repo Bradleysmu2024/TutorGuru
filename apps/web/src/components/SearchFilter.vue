@@ -71,10 +71,14 @@
               <option :value="'applied'">Applied</option>
               <!-- 'Rejected' shows postings where the current tutor's application was rejected -->
               <option :value="'rejected'">Rejected</option>
+              <option :value="'approved'">Approved</option>
             </select>
-              <div v-if="localFilters.status === 'rejected'" class="mt-2 small text-muted">
-                Showing closed assignments where your application was rejected. Other closed assignments remain hidden.
-              </div>
+            <div v-if="localFilters.status === 'rejected'" class="mt-2 small text-muted">
+              Showing closed assignments where your application was rejected. Other closed assignments remain hidden.
+            </div>
+            <div v-else-if="localFilters.status === 'approved'" class="mt-2 small text-muted">
+              Showing assignments where you were selected (approved). These may be closed.
+            </div>
           </div>
 
         <div class="col-md-6 col-lg-3">

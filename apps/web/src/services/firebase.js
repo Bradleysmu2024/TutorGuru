@@ -1184,6 +1184,21 @@ export const setUserDoc = async (uid, data, options = { merge: true }) => {
   }
 };
 
+// Convert a user id (uid) to their username (if present). Returns username string or null.
+export const getUsernameById = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data && data.username ? data.username : null;
+  } catch (err) {
+    console.error('Error fetching username by id:', err);
+    return null;
+  }
+};
+
 export const findUserByUsername = async (username) => {
   try {
     if (!username) return null;

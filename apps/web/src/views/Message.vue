@@ -1,36 +1,9 @@
 <template>
   <div class="container-fluid d-flex bg-light flex-grow-1" style="min-height: 0;">
-    <!-- Desktop sidebar: visible md+ -->
-    <div class="col-3 p-3 border-end bg-white d-none d-md-block" style="min-height: 0;">
-        <MessageSidebar :selectedId="activeUser && activeUser.id" @selectChat="selectChat" @initial-chats="onInitialChats" />
-    </div>
-
-    <!-- Mobile sidebar overlay (slide-in) -->
-      <div v-if="showSidebar" class="mobile-backdrop d-lg-none" @click="closeSidebar"></div>
-      <div v-if="showSidebar" class="mobile-sidebar d-lg-none">
-      <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-        <strong>Chats</strong>
-        <button class="btn btn-sm btn-outline-secondary" @click="closeSidebar">
-          <i class="bi bi-x-lg"></i>
-        </button>
+    <div class="col-3 p-3 border-end bg-white" style="min-height: 0;">
+    <MessageSidebar :selectedId="activeUser && activeUser.id" @selectChat="selectChat" @initial-chats="onInitialChats" />
       </div>
-      <div class="p-2">
-        <MessageSidebar :selectedId="activeUser && activeUser.id" @selectChat="(u)=>{ selectChat(u); closeSidebar(); }" @initial-chats="onInitialChats" />
-      </div>
-    </div>
-
-    <!-- Chat column -->
-    <div class="col-12 col-lg-9 d-flex flex-column" style="min-height: 0;">
-      <!-- Mobile top bar with toggle -->
-        <div class="d-flex d-lg-none align-items-center p-2 border-bottom">
-          <button class="btn btn-outline-secondary me-2" @click="toggleSidebar">
-          <i class="bi bi-list"></i>
-        </button>
-        <div class="flex-grow-1">
-          <strong>{{ activeUser ? (activeUser.name || activeUser.username || 'Chat') : 'Messages' }}</strong>
-        </div>
-      </div>
-
+    <div class="col-9 d-flex flex-column" style="min-height: 0;">
       <template v-if="activeUser">
         <ChatWindow :activeUser="activeUser" />
       </template>
@@ -55,7 +28,6 @@ import MessageSidebar from '../components/ChatSidebar.vue'
 import { getUserDoc, findUserByUsername } from '../services/firebase'
 
 const activeUser = ref(null)
-const showSidebar = ref(false)
 const router = useRouter()
 const route = useRoute()
 
@@ -71,14 +43,6 @@ const selectChat = (user) => {
   } else {
     activeUser.value = user
   }
-}
-
-const toggleSidebar = () => {
-  showSidebar.value = !showSidebar.value
-}
-
-const closeSidebar = () => {
-  showSidebar.value = false
 }
 
 const onInitialChats = (user) => {
@@ -121,30 +85,3 @@ const goToDashboard = () => {
 
 onUnmounted(() => {})
 </script>
-
-<style scoped>
-/* Mobile sidebar overlay */
-.mobile-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  z-index: 1040;
-}
-.mobile-sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 320px;
-  max-width: 90%;
-  background: #fff;
-  z-index: 1050;
-  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
-  overflow: auto;
-}
-
-/* Ensure chat column takes full height on small screens */
-.d-flex.flex-column > .chat-window {
-  min-height: 0;
-}
-</style>

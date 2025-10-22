@@ -8,9 +8,9 @@
             <i class="bi bi-paperclip me-1"></i>
             {{ job.files.length }} file{{ job.files.length !== 1 ? 's' : '' }}
           </span>
-          <span class="badge" :class="getStatusBadgeClass(job.status)">
-            <i :class="getStatusIcon(job.status)" class="me-1"></i>
-            {{ (job.status || "open").toUpperCase() }}
+          <span class="badge" :class="getBadgeClass(displayStatus)">
+            <i :class="getIcon(displayStatus)" class="me-1"></i>
+            {{ (displayStatus || "open").toUpperCase() }}
           </span>
         </div>
       </div>
@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, computed } from "vue";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -97,6 +97,11 @@ const props = defineProps({
   job: {
     type: Object,
     required: true,
+  },
+  appliedStatus: {
+    type: String,
+    required: false,
+    default: null,
   },
 });
 
@@ -121,6 +126,33 @@ const getStatusIcon = (status) => {
     closed: "bi-check-circle",
   };
   return icons[status] || "bi-circle";
+};
+
+// Compute display status for this card. If current user has applied and it's not rejected, show 'applied'.
+const displayStatus = computed(() => {
+  if (props.appliedStatus) {
+    if (props.appliedStatus !== 'rejected') return 'applied';
+    return 'rejected';
+  }
+  return job.status || 'open';
+});
+
+// Badge class and icon mapping for display statuses, extending the base mappings
+const getBadgeClass = (status) => {
+  const base = getStatusBadgeClass(status);
+  const extras = {
+    applied: 'bg-primary text-white',
+    rejected: 'bg-danger text-white',
+  };
+  return extras[status] || base;
+};
+
+const getIcon = (status) => {
+  const extras = {
+    applied: 'bi-person-check',
+    rejected: 'bi-person-x',
+  };
+  return extras[status] || getStatusIcon(status);
 };
 
 const formatDate = (dateVal) => {

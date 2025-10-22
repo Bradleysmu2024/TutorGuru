@@ -1080,14 +1080,14 @@ onMounted(async () => {
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-secondary text-white"
               @click="closeProfileModal"
             >
               Close
             </button>
             <button
               type="button"
-              class="btn btn-outline-primary"
+              class="btn btn-primary text-white"
               @click="messageTutorFromModal"
             >
               <i class="bi bi-chat-left-text me-2"></i>
@@ -1095,7 +1095,7 @@ onMounted(async () => {
             </button>
             <button
               type="button"
-              class="btn btn-success"
+              class="btn btn-success text-white"
               @click="
                 selectTutorForAssignment(selectedApplicant);
                 closeProfileModal();

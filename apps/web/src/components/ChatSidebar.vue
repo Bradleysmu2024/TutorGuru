@@ -23,9 +23,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore'
 import { onAuthStateChanged } from 'firebase/auth'
-import { db, auth } from '../services/firebase'
+import { auth, getUserDoc, db, getCurrentUser } from '../services/firebase'
+import { query, collection, orderBy, onSnapshot } from 'firebase/firestore'
 const emit = defineEmits(['selectChat', 'initial-chats'])
 const props = defineProps({ selectedId: [String, Number, null] })
 
@@ -42,9 +42,8 @@ const enrichItems = async (items) => {
     const needsEnrich = item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG'
     if (!needsEnrich) return item
     try {
-      const uSnap = await getDoc(doc(db, 'users', item.id))
-      if (uSnap && typeof uSnap.exists === 'function' && uSnap.exists()) {
-        const u = uSnap.data() || {}
+      const u = await getUserDoc(item.id)
+      if (u) {
         return {
           id: item.id,
           name: u.name || item.name,
@@ -60,12 +59,6 @@ const enrichItems = async (items) => {
     return item
   }))
 }
-
-const fetchUsersFallback = async () => {
-  const snap = await getDocs(collection(db, 'users'))
-  return snap.docs.map(d => ({ id: d.id, ...(d.data() || {}), username: (d.data() && d.data().username) || '', avatar: (d.data() && d.data().avatar) || '/src/assets/images/profileplaceholder.JPG' }))
-}
-
 const emitInitialIfNeeded = (list) => {
   if (!initialized.value && Array.isArray(list) && list.length > 0) {
     if (typeof emit === 'function') emit('initial-chats', list[0])
@@ -75,7 +68,12 @@ const emitInitialIfNeeded = (list) => {
 
 const loadChats = async () => {
   try {
-    const currentUid = auth.currentUser ? auth.currentUser.uid : null
+    let currentUid = auth.currentUser ? auth.currentUser.uid : null
+    if (!currentUid) {
+      // wait briefly for auth to initialize
+      const user = await getCurrentUser()
+      currentUid = user ? user.uid : null
+    }
     if (!currentUid) return
     const q = query(collection(db, 'chats', currentUid, 'chats'), orderBy('updatedAt', 'desc'))
     unsubscribe = onSnapshot(q, async (snap) => {
@@ -112,12 +110,6 @@ const loadChats = async () => {
     })
   } catch (err) {
     console.error('Error loading chats:', err)
-    try {
-      users.value = await fetchUsersFallback()
-      emitInitialIfNeeded(users.value)
-    } catch (e) {
-      console.error('Fallback users load failed:', e)
-    }
   }
 }
 
@@ -127,10 +119,8 @@ onMounted(() => {
   const tryLoadProfile = async (uid) => {
     if (!uid) return
     try {
-      const snap = await getDoc(doc(db, 'users', uid))
-      if (snap && snap.exists()) {
-        currentProfile.value = { id: snap.id, ...(snap.data() || {}) }
-      }
+      const u = await getUserDoc(uid)
+      if (u) currentProfile.value = u
     } catch (e) {
       console.error('Error loading current profile:', e)
     }

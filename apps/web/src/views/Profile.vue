@@ -1,5 +1,5 @@
 <template>
-  <div class="tutor-profile">
+  <div class="profile-view">
     <div class="container py-4">
       <!-- Header -->
       <div class="row g-4">
@@ -20,9 +20,20 @@
                   />
                 </div>
                 <h4 class="fw-bold mb-2">{{ profile.name }}</h4>
-                <span v-if="profile.verified" class="badge bg-success mb-3">
+
+                <!-- Tutor-specific badge -->
+                <span
+                  v-if="isTutorProfile && profile.verified"
+                  class="badge bg-success mb-3"
+                >
                   <i class="bi bi-check-circle me-1"></i> Verified Tutor
                 </span>
+
+                <!-- Parent-specific badge -->
+                <span v-if="isParentProfile" class="badge bg-primary mb-3">
+                  <i class="bi bi-person-hearts me-1"></i> Parent
+                </span>
+
                 <div class="d-grid" v-if="!isPublicView">
                   <button
                     class="btn btn-outline-primary btn-sm"
@@ -33,7 +44,10 @@
                 </div>
 
                 <!-- Public profile: show Message button when viewer isn't the profile owner -->
-                <div class="d-grid" v-if="isPublicView && showMessageButton">
+                <div
+                  class="d-grid"
+                  v-if="isPublicView && showMessageButton && isTutorProfile"
+                >
                   <button
                     class="btn btn-primary btn-sm mt-2"
                     @click="messageTutor()"
@@ -42,26 +56,83 @@
                   </button>
                 </div>
               </div>
-                <div class="mb-3 info">
-                <div class="subjects-list mb-3">
-                  <h6>Subjects</h6>
-                  <span
-                    class="subject-tag"
-                    v-for="(item, index) in profile.teaching"
-                    >{{ item.levels + " " + item.subject }}</span
+
+              <div class="mb-3 info">
+                <!-- Tutor-specific information -->
+                <div v-if="isTutorProfile">
+                  <div class="subjects-list mb-3">
+                    <h6>Subjects</h6>
+                    <span
+                      class="subject-tag"
+                      v-for="(item, index) in profile.teaching"
+                      :key="index"
+                      >{{ item.levels + " " + item.subject }}</span
+                    >
+                  </div>
+                  <div class="experience mb-3">
+                    <h6>Years of teaching experience</h6>
+                    <p>{{ profile.experience }}</p>
+                  </div>
+                  <div class="location mb-3">
+                    <h6>Location</h6>
+                    <p>{{ profile.location }}</p>
+                  </div>
+                  <div class="bio mb-3">
+                    <h6>Bio</h6>
+                    <p>{{ profile.bio }}</p>
+                  </div>
+                </div>
+
+                <!-- Parent-specific information -->
+                <div v-if="isParentProfile">
+                  <div class="location mb-3">
+                    <h6><i class="bi bi-geo-alt me-2"></i>Location</h6>
+                    <p class="mb-1">
+                      {{ profile.location || "Not specified" }}
+                    </p>
+                    <small class="text-muted" v-if="profile.formattedAddress">
+                      {{ profile.formattedAddress }}
+                    </small>
+                  </div>
+
+                  <div
+                    class="children-list mb-3"
+                    v-if="profile.children && profile.children.length > 0"
                   >
-                </div>
-                <div class="experience mb-3">
-                  <h6>Years of teaching experience</h6>
-                  <p>{{ profile.experience }}</p>
-                </div>
-                <div class="location mb-3">
-                  <h6>Location</h6>
-                  <p>{{ profile.location }}</p>
-                </div>
-                <div class="bio mb-3">
-                  <h6>Bio</h6>
-                  <p>{{ profile.bio }}</p>
+                    <h6><i class="bi bi-people me-2"></i>Children</h6>
+                    <div
+                      v-for="(child, index) in profile.children"
+                      :key="index"
+                      class="child-card mb-2 p-3 bg-light rounded"
+                    >
+                      <div
+                        class="d-flex justify-content-between align-items-start"
+                      >
+                        <div>
+                          <p class="mb-1 fw-semibold">{{ child.name }}</p>
+                          <p class="mb-1 text-muted small">
+                            Grade: {{ child.grade }}
+                          </p>
+                          <div
+                            v-if="child.subjects && child.subjects.length > 0"
+                          >
+                            <span
+                              v-for="(subject, idx) in child.subjects"
+                              :key="idx"
+                              class="badge bg-secondary me-1"
+                            >
+                              {{ subject }}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="contact mb-3" v-if="profile.phone">
+                    <h6><i class="bi bi-telephone me-2"></i>Phone</h6>
+                    <p>{{ profile.phone }}</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -72,24 +143,52 @@
         <div class="card shadow-sm mt-6 col-lg-4">
           <div class="card-body">
             <h6 class="fw-semibold mb-3">Quick Stats</h6>
-            <div class="stat-item d-flex justify-content-between mb-2">
-              <span class="text-muted">Applications Sent</span>
-              <span class="fw-semibold">12</span>
+
+            <!-- Tutor stats -->
+            <div v-if="isTutorProfile">
+              <div class="stat-item d-flex justify-content-between mb-2">
+                <span class="text-muted">Applications Sent</span>
+                <span class="fw-semibold">12</span>
+              </div>
+              <div class="stat-item d-flex justify-content-between mb-2">
+                <span class="text-muted">Active Students</span>
+                <span class="fw-semibold">5</span>
+              </div>
+              <div class="stat-item d-flex justify-content-between">
+                <span class="text-muted">Rating</span>
+                <span class="fw-semibold">{{ profile.rating ?? "—" }} ⭐</span>
+              </div>
             </div>
-            <div class="stat-item d-flex justify-content-between mb-2">
-              <span class="text-muted">Active Students</span>
-              <span class="fw-semibold">5</span>
-            </div>
-            <div class="stat-item d-flex justify-content-between">
-              <span class="text-muted">Rating</span>
-              <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
+
+            <!-- Parent stats -->
+            <div v-if="isParentProfile">
+              <div class="stat-item d-flex justify-content-between mb-2">
+                <span class="text-muted">Assignments Posted</span>
+                <span class="fw-semibold">{{
+                  profile.assignmentsPosted || 0
+                }}</span>
+              </div>
+              <div class="stat-item d-flex justify-content-between mb-2">
+                <span class="text-muted">Active Assignments</span>
+                <span class="fw-semibold">{{
+                  profile.activeAssignments || 0
+                }}</span>
+              </div>
+              <div class="stat-item d-flex justify-content-between">
+                <span class="text-muted">Children</span>
+                <span class="fw-semibold">{{
+                  profile.children?.length || 0
+                }}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Documents --> 
-        <!-- test needed -->
-        <div v-if="uploadedDocuments.length > 0" class="card shadow-sm">
+        <!-- Documents - Only for tutors -->
+        <div
+          v-if="isTutorProfile && uploadedDocuments.length > 0"
+          class="card shadow-sm"
+        >
           <div class="card-body">
             <h5 class="card-title mb-4">
               <i class="bi bi-file-earmark-text me-2"></i> Documents &
@@ -97,17 +196,33 @@
             </h5>
 
             <div class="list-group">
-              <div v-for="(docItem, idx) in uploadedDocuments" :key="idx" class="list-group-item d-flex justify-content-between align-items-center">
+              <div
+                v-for="(docItem, idx) in uploadedDocuments"
+                :key="idx"
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
                 <div class="d-flex align-items-center">
-                  <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
+                  <i
+                    class="bi bi-file-earmark-check text-success me-2 fs-5"
+                  ></i>
                   <div>
                     <div class="fw-semibold">{{ docItem.name }}</div>
-                    <small class="text-muted">Uploaded {{ docItem.uploadDate }}</small>
+                    <small class="text-muted"
+                      >Uploaded {{ docItem.uploadDate }}</small
+                    >
                   </div>
                 </div>
                 <div>
-                  <a :href="docItem.url || '#'" target="_blank" class="btn btn-sm btn-outline-primary me-2"> <i class="bi bi-eye"></i> </a>
-                  <button class="btn btn-sm btn-outline-danger"> <i class="bi bi-trash"></i> </button>
+                  <a
+                    :href="docItem.url || '#'"
+                    target="_blank"
+                    class="btn btn-sm btn-outline-primary me-2"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <button class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </div>
               </div>
             </div>
@@ -120,10 +235,17 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { auth, db } from "../services/firebase";
+import { auth, db, getUserRole, findUserByUsername, getUserDoc } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { useRoute } from 'vue-router'
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { useRoute } from "vue-router";
 import router from "../router/routes";
 
 // Add Firebase data
@@ -138,78 +260,94 @@ const profile = ref({
   experience: 0,
   avatar: "",
   verified: false,
+  // Parent-specific fields
+  children: [],
+  postalCode: "",
+  formattedAddress: "",
 });
 
-const uploadedDocuments = ref([])
+const userRole = ref(null); // 'tutor' or 'parent'
+const uploadedDocuments = ref([]);
 
-const route = useRoute()
-const isPublicView = ref(false)
-const currentUserId = ref(null)
+const route = useRoute();
+const isPublicView = ref(false);
+const currentUserId = ref(null);
 onAuthStateChanged(auth, (user) => {
-  currentUserId.value = user ? user.uid : null
-})
+  currentUserId.value = user ? user.uid : null;
+});
 
-const profileId = computed(() => profile.value.id || profile.value.uid || profile.value.username || null)
+const profileId = computed(
+  () => profile.value.id || profile.value.uid || profile.value.username || null
+);
 const showMessageButton = computed(() => {
-  return profileId.value && currentUserId.value && profileId.value !== currentUserId.value
-})
+  return (
+    profileId.value &&
+    currentUserId.value &&
+    profileId.value !== currentUserId.value
+  );
+});
+
+// Check if viewing profile is a tutor (for conditional rendering)
+const isTutorProfile = computed(() => userRole.value === "tutor");
+const isParentProfile = computed(() => userRole.value === "parent");
 
 // Load profile when logged in
 onMounted(async () => {
-  const username = route.params.username || null
+  const username = route.params.username || null;
   if (username) {
-    isPublicView.value = true
+    isPublicView.value = true;
     try {
-      const q = query(collection(db, 'users'), where('username', '==', username))
-      const snap = await getDocs(q)
-      if (!snap.empty) {
-        const docRef = snap.docs[0]
-        const docData = docRef.data()
-        profile.value = { ...docData, id: docRef.id }
-        uploadedDocuments.value = docData.uploadedDocuments || []
+      const u = await findUserByUsername(username)
+      if (u) {
+        profile.value = u
+        uploadedDocuments.value = u.uploadedDocuments || []
+        userRole.value = u.role || 'tutor'
       } else {
-        console.warn('Tutor not found for username:', username)
+        console.warn('User not found for username:', username)
       }
     } catch (err) {
-      console.error('Error loading public tutor profile:', err)
+      console.error('Error loading public profile:', err)
     }
-    return
+    return;
   }
 
   const loadProfile = async (uid) => {
-    const refDoc = doc(db, 'users', uid)
-    const snap = await getDoc(refDoc)
-    if (snap.exists()) {
-      profile.value = { ...snap.data(), id: snap.id }
-      uploadedDocuments.value = snap.data().uploadedDocuments || []
+    // Get user role first
+    userRole.value = await getUserRole(uid);
+
+    const u = await getUserDoc(uid)
+    if (u) {
+      profile.value = u
+      uploadedDocuments.value = u.uploadedDocuments || []
     } else {
       alert('Please log in to view your profile.')
     }
   }
 
-  const userNow = auth.currentUser
+  const userNow = auth.currentUser;
   if (userNow) {
-    await loadProfile(userNow.uid)
+    await loadProfile(userNow.uid);
   } else {
     const unsub = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        await loadProfile(user.uid)
+        await loadProfile(user.uid);
       } else {
-        alert('Please log in to view your profile.')
+        alert("Please log in to view your profile.");
       }
-      if (typeof unsub === 'function') unsub()
-    })
+      if (typeof unsub === "function") unsub();
+    });
   }
-})
+});
 
 // Start a chat with this tutor (navigates to /chat?tutorId=<username>)
 const messageTutor = () => {
-  if (!profile.value || !profile.value.username) return alert('Unable to start chat: missing tutor username.');
-  router.push({ path: '/chat', query: { tutor: profile.value.username } });
-}
+  if (!profile.value || !profile.value.username)
+    return alert("Unable to start chat: missing tutor username.");
+  router.push({ path: "/chat", query: { tutor: profile.value.username } });
+};
 
 const editProfile = () => {
-  router.push('/editprofile')
+  router.push("/editprofile");
 };
 </script>
 
@@ -245,6 +383,15 @@ const editProfile = () => {
   font-weight: 500;
   margin: 2px;
   display: inline-block;
+}
+
+.child-card {
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.child-card:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 991px) {

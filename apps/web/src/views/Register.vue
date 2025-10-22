@@ -1,9 +1,9 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { registerUser } from '../services/firebase'
+import { registerUser, signInWithGoogle } from '../services/firebase'
 import { db } from '../services/firebase'
-import { doc, setDoc } from 'firebase/firestore'
+import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore'
 
 const router = useRouter()
 
@@ -13,7 +13,8 @@ const registerForm = ref({
   email: '',
   password: '',
   confirmPassword: '',
-  agreeTerms: false
+  agreeTerms: false,
+  role:'parent'
 })
 
 const handleRegister = async () => {
@@ -94,6 +95,105 @@ const handleRegister = async () => {
 
   alert('Registration successful! Please complete your parent profile.')
   router.push('/editprofile') 
+    }
+  } catch (error) {
+    console.error('Registration error:', error)
+    alert('Unexpected error. Please try again.')
+  }
+}
+
+const handleGoogleRegister = async () => {
+  try {
+    console.log(registerForm.value.role)
+    if (registerForm.value.agreeTerms !== true) {
+    alert('Please agree to the terms.')
+    return
+    }
+    if (registerForm.value.role == null){
+    alert('Please select a Role.')
+    return  
+    }
+    const response = await signInWithGoogle()
+    if (!response.success) {
+      alert(`Google register failed: ${response.error}`)
+      return
+    }
+    console.log(response.user)
+    const user = response.user
+    const displayName = user.displayName
+    const normalizedEmail = user.email.trim().toLowerCase();
+    // const photoURL = user.photoURL
+    const q = query(collection(db, "users"), where("email", "==", normalizedEmail));
+    const querySnapshot = await getDocs(q);
+    // email exists
+    if (!querySnapshot.empty) {
+      console.log("Email already exists");
+      alert('Email is already Used. Please Login with the method you have registered with.')
+      return
+    }
+    // create Firebase user collection (defines role of the user for storage)
+    await setDoc(doc(db, "users", user.uid), {
+      username: user.uid,
+      name: user.displayName,
+      email: normalizedEmail,
+      createdAt: new Date().toISOString(),
+      role: registerForm.value.role
+    })
+    if (registerForm.value.role === "tutor"){
+      // add tutor-specific fields into users/{uid}
+      await setDoc(doc(db, "users", user.uid), {
+        username: user.uid,
+        name: user.displayName,
+        email: normalizedEmail,
+        phone: "",
+        location: "",
+        bio: "",
+        teaching: [{ subject: "", levels: [] }],
+        experience: 0,
+        avatar: "",
+        role: "tutor",
+        rating: null,
+        createdAt: new Date().toISOString(),
+        verified: false
+      }, { merge: true })
+
+      console.log("✅ Tutor user created in Firestore for:", user.email)
+
+      localStorage.setItem("user", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        token: response.token, // google token
+        expiry: response.expiry // google api token expiry
+      }))
+
+      alert('Registration successful! Please complete your tutor profile.')
+      router.push('/editprofile') 
+    }
+    else if (registerForm.value.role === "parent"){
+      // add parent-specific fields into users/{uid}
+      await setDoc(doc(db, "users", user.uid), {
+        username: user.uid,
+        name: user.displayName,
+        email: normalizedEmail,
+        phone: "",
+        children: [],
+        role: "parent",
+        createdAt: new Date().toISOString(),
+      }, { merge: true })
+
+      console.log("✅ Parent user created in Firestore for:", user.email)
+
+      localStorage.setItem("user", JSON.stringify({
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        token: response.token, // google token
+        expiry: response.expiry // google api token expiry
+      }))
+
+      alert('Registration successful! Please complete your parent profile.')
+      router.push('/editprofile') 
     }
   } catch (error) {
     console.error('Registration error:', error)
@@ -181,6 +281,14 @@ const handleRegister = async () => {
                     <i class="bi bi-person-check me-2"></i>
                     Create Account
                   </button>
+                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleRegister">
+                    <img
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt="Google logo"
+                      height="20px"
+                    />
+                    Sign Up with Google
+                </button>
                 </div>
 
                 <div class="text-center">

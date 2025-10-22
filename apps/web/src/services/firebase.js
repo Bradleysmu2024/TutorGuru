@@ -36,8 +36,10 @@ import {
   ref,
   uploadBytes,
   getDownloadURL,
+  deleteObject,
   connectStorageEmulator,
 } from "firebase/storage";
+import { ref as vueRef } from 'vue'
 
 // TODO: Replace with your Firebase config
 const firebaseConfig = {
@@ -162,6 +164,159 @@ export const deleteAssignment = async (assignmentId) => {
   }
 };
 
+// ============= APPLICATION FUNCTIONS =============
+
+/**
+ * Submit an application for a tutoring assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} tutorId - The ID of the tutor applying
+ * @param {Object} applicationData - Application details (coverLetter, startDate)
+ * @returns {Promise<Object>} Result with success status
+ */
+export const submitApplication = async (
+  assignmentId,
+  tutorId,
+  applicationData
+) => {
+  try {
+    // Get tutor details for the application
+    const tutorDoc = await getDoc(doc(db, "users", tutorId));
+    if (!tutorDoc.exists()) {
+      throw new Error("Tutor profile not found");
+    }
+    const tutorData = tutorDoc.data();
+
+    // Create the application document
+    const application = {
+      assignmentId,
+      tutorId,
+      tutorName: tutorData.name || "Unknown",
+      tutorEmail: tutorData.email || "",
+      tutorAvatar: tutorData.avatar || "",
+      tutorExperience: tutorData.experience || 0,
+      tutorRating: tutorData.rating || null,
+      coverLetter: applicationData.coverLetter,
+      startDate: applicationData.startDate,
+      status: "pending", // pending, approved, rejected
+      appliedAt: new Date().toISOString(),
+    };
+
+    // Add to applications subcollection
+    const appRef = await addDoc(
+      collection(db, "assignments", assignmentId, "applications"),
+      application
+    );
+
+    // Update assignment status to "pending" if it's currently "open"
+    const assignmentDoc = await getDoc(doc(db, "assignments", assignmentId));
+    if (assignmentDoc.exists() && assignmentDoc.data().status === "open") {
+      await updateDoc(doc(db, "assignments", assignmentId), {
+        status: "pending",
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    return { success: true, applicationId: appRef.id };
+  } catch (error) {
+    console.error("Error submitting application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Get all applications for a specific assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @returns {Promise<Array>} List of applications
+ */
+export const getAssignmentApplications = async (assignmentId) => {
+  try {
+    const q = query(
+      collection(db, "assignments", assignmentId, "applications"),
+      orderBy("appliedAt", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (error) {
+    console.error("Error getting applications:", error);
+    return [];
+  }
+};
+
+/**
+ * Approve a tutor application and close the assignment
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} applicationId - The ID of the approved application
+ * @param {string} tutorId - The ID of the approved tutor
+ * @returns {Promise<Object>} Result with success status
+ */
+export const approveApplication = async (
+  assignmentId,
+  applicationId,
+  tutorId
+) => {
+  try {
+    // Update the approved application status
+    await updateDoc(
+      doc(db, "assignments", assignmentId, "applications", applicationId),
+      {
+        status: "approved",
+        approvedAt: new Date().toISOString(),
+      }
+    );
+
+    // Update assignment status to "closed" and add selectedTutorId
+    await updateDoc(doc(db, "assignments", assignmentId), {
+      status: "closed",
+      selectedTutorId: tutorId,
+      closedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Get all other applications and reject them
+    const applications = await getAssignmentApplications(assignmentId);
+    const rejectPromises = applications
+      .filter((app) => app.id !== applicationId)
+      .map((app) =>
+        updateDoc(
+          doc(db, "assignments", assignmentId, "applications", app.id),
+          {
+            status: "rejected",
+            rejectedAt: new Date().toISOString(),
+          }
+        )
+      );
+
+    await Promise.all(rejectPromises);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error approving application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Reject a tutor application
+ * @param {string} assignmentId - The ID of the assignment
+ * @param {string} applicationId - The ID of the application to reject
+ * @returns {Promise<Object>} Result with success status
+ */
+export const rejectApplication = async (assignmentId, applicationId) => {
+  try {
+    await updateDoc(
+      doc(db, "assignments", assignmentId, "applications", applicationId),
+      {
+        status: "rejected",
+        rejectedAt: new Date().toISOString(),
+      }
+    );
+    return { success: true };
+  } catch (error) {
+    console.error("Error rejecting application:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 export const getParentAssignments = async (parentId) => {
   try {
     // Fetch assignments for parentId without server-side ordering to avoid composite index requirements.
@@ -253,15 +408,18 @@ export const loginUser = async (email, password) => {
   }
 };
 
+// Reactive login status shared across the app
+export const loginStatus = vueRef(false);
+
+// Keep loginStatus and localStorage in sync with Firebase Auth
 onAuthStateChanged(auth, (user) => {
+  loginStatus.value = !!user;
   if (user) {
-    // User is signed in.
-    console.log("User is logged in:", user.uid);
-    // Here you can store the user data in a global state (e.g., Pinia, Vuex, or a reactive variable)
+    if (!localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
+    }
   } else {
-    // User is signed out.
-    console.log("User is logged out");
-    // Clear the user data from your global state here
+    localStorage.removeItem('user');
   }
 });
 
@@ -979,6 +1137,146 @@ export const getUserRole = async (uid) => {
     return null;
   }
 };
+
+// Small helper to obtain the current authenticated user via an observer
+export const getCurrentUser = async () => {
+  try {
+    return new Promise((resolve, reject) => {
+      const removeListener = onAuthStateChanged(
+        auth,
+        (user) => {
+          // unsubscribe immediately after receiving the value
+          if (typeof removeListener === 'function') removeListener();
+          resolve(user);
+        },
+        (err) => {
+          reject(err);
+        }
+      );
+    });
+  } catch (error) {
+    console.error('Error getting currentUser:', error);
+    return null;
+  }
+};
+
+// Convenience wrappers for user document operations
+export const getUserDoc = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() };
+  } catch (err) {
+    console.error('Error fetching user doc:', err);
+    return null;
+  }
+};
+
+export const setUserDoc = async (uid, data, options = { merge: true }) => {
+  try {
+    if (!uid) throw new Error('Missing uid');
+    await setDoc(doc(db, 'users', uid), data, options);
+    return { success: true };
+  } catch (err) {
+    console.error('Error setting user doc:', err);
+    return { success: false, error: err };
+  }
+};
+
+// Convert a user id (uid) to their username (if present). Returns username string or null.
+export const getUsernameById = async (uid) => {
+  try {
+    if (!uid) return null;
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    const data = snap.data();
+    return data && data.username ? data.username : null;
+  } catch (err) {
+    console.error('Error fetching username by id:', err);
+    return null;
+  }
+};
+
+  /**
+   * Upload user avatar to Storage, update users/{uid}.avatar and delete previous avatar file if present.
+   * @param {string} uid
+   * @param {File} file
+   * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
+   */
+  export const uploadUserAvatar = async (uid, file, folder = 'users') => {
+    try {
+      if (!uid) throw new Error('Missing uid');
+      if (!file) throw new Error('Missing file');
+
+      // get previous avatar URL (if any)
+      const userDoc = await getUserDoc(uid);
+      const oldUrl = userDoc ? (userDoc.avatar || userDoc.avator) : null;
+
+      const ext = (file.name || '').split('.').pop();
+      const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
+      const storageRef = ref(storage, path);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+
+      // update user doc
+      await setUserDoc(uid, { avatar: url }, { merge: true });
+
+      // attempt to delete old avatar if it looks like a firebase storage URL
+      if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
+        try {
+          const parts = oldUrl.split('/o/');
+          if (parts.length > 1) {
+            const pathAndQuery = parts[1];
+            const encodedPath = pathAndQuery.split('?')[0];
+            const storagePath = decodeURIComponent(encodedPath);
+            const oldRef = ref(storage, storagePath);
+            await deleteObject(oldRef);
+          }
+        } catch (delErr) {
+          console.warn('Failed to delete old avatar from storage:', delErr);
+        }
+      }
+
+      return { success: true, url };
+    } catch (err) {
+      console.error('Error in uploadUserAvatar:', err);
+      return { success: false, error: err.message || err };
+    }
+  };
+
+export const findUserByUsername = async (username) => {
+  try {
+    if (!username) return null;
+    const q = query(collection(db, 'users'), where('username', '==', username));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const docRef = snap.docs[0];
+    return { id: docRef.id, ...docRef.data() };
+  } catch (err) {
+    console.error('Error finding user by username:', err);
+    return null;
+  }
+};
+
+export const listAllUsers = async (role = null) => {
+  try {
+    let snap;
+    if (role) {
+      const q = query(collection(db, 'users'), where('role', '==', role));
+      snap = await getDocs(q);
+    } else {
+      snap = await getDocs(collection(db, 'users'));
+    }
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.error('Error listing users:', err);
+    return [];
+  }
+};
+
 
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {

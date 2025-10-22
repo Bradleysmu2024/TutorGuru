@@ -1,3 +1,4 @@
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 <template>
   <div class="tutor-profile">
     <div class="container py-4">
@@ -15,27 +16,43 @@
         <div class="col-lg-4">
           <div class="card shadow-sm">
             <div class="card-body text-center">
-              <div class="profile-avatar mb-3">
-                <img
-                  :src="
-                    profile.avatar ||
-                    '/src/assets/images/profileplaceholder.JPG'
-                  "
-                  alt="Profile"
-                  class="rounded-circle img-fluid"
-                  style="width: 150px; height: 150px; object-fit: cover"
-                />
-              </div>
-              <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
-              <p class="text-muted mb-3">{{ profile.email }}</p>
-              <span v-if="profile.verified" class="badge bg-success mb-3">
-                <i class="bi bi-check-circle me-1"></i> Verified Tutor
-              </span>
-              <div class="d-grid">
-                <button class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-camera me-2"></i> Change Photo
-                </button>
-              </div>
+                          <div class="profile-avatar mb-3">
+                            <img
+                              :src="profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
+                              alt="Profile"
+                              class="rounded-circle img-fluid"
+                              style="width: 150px; height: 150px; object-fit: cover"
+                            />
+                          </div>
+                          <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
+                          <p class="text-muted mb-3">{{ profile.email }}</p>
+                          <span v-if="profile.verified" class="badge bg-success mb-3">
+                            <i class="bi bi-check-circle me-1"></i> Verified Tutor
+                          </span>
+                          <div class="d-grid">
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              @click="triggerAvatarInput"
+                              :disabled="avatarUploading"
+                            >
+                              <template v-if="avatarUploading">
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                Uploading...
+                              </template>
+                              <template v-else>
+                                <i class="bi bi-camera me-2"></i> Change Photo
+                              </template>
+                            </button>
+                            <!-- hidden file input -->
+                            <input
+                              ref="avatarInputRef"
+                              type="file"
+                              accept="image/*"
+                              style="display: none"
+                              @change="handleAvatarChange"
+                            />
+                          </div>
             </div>
           </div>
 
@@ -397,6 +414,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
+import { uploadUserAvatar } from "../services/firebase";
 
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
@@ -426,23 +444,44 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error loading form data:", error);
   }
-
-  // // Existing auth state change logic
-  // onAuthStateChanged(auth, async (user) => {
-  //   if (user) {
-  //     const refDoc = doc(db, "users", user.uid)
-  //     const snap = await getDoc(refDoc)
-  //     if (snap.exists()) {
-  //       profile.value = snap.data()
-  //       uploadedDocuments.value = snap.data().uploadedDocuments || []
-  //     }
-  //   } else {
-  //     alert("Please log in to view your profile.")
-  //   }
-  // })
 });
 
 const uploadedDocuments = ref([]);
+const avatarInputRef = ref(null);
+const avatarUploading = ref(false);
+
+const triggerAvatarInput = () => {
+  if (avatarInputRef.value) avatarInputRef.value.click();
+};
+
+const handleAvatarChange = async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  await uploadAvatar(file);
+  e.target.value = "";
+};
+
+const uploadAvatar = async (file) => {
+  const user = auth.currentUser;
+  if (!user) return alert("You must be logged in to change your photo.");
+
+  avatarUploading.value = true;
+  try {
+    const res = await uploadUserAvatar(user.uid, file, 'tutors');
+    if (res.success) {
+      profile.value.avatar = res.url;
+      alert('Profile photo updated successfully!');
+    } else {
+      console.error('uploadUserAvatar failed:', res.error);
+      alert('Failed to upload avatar. Please try again.');
+    }
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    alert('Failed to upload avatar. Please try again.');
+  } finally {
+    avatarUploading.value = false;
+  }
+};
 
 const addSubject = () => {
   profile.value.teaching.push({ subject: "", levels: [] });
@@ -523,6 +562,8 @@ const handleUploadComplete = (files) => {
   });
 });
 
+import { findUserByUsername, setUserDoc, getCurrentUser } from '../services/firebase'
+
 // Save profile to Firestore
 const saveProfile = async () => {
   const user = auth.currentUser;
@@ -532,15 +573,10 @@ const saveProfile = async () => {
   const desiredUsername = (profile.value.username || "").trim();
   if (desiredUsername) {
     try {
-      const q = query(collection(db, 'users'), where('username', '==', desiredUsername));
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        // if any matching doc belongs to someone else, block save
-        const takenByOther = snap.docs.some(d => d.id !== user.uid);
-        if (takenByOther) {
-          alert('That username is already taken. Please choose another.');
-          return;
-        }
+      const existing = await findUserByUsername(desiredUsername)
+      if (existing && existing.id !== user.uid) {
+        alert('That username is already taken. Please choose another.');
+        return;
       }
     } catch (err) {
       console.error('Error validating username uniqueness:', err);
@@ -549,9 +585,13 @@ const saveProfile = async () => {
     }
   }
 
-  const tutorRef = doc(db, "users", user.uid);
-  await updateDoc(tutorRef, profile.value);
-  alert("Profile saved successfully!");
+  // Persist to users/{uid}
+  const result = await setUserDoc(user.uid, profile.value, { merge: true })
+  if (result && result.success) {
+    alert('Profile saved successfully!')
+  } else {
+    alert('Failed to save profile. Please try again.')
+  }
 };
 
 const openEmailChangeModal = () => {
@@ -587,11 +627,11 @@ const changeEmail = async () => {
 
     // Step 2: Update Firestore profile
     const user = await getCurrentUser();
-    if (user && user.uid) {
-      await setDoc(doc(db, "tutorProfile", user.uid), {
+      if (user && user.uid) {
+      await setUserDoc(user.uid, {
         ...profile.value,
         email: newEmail.value,
-      });
+      }, { merge: true });
 
       // Update local state
       profile.value.email = newEmail.value;

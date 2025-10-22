@@ -2,8 +2,16 @@
   <div class="top-tutors">
     <div class="container py-4">
       <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">Top Tutors</h2>
-        <p class="text-muted mb-0">Sorted by rating</p>
+        <div>
+          <h2 class="fw-bold mb-0">Top Tutors</h2>
+          <p class="text-muted mb-0">Sorted by rating</p>
+        </div>
+        <div style="min-width: 280px; max-width: 420px; width: 40%;">
+          <div class="input-group">
+            <input v-model="query" type="search" class="form-control" placeholder="Search tutors by name or username" aria-label="Search tutors">
+            <button v-if="query" class="btn btn-outline-secondary" type="button" @click="query = ''">Clear</button>
+          </div>
+        </div>
       </div>
 
       <div v-if="loading" class="text-center py-5">
@@ -17,7 +25,7 @@
       </div>
 
       <div v-else class="row g-4">
-        <div v-for="t in tutors" :key="t.id" class="col-md-6 col-lg-4">
+        <div v-for="t in filteredTutors" :key="t.id" class="col-md-6 col-lg-4">
           <div class="card shadow-sm h-100">
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-center mb-3">
@@ -43,23 +51,30 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { collection, getDocs } from 'firebase/firestore'
-import { db } from '../services/firebase'
+import { ref, onMounted, computed } from 'vue'
+import { listAllUsers } from '../services/firebase'
 
 const tutors = ref([])
 const loading = ref(false)
+const query = ref('')
+
+const filteredTutors = computed(() => {
+  if (!query.value) return tutors.value
+  const q = query.value.trim().toLowerCase()
+  return tutors.value.filter(t => {
+    const name = (t.name || '').toLowerCase()
+    const username = (t.username || '').toLowerCase()
+    return name.includes(q) || username.includes(q)
+  })
+})
 
 onMounted(async () => {
   loading.value = true
   try {
-  const snap = await getDocs(collection(db, 'users'))
-  const items = snap.docs.map(d => ({ id: d.id, ...(d.data() || {}) }))
-  // filter to only tutors
-  const tutorsOnly = items.filter(i => i.role === 'tutor')
+    const items = await listAllUsers('tutor')
     // sort by rating desc (missing rating => 0)
-  tutorsOnly.sort((a,b) => (b.rating ?? 0) - (a.rating ?? 0))
-  tutors.value = tutorsOnly
+    items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    tutors.value = items
   } catch (err) {
     console.error('Error loading tutors:', err)
   } finally {

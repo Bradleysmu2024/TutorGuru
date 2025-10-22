@@ -6,8 +6,12 @@ import {
   getAssignmentById,
   createPaymentRecord,
   deleteAssignment,
+  getAssignmentApplications,
+  approveApplication,
+  rejectApplication,
   auth,
   db,
+  getUsernameById,
 } from "../services/firebase";
 import { createPaymentSession } from "../services/stripe";
 import {
@@ -20,7 +24,6 @@ import {
 } from "firebase/firestore";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-// import { getTutorApplications, selectTutor } from '../services/firebase'
 
 const route = useRoute();
 const router = useRouter();
@@ -28,11 +31,16 @@ const assignment = ref(null);
 const loading = ref(true);
 const selectedTutorId = ref(null);
 const assignmentMap = ref(null);
+const applications = ref([]); // Store applications from Firebase
 
 // Payment-related state
 const processing = ref(false);
 const paymentStatus = ref(null);
 const selectedTutor = ref(null);
+
+// Modal state for viewing tutor profile
+const showTutorProfileModal = ref(false);
+const selectedApplicant = ref(null);
 
 // Check if payment has been made for this assignment
 const checkPaymentStatus = async (assignmentId) => {
@@ -101,25 +109,27 @@ const loadAssignment = async () => {
       // Check payment status
       await checkPaymentStatus(assignmentId);
 
-      // If assignment has a tutorId, fetch tutor details
-      if (remote.tutorId) {
-        await loadTutorDetails(remote.tutorId);
+      // Load applications from Firebase subcollection
+      applications.value = await getAssignmentApplications(assignmentId);
+
+      // If assignment has a tutorId or selectedTutorId, fetch tutor details
+      if (remote.tutorId || remote.selectedTutorId) {
+        await loadTutorDetails(remote.tutorId || remote.selectedTutorId);
       }
     } else {
       // fallback to local dummy data for development
       assignment.value =
         dummyParentAssignments.find((a) => a.id === assignmentId) || null;
-    }
 
-    // Load tutor profiles for applicants (if present)
-    if (assignment.value && assignment.value.applicants) {
-      assignment.value.applicants = (assignment.value.applicants || []).map(
-        (app) => {
-          // If applicant has an id, try enrich from dummy tutor profiles (development only)
-          const profile = dummyTutorProfiles.find((t) => t.id === app.id);
-          return { ...app, ...profile };
-        }
-      );
+      // Load tutor profiles for applicants (if present) - for dummy data
+      if (assignment.value && assignment.value.applicants) {
+        assignment.value.applicants = (assignment.value.applicants || []).map(
+          (app) => {
+            const profile = dummyTutorProfiles.find((t) => t.id === app.id);
+            return { ...app, ...profile };
+          }
+        );
+      }
     }
 
     loading.value = false;
@@ -154,30 +164,82 @@ const downloadAllFiles = () => {
   alert("Downloading all files as ZIP...");
 };
 
-const viewTutorProfile = (tutorId) => {
-  // TODO: Navigate to tutor profile view
-  console.log("Viewing tutor profile:", tutorId);
+const viewTutorProfile = (application) => {
+  selectedApplicant.value = application;
+  showTutorProfileModal.value = true;
 };
 
-const selectTutorForAssignment = async (tutorId) => {
+const closeProfileModal = () => {
+  showTutorProfileModal.value = false;
+  selectedApplicant.value = null;
+};
+
+// Start a chat with the selected applicant from the modal
+const messageTutorFromModal = async () => {
+  const app = selectedApplicant.value;
+  const tutorIdentifier = await getUsernameById(app.tutorId);
+  if (!app) return alert('No tutor selected');
+
+  if (!tutorIdentifier) {
+    return alert('Unable to start chat: missing tutor identifier.');
+  }
+
+  // Close modal then navigate to chat view with tutor query parameter
+  showTutorProfileModal.value = false;
+  selectedApplicant.value = null;
+  router.push({ path: '/chat', query: { tutor: tutorIdentifier } });
+};
+
+const selectTutorForAssignment = async (application) => {
   if (
     !confirm(
-      "Are you sure you want to select this tutor? This action cannot be undone."
+      `Are you sure you want to select ${application.tutorName}? This will close the assignment and reject all other applicants.`
     )
   ) {
     return;
   }
 
   try {
-    // TODO: Replace with Firebase call
-    // await selectTutor(assignment.value.id, tutorId)
+    const result = await approveApplication(
+      assignment.value.id,
+      application.id,
+      application.tutorId
+    );
 
-    console.log("Selecting tutor:", tutorId);
-    alert("Tutor selected successfully!");
-    router.push("/parent-dashboard");
+    if (result.success) {
+      alert("Tutor selected successfully! The assignment has been closed.");
+      // Reload assignment to reflect changes
+      await loadAssignment();
+    } else {
+      alert(`Failed to select tutor: ${result.error}`);
+    }
   } catch (error) {
     console.error("Error selecting tutor:", error);
     alert("Failed to select tutor. Please try again.");
+  }
+};
+
+const rejectTutorApplication = async (application) => {
+  if (
+    !confirm(
+      `Are you sure you want to reject ${application.tutorName}'s application?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const result = await rejectApplication(assignment.value.id, application.id);
+
+    if (result.success) {
+      alert("Application rejected.");
+      await loadAssignment();
+    } else {
+      alert(`Failed to reject application: ${result.error}`);
+    }
+  } catch (error) {
+    console.error("Error rejecting application:", error);
+    alert("Failed to reject application. Please try again.");
   }
 };
 
@@ -330,32 +392,32 @@ const editAssignment = () => {
     path: "/post-assignment",
     query: {
       edit: "true",
-      id: assignment.value.id || route.params.id
-    }
+      id: assignment.value.id || route.params.id,
+    },
   });
 };
 
 const deleteAssignmentHandler = async () => {
   const assignmentTitle = assignment.value?.title || "this assignment";
-  
+
   // Show confirmation dialog
-  if (!confirm(
-    `Are you sure you want to delete "${assignmentTitle}"?\n\n` +
-    `This action cannot be undone. All applicants and data will be permanently removed.`
-  )) {
+  if (
+    !confirm(
+      `Are you sure you want to delete "${assignmentTitle}"?\n\n` +
+        `This action cannot be undone. All applicants and data will be permanently removed.`
+    )
+  ) {
     return;
   }
 
   // Double confirmation for safety
-  if (!confirm(
-    `Final confirmation: Delete "${assignmentTitle}"?`
-  )) {
+  if (!confirm(`Final confirmation: Delete "${assignmentTitle}"?`)) {
     return;
   }
 
   try {
     const assignmentId = assignment.value?.id || route.params.id;
-    
+
     if (!assignmentId) {
       alert("Assignment ID not found");
       return;
@@ -363,17 +425,17 @@ const deleteAssignmentHandler = async () => {
 
     // Delete from Firestore
     const result = await deleteAssignment(assignmentId);
-    
+
     if (!result?.success) {
       throw new Error(result?.error || "Failed to delete assignment");
     }
 
     alert("Assignment deleted successfully!");
-    
+
     // Redirect to parent dashboard
     router.push({
       path: "/parent-dashboard",
-      query: { refresh: Date.now().toString() }
+      query: { refresh: Date.now().toString() },
     });
   } catch (error) {
     console.error("Error deleting assignment:", error);
@@ -748,91 +810,110 @@ onMounted(async () => {
             <!-- Applicants Section -->
             <div
               v-if="
-                assignment.status === 'pending' &&
-                (assignment.applicants || []).length > 0
+                (assignment.status === 'pending' ||
+                  assignment.status === 'open') &&
+                applications.length > 0
               "
               class="card shadow-sm"
             >
               <div class="card-body">
                 <h5 class="fw-semibold mb-4">
                   <i class="bi bi-people me-2"></i>
-                  Tutor Applications ({{
-                    (assignment.applicants || []).length
-                  }})
+                  Tutor Applications ({{ applications.length }})
                 </h5>
 
                 <div
-                  v-for="applicant in assignment.applicants || []"
-                  :key="applicant.id"
-                  class="applicant-card mb-3"
+                  v-for="application in applications.filter(
+                    (app) => app.status === 'pending'
+                  )"
+                  :key="application.id"
+                  class="applicant-card mb-3 p-3 border rounded"
                 >
                   <div class="row align-items-center">
                     <div class="col-md-2 text-center">
                       <img
-                        :src="applicant.avatar"
+                        :src="
+                          application.tutorAvatar ||
+                          '/src/assets/images/profileplaceholder.JPG'
+                        "
                         alt="Tutor"
                         class="rounded-circle img-fluid mb-2"
                         style="width: 80px; height: 80px; object-fit: cover"
                       />
-                      <div class="rating">
+                      <div class="rating" v-if="application.tutorRating">
                         <small class="text-warning"
-                          >★ {{ applicant.rating }}</small
+                          >★ {{ application.tutorRating }}</small
                         >
                       </div>
                     </div>
                     <div class="col-md-7">
-                      <h6 class="fw-bold mb-1">{{ applicant.name }}</h6>
-                      <p class="text-muted small mb-2">{{ applicant.bio }}</p>
-                      <div class="mb-2">
-                        <span
-                          class="badge bg-light text-dark me-1"
-                          v-for="subject in applicant.subjects"
-                          :key="subject"
-                        >
-                          {{ subject }}
-                        </span>
+                      <h6 class="fw-bold mb-1">{{ application.tutorName }}</h6>
+                      <p class="text-muted small mb-2">
+                        {{ application.tutorEmail }}
+                      </p>
+                      <div class="mb-2" v-if="application.tutorExperience">
+                        <small class="text-muted">
+                          <i class="bi bi-briefcase me-1"></i>
+                          {{ application.tutorExperience }} years experience
+                        </small>
                       </div>
                       <div class="mb-2">
                         <small class="text-muted">
-                          <i class="bi bi-briefcase me-1"></i>
-                          {{ applicant.experience }} years experience
+                          <i class="bi bi-calendar-event me-1"></i>
+                          Available from:
+                          {{
+                            new Date(application.startDate).toLocaleDateString()
+                          }}
                         </small>
-                        <small class="text-muted ms-3">
-                          <i class="bi bi-people me-1"></i>
-                          {{ applicant.totalStudents }} students taught
-                        </small>
-                      </div>
-                      <div class="mb-2">
-                        <strong class="text-success">{{
-                          applicant.rate
-                        }}</strong>
                       </div>
                       <details class="mt-2">
                         <summary class="text-primary" style="cursor: pointer">
                           View Cover Letter
                         </summary>
                         <p class="text-muted small mt-2 ps-3">
-                          {{ applicant.coverLetter }}
+                          {{ application.coverLetter }}
                         </p>
                       </details>
+                      <small class="text-muted d-block mt-2">
+                        Applied
+                        {{ new Date(application.appliedAt).toLocaleString() }}
+                      </small>
                     </div>
                     <div class="col-md-3 text-md-end mt-3 mt-md-0">
                       <button
                         class="btn btn-sm btn-outline-primary mb-2 w-100"
-                        @click="viewTutorProfile(applicant.id)"
+                        @click="viewTutorProfile(application)"
                       >
                         <i class="bi bi-person me-1"></i>
                         View Profile
                       </button>
                       <button
-                        class="btn btn-sm btn-success w-100"
-                        @click="selectTutorForAssignment(applicant.id)"
+                        class="btn btn-sm btn-success w-100 mb-2"
+                        @click="selectTutorForAssignment(application)"
                       >
                         <i class="bi bi-check-circle me-1"></i>
                         Select Tutor
                       </button>
+                      <button
+                        class="btn btn-sm btn-outline-danger w-100"
+                        @click="rejectTutorApplication(application)"
+                      >
+                        <i class="bi bi-x-circle me-1"></i>
+                        Reject
+                      </button>
                     </div>
                   </div>
+                </div>
+
+                <div
+                  v-if="
+                    applications.filter((app) => app.status === 'pending')
+                      .length === 0
+                  "
+                  class="text-center text-muted py-3"
+                >
+                  <i class="bi bi-inbox"></i>
+                  <p class="mb-0">No pending applications</p>
                 </div>
               </div>
             </div>
@@ -846,16 +927,17 @@ onMounted(async () => {
             </div>
 
             <div
-              v-else-if="assignment.status === 'closed' && !assignment.tutorId"
+              v-else-if="assignment.status === 'closed'"
               class="alert alert-success"
             >
               <i class="bi bi-check-circle me-2"></i>
-              This assignment has been closed. Tutor selected:
-              <strong>{{
-                assignment.selectedTutor
-                  ? assignment.selectedTutor.name
-                  : "Unknown"
-              }}</strong>
+              This assignment has been closed.
+              <span v-if="selectedTutor">
+                Tutor selected: <strong>{{ selectedTutor.name }}</strong>
+              </span>
+              <span v-else>
+                A tutor has been selected for this assignment.
+              </span>
             </div>
           </div>
 
@@ -883,18 +965,18 @@ onMounted(async () => {
                   <small class="text-muted d-block"
                     >Applications Received</small
                   >
-                  <strong>{{ (assignment.applicants || []).length }}</strong>
+                  <strong>{{ applications.length }}</strong>
                 </div>
                 <hr />
                 <div class="d-grid gap-2">
-                  <button 
+                  <button
                     class="btn btn-outline-primary btn-sm"
                     @click="editAssignment"
                   >
                     <i class="bi bi-pencil me-2"></i>
                     Edit Assignment
                   </button>
-                  <button 
+                  <button
                     class="btn btn-outline-danger btn-sm"
                     @click="deleteAssignmentHandler"
                   >
@@ -904,6 +986,124 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutor Profile Modal -->
+    <div
+      v-if="showTutorProfileModal && selectedApplicant"
+      class="modal fade show"
+      style="display: block; background-color: rgba(0, 0, 0, 0.5)"
+      tabindex="-1"
+      @click.self="closeProfileModal"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-person-circle me-2"></i>
+              Tutor Profile
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              @click="closeProfileModal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <img
+                :src="
+                  selectedApplicant.tutorAvatar ||
+                  '/src/assets/images/profileplaceholder.JPG'
+                "
+                alt="Tutor"
+                class="rounded-circle mb-3"
+                style="width: 120px; height: 120px; object-fit: cover"
+              />
+              <h4 class="fw-bold mb-1">{{ selectedApplicant.tutorName }}</h4>
+              <p class="text-muted mb-2">{{ selectedApplicant.tutorEmail }}</p>
+              <div v-if="selectedApplicant.tutorRating" class="rating mb-3">
+                <span class="text-warning fs-5"
+                  >★ {{ selectedApplicant.tutorRating }}</span
+                >
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <div class="card bg-light border-0">
+                  <div class="card-body text-center">
+                    <i class="bi bi-briefcase fs-3 text-primary mb-2"></i>
+                    <p class="mb-1 small text-muted">Experience</p>
+                    <p class="fw-bold mb-0">
+                      {{ selectedApplicant.tutorExperience || 0 }} years
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card bg-light border-0">
+                  <div class="card-body text-center">
+                    <i class="bi bi-calendar-event fs-3 text-success mb-2"></i>
+                    <p class="mb-1 small text-muted">Available From</p>
+                    <p class="fw-bold mb-0">
+                      {{
+                        new Date(
+                          selectedApplicant.startDate
+                        ).toLocaleDateString()
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-file-text me-2"></i>
+                Cover Letter
+              </h6>
+              <p class="text-muted">{{ selectedApplicant.coverLetter }}</p>
+            </div>
+
+            <div class="mt-4">
+              <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>
+                Applied on
+                {{ new Date(selectedApplicant.appliedAt).toLocaleString() }}
+              </small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary text-white"
+              @click="closeProfileModal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary text-white"
+              @click="messageTutorFromModal"
+            >
+              <i class="bi bi-chat-left-text me-2"></i>
+              Message Tutor
+            </button>
+            <button
+              type="button"
+              class="btn btn-success text-white"
+              @click="
+                selectTutorForAssignment(selectedApplicant);
+                closeProfileModal();
+              "
+            >
+              <i class="bi bi-check-circle me-2"></i>
+              Select This Tutor
+            </button>
           </div>
         </div>
       </div>

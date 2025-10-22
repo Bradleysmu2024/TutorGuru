@@ -1,7 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { loginUser, signInWithGoogle, getUserRole } from '../services/firebase'
+import { loginUser, signInWithGoogle, getUserRole, db } from '../services/firebase'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 
 const router = useRouter()
 
@@ -55,6 +56,19 @@ const handleGoogleLogin = async () => {
     }
 
     const user = response.user
+    const normalizedEmail = user.email.trim().toLowerCase();
+
+    // query check if email exists
+    const q = query(collection(db, "users"), where("email", "==", normalizedEmail));
+    const querySnapshot = await getDocs(q);
+
+    // email does not exist
+    if (querySnapshot.empty) {
+      console.log("Google email does not exist");
+      alert('Google email does not exist. Please register in the Sign Up page.')
+      return
+    }
+
     localStorage.setItem("user", JSON.stringify({
       uid: user.uid,
       email: user.email,

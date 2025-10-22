@@ -4,13 +4,15 @@
     <main class="main-content">
       <router-view />
     </main>
-    <Footer />
+    <Footer v-if="!isChatPage" />
   </div>
 </template>
 
 <script setup>
 import NavBar from './components/NavBar.vue'
 import Footer from './components/Footer.vue'
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const emu = document.getElementsByClassName("firebase-emulator-warning");
 if (emu.length > 0) {
@@ -18,6 +20,9 @@ if (emu.length > 0) {
     ele.remove();
   });
 }
+
+const route = useRoute()
+const isChatPage = computed(() => route.path === '/chat')
 </script>
 
 <style scoped>

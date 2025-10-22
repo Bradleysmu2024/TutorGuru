@@ -227,10 +227,13 @@ const filteredJobs = computed(() => {
     // show the closed assignment so the tutor can review their rejected applications.
     const statusFilter = filters.value.status || '';
     if (job.status === 'closed') {
-      if (!(statusFilter === 'rejected' && userApplications.value[job.id] === 'rejected')) {
+      // Allow closed assignments to pass only when the tutor explicitly filters
+      // for rejected or approved applications and they have that application state.
+      if (!((statusFilter === 'rejected' && userApplications.value[job.id] === 'rejected') ||
+            (statusFilter === 'approved' && userApplications.value[job.id] === 'approved'))) {
         return false;
       }
-      // otherwise allow closed+rejected for this tutor to pass through
+      // otherwise allow closed+rejected/approved for this tutor to pass through
     }
     const norm = (s) => (s || '').toString().toLowerCase().trim();
     const matchesSubject =
@@ -260,6 +263,8 @@ const filteredJobs = computed(() => {
       matchesStatus = !!userApplications.value[job.id];
     } else if (statusFilter === 'rejected') {
       matchesStatus = userApplications.value[job.id] === 'rejected';
+    } else if (statusFilter === 'approved') {
+      matchesStatus = userApplications.value[job.id] === 'approved';
     }
 
     return matchesSubject && matchesLevel && matchesLocation && matchesSearch && matchesStatus;

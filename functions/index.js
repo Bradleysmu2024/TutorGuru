@@ -7,73 +7,77 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-const functions = require("firebase-functions");
-const stripe = require("stripe")(functions.config().stripe.secret_key);
-const express = require("express");
-const cors = require("cors");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const stripe = require('stripe')(functions.config().stripe.secret_key);
+const cors = require('cors')({ origin: true });
 
-const app = express();
-app.use(cors({ origin: true }));
-app.use(express.json());
+admin.initializeApp();
 
-// Create Payment Session (HTTP endpoint)
-app.post("/create-payment-session", async (req, res) => {
-  const { paymentId, assignmentId, amount, assignmentTitle, tutorName } = req.body;
+exports.api = functions.https.onRequest((req, res) => {
+  return cors(req, res, async () => {
+    const path = req.path;
+    
+    // Create Payment Session
+    if (path === '/create-payment-session' && req.method === 'POST') {
+      try {
+        const { paymentId, assignmentId, amount, assignmentTitle, tutorName } = req.body;
 
-  try {
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "sgd",
-            product_data: {
-              name: assignmentTitle || "Assignment",
-              description: `Tutor: ${tutorName || "N/A"}`,
+        if (!paymentId || !assignmentId || !amount) {
+          return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'sgd',
+                product_data: {
+                  name: `Tutoring Assignment: ${assignmentTitle}`,
+                  description: `Tutor: ${tutorName}`,
+                },
+                unit_amount: amount,
+              },
+              quantity: 1,
             },
-            unit_amount: amount,
+          ],
+          mode: 'payment',
+          success_url: `${req.headers.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}&assignment_id=${assignmentId}`,
+          cancel_url: `${req.headers.origin}/assignment/${assignmentId}`,
+          metadata: {
+            paymentId,
+            assignmentId,
           },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      // IMPORTANT: Use assignmentId in cancel_url
-      success_url: `http://localhost:5173/payment-success?session_id={CHECKOUT_SESSION_ID}&payment_id=${paymentId}&assignment_id=${assignmentId}`,
-      cancel_url: `http://localhost:5173/assignment/${assignmentId}`, // Use assignmentId here
-      metadata: {
-        paymentId: paymentId,
-        assignmentId: assignmentId,
-        tutorName: tutorName,
-      },
-    });
+        });
 
-    res.json({ url: session.url });
-  } catch (error) {
-    console.error("Error creating payment session:", error);
-    res.status(500).json({ error: error.message });
-  }
+        return res.json({ url: session.url, sessionId: session.id });
+      } catch (error) {
+        console.error('Error creating session:', error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    // Verify Payment
+    if (path.startsWith('/verify-payment/') && req.method === 'GET') {
+      try {
+        const sessionId = path.split('/verify-payment/')[1];
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        return res.json({
+          status: session.payment_status,
+          paymentId: session.metadata?.paymentId,
+          assignmentId: session.metadata?.assignmentId,
+        });
+      } catch (error) {
+        console.error('Error verifying payment:', error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+
+    return res.status(404).json({ error: 'Not found' });
+  });
 });
-
-// Verify Payment (HTTP endpoint)
-app.get("/verify-payment/:sessionId", async (req, res) => {
-  const { sessionId } = req.params;
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-    res.json({
-      status: session.payment_status === "paid" ? "paid" : "unpaid",
-      customerEmail: session.customer_details?.email,
-      amountTotal: session.amount_total,
-      metadata: session.metadata,
-    });
-  } catch (error) {
-    console.error("Error verifying payment:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-exports.api = functions.https.onRequest(app);
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected

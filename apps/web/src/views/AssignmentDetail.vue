@@ -6,26 +6,17 @@ import { useRoute, useRouter } from "vue-router";
 import { dummyParentAssignments, dummyTutorProfiles } from "../data/dummyData";
 import {
   getAssignmentById,
-  createPaymentRecord,
   deleteAssignment,
   getAssignmentApplications,
   approveApplication,
   rejectApplication,
-  auth,
-  db,
   getUsernameById,
 } from "../services/firebase";
-import { createPaymentSession } from "../services/stripe";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../services/firebase";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import PaymentCard from "../components/PaymentCard.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -33,44 +24,12 @@ const assignment = ref(null);
 const loading = ref(true);
 const selectedTutorId = ref(null);
 const assignmentMap = ref(null);
-const applications = ref([]); // Store applications from Firebase
-
-// Payment-related state
-const processing = ref(false);
-const paymentStatus = ref(null);
+const applications = ref([]);
 const selectedTutor = ref(null);
 
 // Modal state for viewing tutor profile
 const showTutorProfileModal = ref(false);
 const selectedApplicant = ref(null);
-
-// Check if payment has been made for this assignment
-const checkPaymentStatus = async (assignmentId) => {
-  try {
-    const paymentsRef = collection(db, "payments");
-    const q = query(paymentsRef, where("assignmentId", "==", assignmentId));
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      // Get the most recent payment
-      const payments = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      payments.sort(
-        (a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()
-      );
-      paymentStatus.value = payments[0];
-      return payments[0];
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Error checking payment status:", error);
-    return null;
-  }
-};
 
 const loadTutorDetails = async (tutorId) => {
   try {
@@ -108,9 +67,6 @@ const loadAssignment = async () => {
         id: remote.id || assignmentId,
       };
 
-      // Check payment status
-      await checkPaymentStatus(assignmentId);
-
       // Load applications from Firebase subcollection
       applications.value = await getAssignmentApplications(assignmentId);
 
@@ -140,10 +96,6 @@ const loadAssignment = async () => {
     loading.value = false;
   }
 };
-
-const isPaymentCompleted = computed(() => {
-  return paymentStatus.value && paymentStatus.value.status === "completed";
-});
 
 const getStatusBadgeClass = (status) => {
   const classes = {
@@ -282,106 +234,6 @@ const rejectTutorApplication = async (application) => {
   } catch (error) {
     console.error("Error rejecting application:", error);
     alert("Failed to reject application. Please try again.");
-  }
-};
-
-const calculateTotalAmount = (assignment, tutor) => {
-  const hourlyRate = Number(tutor?.rate || assignment?.rate || 0);
-  const sessionsPerWeek = Number(assignment?.sessionsPerWeek || 1);
-  const durationMonths = Number(assignment?.duration || 1);
-  const hoursPerSession = Number(assignment?.hoursPerSession || 1);
-
-  const totalSessions = sessionsPerWeek * 4 * durationMonths;
-  return hourlyRate * totalSessions * hoursPerSession;
-};
-
-const calculateTotalSessions = (assignment) => {
-  const sessionsPerWeek = Number(assignment?.sessionsPerWeek || 1);
-  const durationMonths = Number(assignment?.duration || 1);
-  return sessionsPerWeek * 4 * durationMonths;
-};
-
-const initiatePayment = async () => {
-  const assignmentId = assignment.value?.id || route.params.id;
-
-  if (!assignmentId || assignmentId === "undefined") {
-    alert("Assignment data is missing. Please refresh the page.");
-    return;
-  }
-
-  const selectedTutorId = assignment.value?.selectedTutorId;
-  if (!selectedTutorId) {
-    alert("No tutor has been selected for this assignment.");
-    return;
-  }
-
-  if (!confirm("Proceed to payment for this assignment?")) {
-    return;
-  }
-
-  processing.value = true;
-  try {
-    // Use the loaded tutor details or fetch if not available
-    let tutor = selectedTutor.value;
-
-    if (!tutor) {
-      tutor = applications.value.find(
-        (app) => app.tutorId === selectedTutorId
-      );
-
-      if (!tutor) {
-        throw new Error("Tutor information not found. Please contact support.");
-      }
-    }
-
-    // Calculate total amount
-    const totalAmount = calculateTotalAmount(assignment.value, tutor);
-
-    // Get current user ID (parent)
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      throw new Error("User not authenticated. Please log in.");
-    }
-
-    const existingPayment = await checkPaymentStatus(assignmentId);
-
-    if (existingPayment && existingPayment.status === "completed") {
-      alert("This assignment has already been paid for.");
-      processing.value = false;
-      return;
-    }
-
-    let paymentId;
-
-    if (existingPayment && existingPayment.status === "pending") {
-      paymentId = existingPayment.id;
-      console.log("Reusing existing payment record:", paymentId);
-    } else {
-      paymentId = await createPaymentRecord(assignmentId, {
-        tutorId: selectedTutorId,
-        parentId: currentUser.uid,
-        amount: totalAmount,
-        assignmentTitle: assignment.value.title,
-        tutorName: tutor.name || tutor.tutorName || "Unknown Tutor",
-        tutorRate: tutor.rate || assignment.value.rate,
-      });
-      console.log("Created new payment record:", paymentId);
-    }
-
-    // Pass both paymentId AND assignmentId
-    await createPaymentSession({
-      paymentId: paymentId,
-      assignmentId: assignmentId,
-      totalAmount: totalAmount,
-      title: assignment.value.title,
-      selectedTutor: tutor,
-    });
-  } catch (error) {
-    console.error("Payment initiation error:", error);
-    alert(`Failed to initiate payment: ${error.message}`);
-  } finally {
-    processing.value = false;
   }
 };
 
@@ -736,121 +588,12 @@ onMounted(async () => {
               </div>
             </div>
 
-            <!-- Payment Completed Alert -->
-            <div v-if="isPaymentCompleted" class="alert alert-success mb-4">
-              <div class="d-flex align-items-center">
-                <i class="bi bi-check-circle-fill fs-3 me-3"></i>
-                <div>
-                  <h5 class="mb-1">Payment Completed</h5>
-                  <p class="mb-0">
-                    This assignment has been paid for. Payment ID:
-                    <code>{{ paymentStatus.id }}</code>
-                  </p>
-                  <small class="text-muted">
-                    Paid on:
-                    {{
-                      paymentStatus.paidAt?.toDate().toLocaleString() ||
-                      paymentStatus.createdAt?.toDate().toLocaleString()
-                    }}
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <!-- Payment Details Card (only if NOT paid) -->
-            <div
-              v-if="
-                assignment.status === 'closed' &&
-                assignment.selectedTutorId &&
-                !isPaymentCompleted
-              "
-              class="card shadow-sm mb-4 border-warning"
-            >
-              <div class="card-body">
-                <h4 class="card-title">
-                  <i class="bi bi-credit-card"></i> Payment Details
-                </h4>
-
-                <div class="row mb-3">
-                  <div class="col-md-6">
-                    <strong>{{
-                      selectedTutor?.name || "Selected Tutor"
-                    }}</strong>
-                    <p class="text-muted mb-0">
-                      ${{ selectedTutor?.rate || assignment.rate || 0 }}/hr
-                    </p>
-                  </div>
-                </div>
-
-                <table class="table">
-                  <tbody>
-                    <tr>
-                      <td>Hourly Rate:</td>
-                      <td class="text-end">
-                        ${{ selectedTutor?.rate || assignment.rate || 0 }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Total Sessions:</td>
-                      <td class="text-end">
-                        {{ calculateTotalSessions(assignment) }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Duration per Session:</td>
-                      <td class="text-end">
-                        {{ assignment.hoursPerSession || 1 }} hour(s)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Contract Duration:</td>
-                      <td class="text-end">
-                        {{ assignment.duration }} month(s)
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Sessions per Week:</td>
-                      <td class="text-end">
-                        {{ assignment.sessionsPerWeek || 1 }}
-                      </td>
-                    </tr>
-                    <tr class="table-success">
-                      <td><strong>Total Amount:</strong></td>
-                      <td class="text-end">
-                        <strong class="text-success fs-5">
-                          ${{
-                            calculateTotalAmount(
-                              assignment,
-                              selectedTutor
-                            ).toFixed(2)
-                          }}
-                        </strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <button
-                  class="btn btn-primary w-100"
-                  :disabled="processing"
-                  @click="initiatePayment"
-                >
-                  <span v-if="processing">
-                    <span class="spinner-border spinner-border-sm me-2"></span>
-                    Processing...
-                  </span>
-                  <span v-else>
-                    <i class="bi bi-credit-card me-2"></i>
-                    Proceed to Payment
-                  </span>
-                </button>
-
-                <p class="text-center text-muted mt-2 mb-0">
-                  <i class="bi bi-shield-check"></i> Secure payment powered by
-                  Stripe
-                </p>
-              </div>
-            </div>
+            <!-- Payment Component -->
+            <PaymentCard
+              v-if="assignment"
+              :assignment="assignment"
+              :selected-tutor="selectedTutor"
+            />
 
             <!-- Applicants Section -->
             <div

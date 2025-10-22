@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router"
 import Home from "../views/Home.vue"
 import TutorDashboard from "../views/TutorDashboard.vue"
-import TutorProfile from "../views/TutorProfile.vue"
 import EditProfile from "../views/EditProfile.vue"
 import TopTutors from "../views/TopTutors.vue"
 import ParentDashboard from "../views/ParentDashboard.vue"
@@ -14,9 +13,7 @@ import Calendar from "../views/Calendar.vue"
 import Logout from "../views/Logout.vue"
 import TutorMaps from "../views/TutorMaps.vue"
 import Profile from "../views/Profile.vue"
-import { ref } from "vue"
-import { getAuth, onAuthStateChanged } from "firebase/auth"
-import { getCurrentUser, loginStatus } from '../services/firebase'
+import { getCurrentUser } from '../services/firebase'
 import PaymentSuccess from '../views/PaymentSuccess.vue'
 import { getUserRole } from '../services/firebase'
 import Message from "../views/Message.vue"

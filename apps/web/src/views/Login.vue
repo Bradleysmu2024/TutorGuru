@@ -12,14 +12,19 @@ const loginForm = ref({
   remember: false
 })
 
+const loading = ref(false)
+
 const showPassword = ref(false)
 
 const handleLogin = async () => {
+  if (loading.value) return
+  loading.value = true
   try {
     const response = await loginUser(loginForm.value.email, loginForm.value.password)
 
     if (!response.success) {
       alert(`Login failed: ${response.error}`)
+      loading.value = false
       return
     }
 
@@ -43,15 +48,20 @@ const handleLogin = async () => {
   } catch (error) {
     console.error('Login error:', error)
     alert('Unexpected error during login.')
+  } finally {
+    loading.value = false
   }
 }
 
 const handleGoogleLogin = async () => {
+  if (loading.value) return
+  loading.value = true
   try {
     const response = await signInWithGoogle()
 
     if (!response.success) {
       alert(`Google login failed: ${response.error}`)
+      loading.value = false
       return
     }
 
@@ -89,6 +99,8 @@ const handleGoogleLogin = async () => {
   } catch (error) {
     console.error('Google Login error:', error)
     alert('Unexpected error during Google login.')
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -120,6 +132,7 @@ const handleGoogleLogin = async () => {
                       class="form-control"
                       placeholder="your@email.com"
                       required
+                      :disabled="loading"
                     >
                   </div>
                 </div>
@@ -136,11 +149,13 @@ const handleGoogleLogin = async () => {
                       class="form-control"
                       placeholder="Enter your password"
                       required
+                      :disabled="loading"
                     >
                     <button 
                       class="btn btn-outline-secondary" 
                       type="button"
                       @click="showPassword = !showPassword"
+                      :disabled="loading"
                     >
                       <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                     </button>
@@ -153,6 +168,7 @@ const handleGoogleLogin = async () => {
                     type="checkbox" 
                     class="form-check-input" 
                     id="rememberMe"
+                    :disabled="loading"
                   >
                   <label class="form-check-label" for="rememberMe">
                     Remember me
@@ -160,11 +176,15 @@ const handleGoogleLogin = async () => {
                 </div>
                 
                 <div class="d-grid mb-3">
-                  <button type="submit" class="btn btn-primary btn-lg text-light">
+                  <button type="submit" class="btn btn-primary btn-lg text-light" :disabled="loading">
                     <i class="bi bi-box-arrow-in-right me-2"></i>
-                    Login
+                    <span v-if="!loading">Login</span>
+                    <span v-else>
+                      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Logging in...
+                    </span>
                   </button>
-                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleLogin">
+                  <button type="button" class="google-btn btn btn-lg" @click="handleGoogleLogin" :disabled="loading">
                     <img
                       src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                       alt="Google logo"

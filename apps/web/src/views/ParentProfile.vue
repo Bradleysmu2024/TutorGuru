@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
 import { getCurrentUser } from '../services/firebase'
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
@@ -38,6 +39,63 @@ const loadProfile = async () => {
     }
   } catch (err) {
     console.error("Error loading parent profile:", err);
+  }
+};
+
+// Avatar upload state for parent
+const avatarInputRef = ref(null);
+const avatarUploading = ref(false);
+
+const triggerAvatarInput = () => {
+  if (avatarInputRef.value) avatarInputRef.value.click();
+};
+
+const handleAvatarChange = async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  await uploadAvatar(file);
+  e.target.value = "";
+};
+
+const uploadAvatar = async (file) => {
+  const user = await getCurrentUser();
+  if (!user || !user.uid) return alert('You must be logged in to change your photo.');
+  const oldUrl = profile.value.avatar;
+
+  avatarUploading.value = true;
+  try {
+    const storage = getStorage();
+    const ext = (file.name || '').split('.').pop();
+    const filename = `parents/${user.uid}/avatar_${Date.now()}.${ext}`;
+    const sRef = storageRef(storage, filename);
+    await uploadBytes(sRef, file);
+    const url = await getDownloadURL(sRef);
+
+    // save to users/{uid}
+    await setDoc(doc(db, 'users', user.uid), { avatar: url }, { merge: true });
+    profile.value.avatar = url;
+
+    if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
+      try {
+        const parts = oldUrl.split('/o/');
+        if (parts.length > 1) {
+          const pathAndQuery = parts[1];
+          const encodedPath = pathAndQuery.split('?')[0];
+          const storagePath = decodeURIComponent(encodedPath);
+          const oldRef = storageRef(storage, storagePath);
+          await deleteObject(oldRef);
+        }
+      } catch (delErr) {
+        console.warn('Failed to delete old parent avatar:', delErr);
+      }
+    }
+
+    alert('Profile photo updated successfully!');
+  } catch (err) {
+    console.error('Parent avatar upload error:', err);
+    alert('Failed to upload avatar. Please try again.');
+  } finally {
+    avatarUploading.value = false;
   }
 };
 
@@ -187,7 +245,7 @@ onMounted(async () => {
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
                 <img
-                  src="../assets/images/profileplaceholder.JPG"
+                  :src="profile.avatar || '../assets/images/profileplaceholder.JPG'"
                   alt="Profile"
                   class="rounded-circle img-fluid"
                   style="width: 150px; height: 150px; object-fit: cover"
@@ -200,10 +258,28 @@ onMounted(async () => {
                 Verified Parent
               </span>
               <div class="d-grid">
-                <button class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-camera me-2"></i>
-                  Change Photo
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  type="button"
+                  @click="triggerAvatarInput"
+                  :disabled="avatarUploading"
+                >
+                  <template v-if="avatarUploading">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Uploading...
+                  </template>
+                  <template v-else>
+                    <i class="bi bi-camera me-2"></i>
+                    Change Photo
+                  </template>
                 </button>
+                <input
+                  ref="avatarInputRef"
+                  type="file"
+                  accept="image/*"
+                  style="display: none"
+                  @change="handleAvatarChange"
+                />
               </div>
             </div>
           </div>

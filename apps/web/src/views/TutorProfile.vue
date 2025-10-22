@@ -1,3 +1,4 @@
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 <template>
   <div class="tutor-profile">
     <div class="container py-4">
@@ -15,27 +16,43 @@
         <div class="col-lg-4">
           <div class="card shadow-sm">
             <div class="card-body text-center">
-              <div class="profile-avatar mb-3">
-                <img
-                  :src="
-                    profile.avatar ||
-                    '/src/assets/images/profileplaceholder.JPG'
-                  "
-                  alt="Profile"
-                  class="rounded-circle img-fluid"
-                  style="width: 150px; height: 150px; object-fit: cover"
-                />
-              </div>
-              <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
-              <p class="text-muted mb-3">{{ profile.email }}</p>
-              <span v-if="profile.verified" class="badge bg-success mb-3">
-                <i class="bi bi-check-circle me-1"></i> Verified Tutor
-              </span>
-              <div class="d-grid">
-                <button class="btn btn-outline-primary btn-sm">
-                  <i class="bi bi-camera me-2"></i> Change Photo
-                </button>
-              </div>
+                          <div class="profile-avatar mb-3">
+                            <img
+                              :src="profile.avator || profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
+                              alt="Profile"
+                              class="rounded-circle img-fluid"
+                              style="width: 150px; height: 150px; object-fit: cover"
+                            />
+                          </div>
+                          <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
+                          <p class="text-muted mb-3">{{ profile.email }}</p>
+                          <span v-if="profile.verified" class="badge bg-success mb-3">
+                            <i class="bi bi-check-circle me-1"></i> Verified Tutor
+                          </span>
+                          <div class="d-grid">
+                            <button
+                              class="btn btn-outline-primary btn-sm"
+                              type="button"
+                              @click="triggerAvatarInput"
+                              :disabled="avatarUploading"
+                            >
+                              <template v-if="avatarUploading">
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                Uploading...
+                              </template>
+                              <template v-else>
+                                <i class="bi bi-camera me-2"></i> Change Photo
+                              </template>
+                            </button>
+                            <!-- hidden file input -->
+                            <input
+                              ref="avatarInputRef"
+                              type="file"
+                              accept="image/*"
+                              style="display: none"
+                              @change="handleAvatarChange"
+                            />
+                          </div>
             </div>
           </div>
 
@@ -426,23 +443,48 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error loading form data:", error);
   }
-
-  // // Existing auth state change logic
-  // onAuthStateChanged(auth, async (user) => {
-  //   if (user) {
-  //     const refDoc = doc(db, "users", user.uid)
-  //     const snap = await getDoc(refDoc)
-  //     if (snap.exists()) {
-  //       profile.value = snap.data()
-  //       uploadedDocuments.value = snap.data().uploadedDocuments || []
-  //     }
-  //   } else {
-  //     alert("Please log in to view your profile.")
-  //   }
-  // })
 });
 
 const uploadedDocuments = ref([]);
+const avatarInputRef = ref(null);
+const avatarUploading = ref(false);
+
+const triggerAvatarInput = () => {
+  if (avatarInputRef.value) avatarInputRef.value.click();
+};
+
+const handleAvatarChange = async (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  await uploadAvatar(file);
+  e.target.value = "";
+};
+
+const uploadAvatar = async (file) => {
+  const user = auth.currentUser;
+  if (!user) return alert("You must be logged in to change your photo.");
+  const oldUrl = profile.value.avatar;
+
+  avatarUploading.value = true;
+  try {
+    const storage = getStorage();
+    const ext = (file.name || "").split('.').pop();
+    const filename = `tutors/${user.uid}/avatar_${Date.now()}.${ext}`;
+    const sRef = storageRef(storage, filename);
+    await uploadBytes(sRef, file);
+    const url = await getDownloadURL(sRef);
+
+    await setUserDoc(user.uid, { avatar: url }, { merge: true });
+    profile.value.avatar = url;
+
+    alert('Profile photo updated successfully!');
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    alert('Failed to upload avatar. Please try again.');
+  } finally {
+    avatarUploading.value = false;
+  }
+};
 
 const addSubject = () => {
   profile.value.teaching.push({ subject: "", levels: [] });

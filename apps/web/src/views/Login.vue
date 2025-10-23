@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { loginUser, signInWithGoogle, getUserRole, db } from '../services/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
+import PasswordResetModal from '../components/PasswordResetModal.vue';
 
 const router = useRouter()
 
@@ -15,6 +16,8 @@ const loginForm = ref({
 const loading = ref(false)
 
 const showPassword = ref(false)
+
+const showPasswordResetModal = ref(false)
 
 const handleLogin = async () => {
   if (loading.value) return
@@ -103,6 +106,10 @@ const handleGoogleLogin = async () => {
     loading.value = false
   }
 }
+
+const openPasswordResetModal = () => {
+  showPasswordResetModal.value = true;
+};
 </script>
 
 
@@ -162,7 +169,7 @@ const handleGoogleLogin = async () => {
                   </div>
                 </div>
                 
-                <div class="mb-3 form-check">
+                <div class="mb-3 form-check clearfix">
                   <input 
                     v-model="loginForm.remember"
                     type="checkbox" 
@@ -173,8 +180,8 @@ const handleGoogleLogin = async () => {
                   <label class="form-check-label" for="rememberMe">
                     Remember me
                   </label>
+                  <a @click="openPasswordResetModal" class="text-decoration-none float-end">Forgot password?</a>
                 </div>
-                
                 <div class="d-grid mb-3">
                   <button type="submit" class="btn btn-primary btn-lg text-light" :disabled="loading">
                     <i class="bi bi-box-arrow-in-right me-2"></i>
@@ -211,6 +218,10 @@ const handleGoogleLogin = async () => {
       </div>
     </div>
   </div>
+    <!-- Email Change Modal Component -->
+  <PasswordResetModal
+    v-model:show="showPasswordResetModal"
+  />
 </template>
 
 <style scoped>

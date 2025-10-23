@@ -18,12 +18,11 @@
         @update:filters="updateFilters"
       />
 
-      <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-muted mt-3">Loading opportunities...</p>
-      </div>
+      <LoadingState 
+        v-if="loading" 
+        :loading="true" 
+        message="Loading opportunities..." 
+      />
 
       <div v-else-if="filteredJobs.length === 0" class="text-center py-5">
         <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
@@ -119,6 +118,7 @@ import { ref, computed, onMounted } from "vue";
 import { Modal } from "bootstrap";
 import SearchFilter from "../components/SearchFilter.vue";
 import JobCard from "../components/JobCard.vue";
+import LoadingState from "../components/LoadingState.vue";
 import { dummyJobPostings } from "../data/dummyData";
 import {
   getSubjects,

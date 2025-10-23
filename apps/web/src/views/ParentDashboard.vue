@@ -4,6 +4,8 @@ import { useRouter } from "vue-router";
 import { getCurrentUser } from '../services/firebase'
 import { db, getAssignmentApplications } from "../services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import StatusBadge from "../components/StatusBadge.vue";
+import LoadingState from "../components/LoadingState.vue";
 
 const router = useRouter();
 const loading = ref(false);
@@ -90,23 +92,7 @@ const filteredAssignments = computed(() => {
   return assignments.value.filter((a) => a.status === filterStatus.value);
 });
 
-const getStatusBadgeClass = (status) => {
-  const classes = {
-    open: "bg-success",
-    pending: "bg-warning",
-    closed: "bg-secondary",
-  };
-  return classes[status] || "bg-secondary";
-};
-
-const getStatusIcon = (status) => {
-  const icons = {
-    open: "bi-circle",
-    pending: "bi-clock-history",
-    closed: "bi-check-circle",
-  };
-  return icons[status] || "bi-circle";
-};
+// Removed getStatusBadgeClass and getStatusIcon - now using StatusBadge component
 
 const viewAssignment = (assignmentId) => {
   router.push(`/assignment/${assignmentId}`);
@@ -251,12 +237,11 @@ const getApplicationCount = (assignmentId) => {
         </div>
       </div>
 
-      <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-        <p class="text-muted mt-3">Loading assignments...</p>
-      </div>
+      <LoadingState 
+        v-if="loading" 
+        :loading="true" 
+        message="Loading assignments..." 
+      />
 
       <div
         v-else-if="filteredAssignments.length === 0"
@@ -283,16 +268,7 @@ const getApplicationCount = (assignmentId) => {
               <div class="col-md-8">
                 <div class="d-flex align-items-start mb-2">
                   <h5 class="card-title mb-0 me-3">{{ assignment.title }}</h5>
-                  <span
-                    class="badge"
-                    :class="getStatusBadgeClass(assignment.status)"
-                  >
-                    <i
-                      :class="getStatusIcon(assignment.status)"
-                      class="me-1"
-                    ></i>
-                    {{ (assignment.status || "unknown").toUpperCase() }}
-                  </span>
+                  <StatusBadge :status="assignment.status" :show-icon="true" />
                 </div>
                 <p class="text-muted mb-2">{{ assignment.description }}</p>
                 <div class="assignment-meta">

@@ -20,6 +20,8 @@ import { db } from "../services/firebase";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import PaymentCard from "../components/PaymentCard.vue";
+import StatusBadge from "../components/StatusBadge.vue";
+import LoadingState from "../components/LoadingState.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -172,14 +174,7 @@ const submitReviewHandler = async () => {
   }
 };
 
-const getStatusBadgeClass = (status) => {
-  const classes = {
-    open: "bg-success",
-    pending: "bg-warning text-dark",
-    closed: "bg-secondary",
-  };
-  return classes[status] || "bg-secondary";
-};
+// Removed getStatusBadgeClass - now using StatusBadge component
 
 const downloadFile = (file) => {
   try {
@@ -559,10 +554,8 @@ onMounted(async () => {
         Back to Dashboard
       </button>
 
-      <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+      <div v-if="loading">
+        <LoadingState :loading="true" message="Loading assignment details..." />
       </div>
 
       <div v-else-if="!assignment" class="text-center py-5">
@@ -579,12 +572,7 @@ onMounted(async () => {
                   class="d-flex justify-content-between align-items-start mb-3"
                 >
                   <h2 class="fw-bold mb-0">{{ assignment.title }}</h2>
-                  <span
-                    class="badge"
-                    :class="getStatusBadgeClass(assignment.status)"
-                  >
-                    {{ (assignment.status || "unknown").toUpperCase() }}
-                  </span>
+                  <StatusBadge :status="assignment.status" size="lg" />
                 </div>
 
                 <div class="assignment-meta mb-4">
@@ -936,12 +924,7 @@ onMounted(async () => {
                 </div>
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Status</small>
-                  <span
-                    class="badge"
-                    :class="getStatusBadgeClass(assignment.status)"
-                  >
-                    {{ (assignment.status || "unknown").toUpperCase() }}
-                  </span>
+                  <StatusBadge :status="assignment.status" />
                 </div>
                 <div class="info-item mb-3">
                   <small class="text-muted d-block">Applications Received</small>

@@ -45,10 +45,8 @@ const hasReviewed = computed(() => {
   try {
     if (!assignment.value) return false;
 
-    // Accept either `review` or `reviews` field (some codepaths use different names)
     const reviews = assignment.value.review || [];
     if (!Array.isArray(reviews) || reviews.length === 0) return false;
-
     return true;
   } catch (e) {
     return false;
@@ -57,15 +55,11 @@ const hasReviewed = computed(() => {
 
 const userReview = computed(() => {
   try {
-    const reviews = assignment.value?.review || assignment.value?.reviews || [];
+    const reviews = assignment.value?.review || [];
+    console.log('User reviews:', reviews[0].comment);
     if (!Array.isArray(reviews) || reviews.length === 0) return null;
-    if (!currentUser.value || !currentUser.value.uid) return null;
-    const uid = currentUser.value.uid;
     return (
-      reviews.find((r) => {
-        if (!r) return false;
-        return r.parentId === uid || r.parent === uid || r.parent_uid === uid || r.userId === uid;
-      }) || null
+      {comment: reviews[0].comment, rating: reviews[0].rating} || null
     );
   } catch (e) {
     return null;
@@ -1000,9 +994,9 @@ onMounted(async () => {
                   <div class="card-body">
                     <h6 class="fw-semibold mb-2"><i class="bi bi-star-fill text-warning me-2"></i>Your Review</h6>
                     <div class="mb-2">
-                      <strong class="text-warning">{{ userReview.rating || userReview.score || userReview.stars }} / 5</strong>
+                      <strong class="text-warning">{{ userReview.rating }} / 5</strong>
                     </div>
-                    <div class="mb-2 text-muted">{{ userReview.comment || userReview.text || userReview.body }}</div>
+                    <div class="mb-2 text-muted">{{ userReview.comment }}</div>
                     <div class="small text-muted">Submitted: {{ formatDate(userReview.createdAt || userReview.created_at || userReview.timestamp) }}</div>
                   </div>
                 </div>

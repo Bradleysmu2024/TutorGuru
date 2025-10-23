@@ -62,12 +62,24 @@
                 <div v-if="isTutorProfile">
                   <div class="subjects-list mb-3">
                     <h6>Subjects</h6>
-                    <span
-                      class="subject-tag"
+                    <div
                       v-for="(item, index) in profile.teaching"
                       :key="index"
-                      >{{ item.levels + " " + item.subject }}</span
+                      class="subject-item mb-3 p-3 bg-light rounded"
                     >
+                      <div class="fw-semibold text-primary mb-2">
+                        <i class="bi bi-book me-2"></i>{{ item.subject }}
+                      </div>
+                      <div class="levels-list">
+                        <span
+                          v-for="(level, idx) in item.levels"
+                          :key="idx"
+                          class="level-badge badge bg-success me-1 mb-1"
+                        >
+                          {{ level }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div class="experience mb-3">
                     <h6>Years of teaching experience</h6>
@@ -235,7 +247,13 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { auth, db, getUserRole, findUserByUsername, getUserDoc } from "../services/firebase";
+import {
+  auth,
+  db,
+  getUserRole,
+  findUserByUsername,
+  getUserDoc,
+} from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
@@ -297,16 +315,16 @@ onMounted(async () => {
   if (username) {
     isPublicView.value = true;
     try {
-      const u = await findUserByUsername(username)
+      const u = await findUserByUsername(username);
       if (u) {
-        profile.value = u
-        uploadedDocuments.value = u.uploadedDocuments || []
-        userRole.value = u.role || 'tutor'
+        profile.value = u;
+        uploadedDocuments.value = u.uploadedDocuments || [];
+        userRole.value = u.role || "tutor";
       } else {
-        console.warn('User not found for username:', username)
+        console.warn("User not found for username:", username);
       }
     } catch (err) {
-      console.error('Error loading public profile:', err)
+      console.error("Error loading public profile:", err);
     }
     return;
   }
@@ -315,14 +333,14 @@ onMounted(async () => {
     // Get user role first
     userRole.value = await getUserRole(uid);
 
-    const u = await getUserDoc(uid)
+    const u = await getUserDoc(uid);
     if (u) {
-      profile.value = u
-      uploadedDocuments.value = u.uploadedDocuments || []
+      profile.value = u;
+      uploadedDocuments.value = u.uploadedDocuments || [];
     } else {
-      alert('Please log in to view your profile.')
+      alert("Please log in to view your profile.");
     }
-  }
+  };
 
   const userNow = auth.currentUser;
   if (userNow) {
@@ -374,15 +392,19 @@ const editProfile = () => {
   border-bottom: none;
 }
 
-.subject-tag {
-  background: #81b29a;
-  color: white;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
+.subject-item {
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.subject-item:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.level-badge {
+  font-size: 0.8rem;
   font-weight: 500;
-  margin: 2px;
-  display: inline-block;
+  padding: 0.35em 0.65em;
 }
 
 .child-card {

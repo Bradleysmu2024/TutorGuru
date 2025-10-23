@@ -4,14 +4,18 @@
       <div class="d-flex justify-content-between align-items-start mb-3">
         <h5 class="card-title mb-0">{{ job.title }}</h5>
         <div class="d-flex align-items-center gap-2">
-          <span v-if="job.files && job.files.length > 0" class="badge bg-light text-dark">
+          <span
+            v-if="job.files && job.files.length > 0"
+            class="badge bg-light text-dark"
+          >
             <i class="bi bi-paperclip me-1"></i>
-            {{ job.files.length }} file{{ job.files.length !== 1 ? 's' : '' }}
+            {{ job.files.length }} file{{ job.files.length !== 1 ? "s" : "" }}
           </span>
-          <span class="badge" :class="getBadgeClass(displayStatus)">
-            <i :class="getIcon(displayStatus)" class="me-1"></i>
-            {{ (displayStatus || "open").toUpperCase() }}
-          </span>
+          <StatusBadge
+            :status="displayStatus"
+            :show-icon="true"
+            :status-config="statusConfig"
+          />
         </div>
       </div>
 
@@ -90,8 +94,9 @@
 
 <script setup>
 import { defineProps, defineEmits, computed } from "vue";
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import StatusBadge from "./StatusBadge.vue";
 
 const props = defineProps({
   job: {
@@ -110,58 +115,37 @@ defineEmits(["apply"]);
 // expose `job` for use inside the script (and template already uses `job`)
 const job = props.job;
 
-const getStatusBadgeClass = (status) => {
-  const classes = {
-    open: "bg-success",
-    pending: "bg-warning text-dark",
-    closed: "bg-secondary",
-  };
-  return classes[status] || "bg-success";
-};
-
-const getStatusIcon = (status) => {
-  const icons = {
-    open: "bi-circle",
-    pending: "bi-clock-history",
-    closed: "bi-check-circle",
-  };
-  return icons[status] || "bi-circle";
-};
+// Removed getStatusBadgeClass and getStatusIcon - now using StatusBadge component
 
 // Compute display status for this card. If current user has applied and it's not rejected, show 'applied'.
 const displayStatus = computed(() => {
   // If current user has an application for this job, show a per-user state
   if (props.appliedStatus) {
-    if (props.appliedStatus === 'approved') return 'approved';
-    if (props.appliedStatus === 'rejected') return 'rejected';
-    return 'applied';
+    if (props.appliedStatus === "approved") return "approved";
+    if (props.appliedStatus === "rejected") return "rejected";
+    return "applied";
   }
 
-  // User hasn't applied. For tutors we prefer to keep jobs visible as 'open'
-  // even when assignment.status === 'pending' (so other tutors still see Open).
-  if (job.status === 'pending') return 'open';
+  // User hasn't applied. Show 'open' for open/pending assignments, 'closed' for closed ones
+  if (job.status === "pending") return "open";
 
-  return job.status || 'open';
+  return job.status || "open";
 });
 
-// Badge class and icon mapping for display statuses, extending the base mappings
-const getBadgeClass = (status) => {
-  const base = getStatusBadgeClass(status);
-  const extras = {
-    applied: 'bg-primary text-white',
-    rejected: 'bg-danger text-white',
-    approved: 'bg-success text-white',
-  };
-  return extras[status] || base;
-};
-
-const getIcon = (status) => {
-  const extras = {
-    applied: 'bi-person-check',
-    rejected: 'bi-person-x',
-    approved: 'bi-check-circle',
-  };
-  return extras[status] || getStatusIcon(status);
+// Status badge configuration for extended statuses (applied, rejected, approved)
+const statusConfig = {
+  applied: {
+    color: "primary",
+    icon: "bi-person-check",
+  },
+  rejected: {
+    color: "danger",
+    icon: "bi-person-x",
+  },
+  approved: {
+    color: "success",
+    icon: "bi-check-circle",
+  },
 };
 
 const formatDate = (dateVal) => {
@@ -169,8 +153,8 @@ const formatDate = (dateVal) => {
   let postedDate = NaN;
 
   try {
-    if (typeof dateVal === 'object') {
-      if (typeof dateVal.toDate === 'function') {
+    if (typeof dateVal === "object") {
+      if (typeof dateVal.toDate === "function") {
         postedDate = dateVal.toDate();
       } else if (dateVal.seconds) {
         postedDate = new Date(dateVal.seconds * 1000);
@@ -179,7 +163,7 @@ const formatDate = (dateVal) => {
       }
     }
 
-    if (!postedDate && typeof dateVal === 'string') {
+    if (!postedDate && typeof dateVal === "string") {
       const ts = Date.parse(dateVal);
       if (!isNaN(ts)) postedDate = new Date(ts);
     }
@@ -204,10 +188,10 @@ const formatDate = (dateVal) => {
 
 const downloadFiles = async () => {
   try {
-    if (!job.files || job.files.length === 0) return alert('No files attached');
+    if (!job.files || job.files.length === 0) return alert("No files attached");
 
     const zip = new JSZip();
-    const folder = zip.folder(`assignment_${job.id || 'files'}`) || zip;
+    const folder = zip.folder(`assignment_${job.id || "files"}`) || zip;
 
     // Fetch each file as a blob and add to the zip
     const fetchPromises = (job.files || []).map(async (f) => {
@@ -221,7 +205,7 @@ const downloadFiles = async () => {
         folder.file(filename, blob);
         return true;
       } catch (err) {
-        console.warn('Failed to fetch file for zipping', f, err);
+        console.warn("Failed to fetch file for zipping", f, err);
         return false;
       }
     });
@@ -229,15 +213,18 @@ const downloadFiles = async () => {
     const results = await Promise.all(fetchPromises);
 
     if (!results.some(Boolean)) {
-      return alert('Failed to fetch any files for download');
+      return alert("Failed to fetch any files for download");
     }
 
-    const content = await zip.generateAsync({ type: 'blob' });
-    const zipName = `${(job.title || 'assignment').replace(/[^a-z0-9_-]/gi, '_')}_files.zip`;
+    const content = await zip.generateAsync({ type: "blob" });
+    const zipName = `${(job.title || "assignment").replace(
+      /[^a-z0-9_-]/gi,
+      "_"
+    )}_files.zip`;
     saveAs(content, zipName);
   } catch (err) {
-    console.error('Error creating zip:', err);
-    alert('Failed to create ZIP of files');
+    console.error("Error creating zip:", err);
+    alert("Failed to create ZIP of files");
   }
 };
 </script>

@@ -317,83 +317,12 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
   </div>
 
   <!-- Email Change Modal, opens up when change email button is clicked on -->
-  <div
-    v-if="showEmailModal"
-    class="modal-overlay"
-    @click.self="cancelEmailChange"
-  >
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="bi bi-envelope me-2"></i>Change Email Address
-          </h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="cancelEmailChange"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted mb-3">
-            For security, we need to verify your current password before
-            changing your email.
-          </p>
-
-          <div v-if="emailChangeError" class="alert alert-danger">
-            {{ emailChangeError }}
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">New Email Address</label>
-            <input
-              v-model="newEmail"
-              type="email"
-              class="form-control"
-              placeholder="Enter new email"
-              :disabled="emailChangeLoading"
-            />
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Current Password</label>
-            <input
-              v-model="currentPassword"
-              type="password"
-              class="form-control"
-              placeholder="Enter your current password"
-              :disabled="emailChangeLoading"
-            />
-            <small class="text-muted"
-              >We need this to verify it's really you</small
-            >
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="cancelEmailChange"
-            :disabled="emailChangeLoading"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="changeEmail"
-            :disabled="emailChangeLoading"
-          >
-            <span v-if="emailChangeLoading">
-              <span class="spinner-border spinner-border-sm me-2"></span>
-              Updating...
-            </span>
-            <span v-else> <i class="bi bi-check2 me-2"></i>Update Email </span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <EmailChangeModal
+    v-model:show="showEmailModal"
+    :current-email="profile.email"
+    user-collection="users"
+    @email-changed="handleEmailChanged"
+  />
 </template>
 
 <script setup>
@@ -415,6 +344,7 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { uploadUserAvatar } from "../services/firebase";
+import EmailChangeModal from "../components/EmailChangeModal.vue";
 
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
@@ -422,6 +352,9 @@ const selectedFiles = ref([]);
 // Add Firebase data
 const subjects = ref([]);
 const levels = ref([]);
+
+// Email change modal state
+const showEmailModal = ref(false);
 
 const profile = ref({
   name: "",
@@ -595,66 +528,12 @@ const saveProfile = async () => {
 };
 
 const openEmailChangeModal = () => {
-  newEmail.value = profile.value.email;
-  currentPassword.value = "";
-  emailChangeError.value = "";
   showEmailModal.value = true;
 };
 
-const changeEmail = async () => {
-  if (!newEmail.value || !currentPassword.value) {
-    emailChangeError.value = "Please fill in all fields";
-    return;
-  }
-
-  if (newEmail.value === profile.value.email) {
-    emailChangeError.value = "New email is the same as current email";
-    return;
-  }
-
-  emailChangeLoading.value = true;
-  emailChangeError.value = "";
-
-  try {
-    // Step 1: Update Firebase Authentication email
-    const result = await updateUserEmail(newEmail.value, currentPassword.value);
-
-    if (!result.success) {
-      emailChangeError.value = result.error;
-      emailChangeLoading.value = false;
-      return;
-    }
-
-    // Step 2: Update Firestore profile
-    const user = await getCurrentUser();
-      if (user && user.uid) {
-      await setUserDoc(user.uid, {
-        ...profile.value,
-        email: newEmail.value,
-      }, { merge: true });
-
-      // Update local state
-      profile.value.email = newEmail.value;
-
-      // Close modal and show success
-      showEmailModal.value = false;
-      alert(
-        "Email updated successfully! You can now log in with your new email."
-      );
-    }
-  } catch (err) {
-    console.error("Error updating email:", err);
-    emailChangeError.value = "Failed to update email. Please try again.";
-  } finally {
-    emailChangeLoading.value = false;
-  }
-};
-
-const cancelEmailChange = () => {
-  showEmailModal.value = false;
-  newEmail.value = "";
-  currentPassword.value = "";
-  emailChangeError.value = "";
+const handleEmailChanged = (newEmail) => {
+  // Update local profile email state
+  profile.value.email = newEmail;
 };
 </script>
 
@@ -676,61 +555,7 @@ const cancelEmailChange = () => {
 .stat-item:last-child {
   border-bottom: none;
 }
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
 
-.modal-dialog {
-  max-width: 500px;
-  width: 90%;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.btn-close {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  opacity: 0.5;
-}
-
-.btn-close:hover {
-  opacity: 1;
-}
 @media (max-width: 991px) {
   .col-lg-4 {
     margin-bottom: 2rem;

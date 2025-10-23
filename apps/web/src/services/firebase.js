@@ -1399,30 +1399,32 @@ export const completePayment = async (assignmentId, sessionId) => {
  * Submit feedback/review for a completed assignment
  * Stores a review document in top-level `reviews` collection.
  */
-export const submitFeedback = async (
-  assignmentId,
-  rating,
-  comment
-) => {
+export const submitFeedback = async (assignmentId, rating, comment) => {
   try {
+    if (!assignmentId) return { success: false, error: 'Missing assignmentId' };
+
     const assignmentRef = doc(db, "assignments", assignmentId);
     const assignmentSnap = await getDoc(assignmentRef);
-
+    const createdAt = new Date().toISOString();
+    const reviewerId = auth && auth.currentUser ? auth.currentUser.uid : null;
     const assignmentPayload = {
-      rating: rating, 
-      comment: comment
+      rating: rating,
+      comment: comment,
+      createdAt,
     };
 
     if (assignmentSnap.exists()) {
       await updateDoc(assignmentRef, {
         review: arrayUnion(assignmentPayload),
+        updatedAt: createdAt,
       });
       return { success: true };
     }
+
+    return { success: false, error: 'Assignment not found' };
   } catch (assignmentErr) {
-    console.warn(
-      "Failed to append review to assignment document:" + assignmentErr
-    );
+    console.warn("Failed to append review to assignment document:", assignmentErr);
+    return { success: false, error: assignmentErr.message || assignmentErr };
   }
 };
 

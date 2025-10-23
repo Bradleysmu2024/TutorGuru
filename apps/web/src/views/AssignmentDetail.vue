@@ -59,7 +59,7 @@ const userReview = computed(() => {
     console.log('User reviews:', reviews[0].comment);
     if (!Array.isArray(reviews) || reviews.length === 0) return null;
     return (
-      {comment: reviews[0].comment, rating: reviews[0].rating} || null
+      {comment: reviews[0].comment, rating: reviews[0].rating, reviewDate: reviews[0].createdAt} || null
     );
   } catch (e) {
     return null;
@@ -155,19 +155,16 @@ const submitReviewHandler = async () => {
   try {
     const res = await submitFeedback(
       assignment.value?.id,
-      assignment.value?.selectedTutorId || null,
-      currentUser.value.uid,
       feedbackRating.value,
       feedbackComment.value
     );
     if (res && res.success) {
       feedbackSubmitted.value = true;
       showFeedbackModal.value = false;
-      // reload assignment to pick up appended review
       await loadAssignment();
       alert('Thank you for your feedback');
     } else {
-      throw new Error(res.error || 'Failed to submit feedback');
+      throw new Error('Failed to submit feedback');
     }
   } catch (err) {
     console.error('Error submitting review', err);
@@ -997,7 +994,7 @@ onMounted(async () => {
                       <strong class="text-warning">{{ userReview.rating }} / 5</strong>
                     </div>
                     <div class="mb-2 text-muted">{{ userReview.comment }}</div>
-                    <div class="small text-muted">Submitted: {{ formatDate(userReview.createdAt || userReview.created_at || userReview.timestamp) }}</div>
+                    <div class="small text-muted">Submitted: {{ formatDate(userReview.reviewDate) }}</div>
                   </div>
                 </div>
               </div>

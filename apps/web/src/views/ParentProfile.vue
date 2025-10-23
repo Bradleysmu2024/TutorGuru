@@ -7,6 +7,7 @@ import { uploadUserAvatar } from '../services/firebase'
 import { getCurrentUser } from '../services/firebase'
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
+import EmailChangeModal from "../components/EmailChangeModal.vue";
 
 const profile = ref({
   name: "",
@@ -25,10 +26,6 @@ const { geocoding, postalError, postalSuccess, validateAndGeocode } =
   usePostalCodeGeocoding();
 
 const showEmailModal = ref(false);
-const newEmail = ref("");
-const currentPassword = ref("");
-const emailChangeError = ref("");
-const emailChangeLoading = ref(false);
 
 const loadProfile = async () => {
   try {
@@ -131,70 +128,12 @@ const loadAssignments = async () => {
 };
 
 const openEmailChangeModal = () => {
-  newEmail.value = profile.value.email; // Pre-fill with current email
-  currentPassword.value = "";
-  emailChangeError.value = "";
   showEmailModal.value = true;
 };
 
-const changeEmail = async () => {
-  //validate that the user knows email and pw
-  if (!newEmail.value || !currentPassword.value) {
-    emailChangeError.value =
-      "Please provide both new email and current password.";
-    return;
-  }
-
-  if (newEmail.value === profile.value.email) {
-    emailChangeError.value =
-      "The new email must be different from the current email.";
-    return;
-  }
-
-  emailChangeError.value = "";
-  emailChangeLoading.value = true;
-  try {
-    // update Firebase Auth email first, so they can login with new email next time
-    const result = await updateUserEmail(newEmail.value, currentPassword.value);
-
-    if (!result.success) {
-      emailChangeError.value = result.error;
-      emailChangeLoading.value = false;
-      return;
-    }
-
-    // then update Firestore profile email
-    const user = await getCurrentUser();
-    if (!user || !user.uid) throw new Error("User not logged in");
-    else {
-      await setDoc(doc(db, "parentProfile", user.uid), {
-        ...profile.value,
-        email: newEmail.value,
-      });
-      // Update local state
-      profile.value.email = newEmail.value;
-
-      // Close modal and show success
-      showEmailModal.value = false;
-      alert(
-        "Email updated successfully! You can now log in with your new email."
-      );
-    }
-  } catch (err) {
-    console.error("Error changing email:", err);
-    emailChangeError.value =
-      err.message || "Failed to change email. Please try again.";
-  } finally {
-    // will always run at the end
-    emailChangeLoading.value = false;
-  }
-};
-
-const cancelEmailChange = () => {
-  showEmailModal.value = false;
-  newEmail.value = "";
-  currentPassword.value = "";
-  emailChangeError.value = "";
+const handleEmailChanged = (newEmail) => {
+  // Update local profile email state
+  profile.value.email = newEmail;
 };
 
 onMounted(loadAssignments);
@@ -474,84 +413,13 @@ onMounted(async () => {
     </div>
   </div>
 
-  <!-- Email Change Modal -->
-  <div
-    v-if="showEmailModal"
-    class="modal-overlay"
-    @click.self="cancelEmailChange"
-  >
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            <i class="bi bi-envelope me-2"></i>Change Email Address
-          </h5>
-          <button
-            type="button"
-            class="btn-close"
-            @click="cancelEmailChange"
-          ></button>
-        </div>
-        <div class="modal-body">
-          <p class="text-muted mb-3">
-            For security, we need to verify your current password before
-            changing your email.
-          </p>
-
-          <div v-if="emailChangeError" class="alert alert-danger">
-            {{ emailChangeError }}
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">New Email Address</label>
-            <input
-              v-model="newEmail"
-              type="email"
-              class="form-control"
-              placeholder="Enter new email"
-              :disabled="emailChangeLoading"
-            />
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Current Password</label>
-            <input
-              v-model="currentPassword"
-              type="password"
-              class="form-control"
-              placeholder="Enter your current password"
-              :disabled="emailChangeLoading"
-            />
-            <small class="text-muted"
-              >We need this to verify it's really you</small
-            >
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            @click="cancelEmailChange"
-            :disabled="emailChangeLoading"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            @click="changeEmail"
-            :disabled="emailChangeLoading"
-          >
-            <span v-if="emailChangeLoading">
-              <span class="spinner-border spinner-border-sm me-2"></span>
-              Updating...
-            </span>
-            <span v-else> <i class="bi bi-check2 me-2"></i>Update Email </span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Email Change Modal Component -->
+  <EmailChangeModal
+    v-model:show="showEmailModal"
+    :current-email="profile.email"
+    user-collection="users"
+    @email-changed="handleEmailChanged"
+  />
 </template>
 
 <style scoped>
@@ -577,62 +445,6 @@ onMounted(async () => {
   padding: 1.5rem;
   background-color: #f8f9fa;
   border-radius: 0.75rem;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1050;
-}
-
-.modal-dialog {
-  max-width: 500px;
-  width: 90%;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-}
-
-.modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #dee2e6;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.btn-close {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  opacity: 0.5;
-}
-
-.btn-close:hover {
-  opacity: 1;
 }
 
 @media (max-width: 991px) {

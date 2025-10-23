@@ -55,6 +55,7 @@ const formData = ref({
   sessionDuration: 1,
   sessionStartTime: '12:00',
   rate: 40,
+  rating: NaN,
   selectedDays: [], // Array of day names ['Monday', 'Wednesday']
   location: '',
   postalCode: '',
@@ -229,13 +230,18 @@ const submitAssignment = async () => {
     // Construct data to save
     const assignmentData = {
       ...formData.value,
-      sessionsPerWeek: sessionsPerWeek.value, // Derived from selectedDays
-      requirements: formData.value.requirements
-        ? formData.value.requirements
-            .split("\n")
-            .map((r) => r.trim())
-            .filter(Boolean)
-        : [],
+      sessionsPerWeek: sessionsPerWeek.value,
+      requirements: (function() {
+        const req = formData.value.requirements;
+        if (!req) return [];
+        if (Array.isArray(req)) {
+          return req.map((r) => (typeof r === 'string' ? r.trim() : '')).filter(Boolean);
+        }
+        return String(req)
+          .split('\n')
+          .map((r) => r.trim())
+          .filter(Boolean);
+      })(),
       files: [],
       // Only add geo data for physical locations
       ...(isOnline.value

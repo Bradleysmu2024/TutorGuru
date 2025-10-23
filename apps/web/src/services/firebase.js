@@ -165,7 +165,7 @@ export const updateAssignment = async (assignmentId, updates) => {
   try {
     // Normalize numeric fields if present
     const normalizedUpdates = { ...updates }
-    
+
     if ('rate' in updates) normalizedUpdates.rate = Number(updates.rate) || 0
     if ('contractDuration' in updates) normalizedUpdates.contractDuration = Number(updates.contractDuration) || 1
     if ('sessionDuration' in updates) normalizedUpdates.sessionDuration = Number(updates.sessionDuration) || 1
@@ -174,9 +174,9 @@ export const updateAssignment = async (assignmentId, updates) => {
       normalizedUpdates.selectedDays = Array.isArray(updates.selectedDays) ? updates.selectedDays : []
       normalizedUpdates.sessionsPerWeek = normalizedUpdates.selectedDays.length
     }
-    
+
     normalizedUpdates.updatedAt = new Date().toISOString()
-    
+
     // Remove any undefined/null values
     Object.keys(normalizedUpdates).forEach(key => {
       if (normalizedUpdates[key] === undefined || normalizedUpdates[key] === null) {
@@ -188,7 +188,7 @@ export const updateAssignment = async (assignmentId, updates) => {
       doc(db, 'assignments', assignmentId),
       normalizedUpdates
     )
-    
+
     return { success: true }
   } catch (error) {
     console.error('Error updating assignment:', error)
@@ -384,14 +384,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-          ? a.createdAt.seconds * 1000
-          : 0;
+            ? a.createdAt.seconds * 1000
+            : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-          ? b.createdAt.seconds * 1000
-          : 0;
+            ? b.createdAt.seconds * 1000
+            : 0;
       return tb - ta;
     });
     return items;
@@ -1252,52 +1252,52 @@ export const getUsernameById = async (uid) => {
   }
 };
 
-  /**
-   * Upload user avatar to Storage, update users/{uid}.avatar and delete previous avatar file if present.
-   * @param {string} uid
-   * @param {File} file
-   * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
-   */
-  export const uploadUserAvatar = async (uid, file, folder = 'users') => {
-    try {
-      if (!uid) throw new Error('Missing uid');
-      if (!file) throw new Error('Missing file');
+/**
+ * Upload user avatar to Storage, update users/{uid}.avatar and delete previous avatar file if present.
+ * @param {string} uid
+ * @param {File} file
+ * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
+ */
+export const uploadUserAvatar = async (uid, file, folder = 'users') => {
+  try {
+    if (!uid) throw new Error('Missing uid');
+    if (!file) throw new Error('Missing file');
 
-      // get previous avatar URL (if any)
-      const userDoc = await getUserDoc(uid);
-      const oldUrl = userDoc ? (userDoc.avatar || userDoc.avator) : null;
+    // get previous avatar URL (if any)
+    const userDoc = await getUserDoc(uid);
+    const oldUrl = userDoc ? (userDoc.avatar || userDoc.avator) : null;
 
-      const ext = (file.name || '').split('.').pop();
-      const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
-      const storageRef = ref(storage, path);
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
+    const ext = (file.name || '').split('.').pop();
+    const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
+    const storageRef = ref(storage, path);
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
 
-      // update user doc
-      await setUserDoc(uid, { avatar: url }, { merge: true });
+    // update user doc
+    await setUserDoc(uid, { avatar: url }, { merge: true });
 
-      // attempt to delete old avatar if it looks like a firebase storage URL
-      if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
-        try {
-          const parts = oldUrl.split('/o/');
-          if (parts.length > 1) {
-            const pathAndQuery = parts[1];
-            const encodedPath = pathAndQuery.split('?')[0];
-            const storagePath = decodeURIComponent(encodedPath);
-            const oldRef = ref(storage, storagePath);
-            await deleteObject(oldRef);
-          }
-        } catch (delErr) {
-          console.warn('Failed to delete old avatar from storage:', delErr);
+    // attempt to delete old avatar if it looks like a firebase storage URL
+    if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
+      try {
+        const parts = oldUrl.split('/o/');
+        if (parts.length > 1) {
+          const pathAndQuery = parts[1];
+          const encodedPath = pathAndQuery.split('?')[0];
+          const storagePath = decodeURIComponent(encodedPath);
+          const oldRef = ref(storage, storagePath);
+          await deleteObject(oldRef);
         }
+      } catch (delErr) {
+        console.warn('Failed to delete old avatar from storage:', delErr);
       }
-
-      return { success: true, url };
-    } catch (err) {
-      console.error('Error in uploadUserAvatar:', err);
-      return { success: false, error: err.message || err };
     }
-  };
+
+    return { success: true, url };
+  } catch (err) {
+    console.error('Error in uploadUserAvatar:', err);
+    return { success: false, error: err.message || err };
+  }
+};
 
 export const findUserByUsername = async (username) => {
   try {
@@ -1392,6 +1392,39 @@ export const completePayment = async (assignmentId, sessionId) => {
   } catch (error) {
     console.error("Error completing payment:", error);
     throw error;
+  }
+};
+
+/**
+ * Submit feedback/review for a completed assignment
+ * Stores a review document in top-level `reviews` collection.
+ */
+export const submitFeedback = async (assignmentId, rating, comment) => {
+  try {
+    if (!assignmentId) return { success: false, error: 'Missing assignmentId' };
+
+    const assignmentRef = doc(db, "assignments", assignmentId);
+    const assignmentSnap = await getDoc(assignmentRef);
+    const createdAt = new Date().toISOString();
+    const reviewerId = auth && auth.currentUser ? auth.currentUser.uid : null;
+    const assignmentPayload = {
+      rating: rating,
+      comment: comment,
+      createdAt,
+    };
+
+    if (assignmentSnap.exists()) {
+      await updateDoc(assignmentRef, {
+        review: arrayUnion(assignmentPayload),
+        updatedAt: createdAt,
+      });
+      return { success: true };
+    }
+
+    return { success: false, error: 'Assignment not found' };
+  } catch (assignmentErr) {
+    console.warn("Failed to append review to assignment document:", assignmentErr);
+    return { success: false, error: assignmentErr.message || assignmentErr };
   }
 };
 

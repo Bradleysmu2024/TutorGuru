@@ -55,7 +55,7 @@ const formData = ref({
   sessionDuration: 1,
   sessionStartTime: '12:00',
   rate: 40,
-  rating: NaN,
+  review: [],
   selectedDays: [], // Array of day names ['Monday', 'Wednesday']
   location: '',
   postalCode: '',

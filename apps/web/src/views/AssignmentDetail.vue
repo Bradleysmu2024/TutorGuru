@@ -12,6 +12,8 @@ import {
   rejectApplication,
   getUsernameById,
   addEvent_,
+  submitFeedback,
+  getCurrentUser,
 } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
@@ -31,6 +33,44 @@ const selectedTutor = ref(null);
 // Modal state for viewing tutor profile
 const showTutorProfileModal = ref(false);
 const selectedApplicant = ref(null);
+
+// Feedback modal state
+const showFeedbackModal = ref(false);
+const feedbackRating = ref(5);
+const feedbackComment = ref("");
+const feedbackSubmitted = ref(false);
+const currentUser = ref(null);
+
+const hasReviewed = computed(() => {
+  try {
+    if (!assignment.value) return false;
+
+    // Accept either `review` or `reviews` field (some codepaths use different names)
+    const reviews = assignment.value.review || [];
+    if (!Array.isArray(reviews) || reviews.length === 0) return false;
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
+
+const userReview = computed(() => {
+  try {
+    const reviews = assignment.value?.review || assignment.value?.reviews || [];
+    if (!Array.isArray(reviews) || reviews.length === 0) return null;
+    if (!currentUser.value || !currentUser.value.uid) return null;
+    const uid = currentUser.value.uid;
+    return (
+      reviews.find((r) => {
+        if (!r) return false;
+        return r.parentId === uid || r.parent === uid || r.parent_uid === uid || r.userId === uid;
+      }) || null
+    );
+  } catch (e) {
+    return null;
+  }
+});
 
 const loadTutorDetails = async (tutorId) => {
   try {
@@ -95,6 +135,49 @@ const loadAssignment = async () => {
   } catch (error) {
     console.error("Error loading assignment:", error);
     loading.value = false;
+  }
+};
+
+// Load current user for feedback permissions
+onMounted(async () => {
+  try {
+    currentUser.value = await getCurrentUser();
+  } catch (err) {
+    console.warn('Could not get current user for feedback permissions', err);
+  }
+});
+
+const openFeedbackModal = () => {
+  feedbackRating.value = 5;
+  feedbackComment.value = "";
+  showFeedbackModal.value = true;
+};
+
+const submitReviewHandler = async () => {
+  if (hasReviewed.value) {
+    alert('You have already submitted feedback for this assignment.');
+    return;
+  }
+  try {
+    const res = await submitFeedback(
+      assignment.value?.id,
+      assignment.value?.selectedTutorId || null,
+      currentUser.value.uid,
+      feedbackRating.value,
+      feedbackComment.value
+    );
+    if (res && res.success) {
+      feedbackSubmitted.value = true;
+      showFeedbackModal.value = false;
+      // reload assignment to pick up appended review
+      await loadAssignment();
+      alert('Thank you for your feedback');
+    } else {
+      throw new Error(res.error || 'Failed to submit feedback');
+    }
+  } catch (err) {
+    console.error('Error submitting review', err);
+    alert('Failed to submit review. Please try again.');
   }
 };
 
@@ -715,6 +798,7 @@ onMounted(async () => {
               v-if="assignment"
               :assignment="assignment"
               :selected-tutor="selectedTutor"
+              @payment-completed="openFeedbackModal"
             />
 
             <!-- Applicants Section -->
@@ -889,6 +973,39 @@ onMounted(async () => {
                     Delete Assignment
                   </button>
                 </div>
+                <!-- Feedback card placed below Assignment Info card -->
+                <div v-if="showFeedbackModal && !feedbackSubmitted && !hasReviewed" class="card mt-3 border-primary">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Leave Feedback</h6>
+                    <div class="mb-3">
+                      <label class="form-label">Rating</label>
+                      <select v-model.number="feedbackRating" class="form-select">
+                        <option v-for="n in 5" :key="n" :value="n">{{ n }} star{{ n>1 ? 's' : '' }}</option>
+                      </select>
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">Comment</label>
+                      <textarea v-model="feedbackComment" class="form-control" rows="3" placeholder="Share your experience..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                      <button class="btn btn-outline-secondary" @click="showFeedbackModal = false">Cancel</button>
+                      <button class="btn btn-primary ms-auto" @click="submitReviewHandler">Submit Review</button>
+                    </div>
+                  </div>
+                </div>
+                <div v-if="feedbackSubmitted" class="alert alert-success mt-3">Thank you — your feedback has been submitted.</div>
+
+                <!-- Display the user's submitted review if present -->
+                <div v-if="userReview" class="card mt-3 border-success">
+                  <div class="card-body">
+                    <h6 class="fw-semibold mb-2"><i class="bi bi-star-fill text-warning me-2"></i>Your Review</h6>
+                    <div class="mb-2">
+                      <strong class="text-warning">{{ userReview.rating || userReview.score || userReview.stars }} / 5</strong>
+                    </div>
+                    <div class="mb-2 text-muted">{{ userReview.comment || userReview.text || userReview.body }}</div>
+                    <div class="small text-muted">Submitted: {{ formatDate(userReview.createdAt || userReview.created_at || userReview.timestamp) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1014,6 +1131,8 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+
+    <!-- feedback card replaced modal; UI now appended below Assignment Info -->
 </template>
 
 <style scoped>

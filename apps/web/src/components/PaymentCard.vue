@@ -61,6 +61,17 @@ const isPaymentCompleted = computed(() => {
   return paymentStatus.value && paymentStatus.value.status === 'completed'
 })
 
+// Emit a one-time event when payment becomes completed so parent can open feedback modal
+const emit = defineEmits(['payment-completed'])
+const paymentEventEmitted = ref(false)
+
+watch(isPaymentCompleted, (val) => {
+  if (val && !paymentEventEmitted.value) {
+    emit('payment-completed', { assignmentId: props.assignment?.id })
+    paymentEventEmitted.value = true
+  }
+})
+
 const calculateTotalSessions = () => {
   const sessionsPerWeek = props.assignment?.selectedDays?.length || 1
   const contractDuration = props.assignment?.contractDuration || 1
@@ -173,6 +184,8 @@ const initiatePayment = async () => {
         </div>
       </div>
     </div>
+
+    <!-- Feedback Modal moved to AssignmentDetail; PaymentCard now emits payment-completed event -->
 
     <!-- Payment Details Card (only if NOT paid) -->
     <div

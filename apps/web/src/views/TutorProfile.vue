@@ -1,4 +1,3 @@
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 <template>
   <div class="tutor-profile">
     <div class="container py-4">
@@ -16,43 +15,46 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
         <div class="col-lg-4">
           <div class="card shadow-sm">
             <div class="card-body text-center">
-                          <div class="profile-avatar mb-3">
-                            <img
-                              :src="profile.avatar || '/src/assets/images/profileplaceholder.JPG'"
-                              alt="Profile"
-                              class="rounded-circle img-fluid"
-                              style="width: 150px; height: 150px; object-fit: cover"
-                            />
-                          </div>
-                          <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
-                          <p class="text-muted mb-3">{{ profile.email }}</p>
-                          <span v-if="profile.verified" class="badge bg-success mb-3">
-                            <i class="bi bi-check-circle me-1"></i> Verified Tutor
-                          </span>
-                          <div class="d-grid">
-                            <button
-                              class="btn btn-outline-primary btn-sm"
-                              type="button"
-                              @click="triggerAvatarInput"
-                              :disabled="avatarUploading"
-                            >
-                              <template v-if="avatarUploading">
-                                <span class="spinner-border spinner-border-sm me-2"></span>
-                                Uploading...
-                              </template>
-                              <template v-else>
-                                <i class="bi bi-camera me-2"></i> Change Photo
-                              </template>
-                            </button>
-                            <!-- hidden file input -->
-                            <input
-                              ref="avatarInputRef"
-                              type="file"
-                              accept="image/*"
-                              style="display: none"
-                              @change="handleAvatarChange"
-                            />
-                          </div>
+              <div class="profile-avatar mb-3">
+                <img
+                  :src="
+                    profile.avatar ||
+                    '/src/assets/images/profileplaceholder.JPG'
+                  "
+                  alt="Profile"
+                  class="rounded-circle img-fluid"
+                  style="width: 150px; height: 150px; object-fit: cover"
+                />
+              </div>
+              <h4 class="fw-bold mb-1">{{ profile.name }}</h4>
+              <p class="text-muted mb-3">{{ profile.email }}</p>
+              <span v-if="profile.verified" class="badge bg-success mb-3">
+                <i class="bi bi-check-circle me-1"></i> Verified Tutor
+              </span>
+              <div class="d-grid">
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  type="button"
+                  @click="triggerAvatarInput"
+                  :disabled="avatarUploading"
+                >
+                  <template v-if="avatarUploading">
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Uploading...
+                  </template>
+                  <template v-else>
+                    <i class="bi bi-camera me-2"></i> Change Photo
+                  </template>
+                </button>
+                <!-- hidden file input -->
+                <input
+                  ref="avatarInputRef"
+                  type="file"
+                  accept="image/*"
+                  style="display: none"
+                  @change="handleAvatarChange"
+                />
+              </div>
             </div>
           </div>
 
@@ -70,7 +72,7 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
               </div>
               <div class="stat-item d-flex justify-content-between">
                 <span class="text-muted">Rating</span>
-                <span class="fw-semibold">{{ profile.rating ?? '—' }} ⭐</span>
+                <span class="fw-semibold">{{ profile.rating ?? "—" }} ⭐</span>
               </div>
             </div>
           </div>
@@ -121,15 +123,6 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
                   </div>
 
                   <div class="col-md-6">
-                    <label class="form-label">Username</label>
-                    <input
-                      v-model="profile.username"
-                      type="text"
-                      class="form-control"
-                    />
-                  </div>
-
-                  <div class="col-md-6">
                     <label class="form-label">Phone</label>
                     <input
                       v-model="profile.phone"
@@ -138,13 +131,50 @@ import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "fire
                     />
                   </div>
 
-                  <div class="col-12">
-                    <label class="form-label">Location</label>
-                    <input
-                      v-model="profile.location"
-                      type="text"
-                      class="form-control"
-                    />
+                  <div class="col-md-6">
+                    <label class="form-label">Location (Postal Code)</label>
+                    <div class="input-group">
+                      <input
+                        v-model="profile.postalCode"
+                        type="text"
+                        class="form-control"
+                        placeholder="Enter 6-digit postal code"
+                        @blur="validateAndGeocodePostal"
+                        @keyup.enter="validateAndGeocodePostal"
+                        maxlength="6"
+                        :class="{
+                          'is-invalid': postalError,
+                          'is-valid': postalSuccess,
+                        }"
+                      />
+                      <button
+                        class="btn btn-outline-secondary"
+                        type="button"
+                        @click="validateAndGeocodePostal"
+                        :disabled="geocoding || !profile.postalCode"
+                      >
+                        <span
+                          v-if="geocoding"
+                          class="spinner-border spinner-border-sm"
+                        ></span>
+                        <i v-else class="bi bi-geo-alt"></i>
+                      </button>
+                    </div>
+                    <div v-if="postalError" class="invalid-feedback d-block">
+                      <i class="bi bi-exclamation-circle me-1"></i>
+                      {{ postalError }}
+                    </div>
+                    <div v-if="postalSuccess" class="valid-feedback d-block">
+                      <i class="bi bi-check-circle me-1"></i>
+                      <strong>{{ profile.formattedAddress }}</strong>
+                      <span class="ms-2 badge bg-success">{{
+                        profile.location
+                      }}</span>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                      <i class="bi bi-info-circle me-1"></i>
+                      We'll automatically detect your region and address
+                    </small>
                   </div>
 
                   <div class="col-12">
@@ -336,7 +366,15 @@ import {
   updateUserEmail,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import {
   getStorage,
   ref as storageRef,
@@ -345,6 +383,7 @@ import {
 } from "firebase/storage";
 import { uploadUserAvatar } from "../services/firebase";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
+import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
@@ -356,12 +395,17 @@ const levels = ref([]);
 // Email change modal state
 const showEmailModal = ref(false);
 
+// Use postal code geocoding composable
+const { geocoding, postalError, postalSuccess, validateAndGeocode } =
+  usePostalCodeGeocoding();
+
 const profile = ref({
   name: "",
-  username: "",
   email: "",
   phone: "",
   location: "",
+  postalCode: "",
+  formattedAddress: "",
   bio: "",
   teaching: [{ subject: "", levels: [] }],
   experience: 0,
@@ -400,17 +444,17 @@ const uploadAvatar = async (file) => {
 
   avatarUploading.value = true;
   try {
-    const res = await uploadUserAvatar(user.uid, file, 'tutors');
+    const res = await uploadUserAvatar(user.uid, file, "tutors");
     if (res.success) {
       profile.value.avatar = res.url;
-      alert('Profile photo updated successfully!');
+      alert("Profile photo updated successfully!");
     } else {
-      console.error('uploadUserAvatar failed:', res.error);
-      alert('Failed to upload avatar. Please try again.');
+      console.error("uploadUserAvatar failed:", res.error);
+      alert("Failed to upload avatar. Please try again.");
     }
   } catch (err) {
-    console.error('Avatar upload error:', err);
-    alert('Failed to upload avatar. Please try again.');
+    console.error("Avatar upload error:", err);
+    alert("Failed to upload avatar. Please try again.");
   } finally {
     avatarUploading.value = false;
   }
@@ -479,8 +523,21 @@ const handleUploadComplete = (files) => {
   alert("Documents uploaded successfully!");
 };
 
+// Auto-validate and geocode postal code
+const validateAndGeocodePostal = async () => {
+  const result = await validateAndGeocode(profile.value.postalCode, {
+    includeCoordinates: false, // Profile doesn't need lat/lng
+  });
+
+  if (result.success) {
+    // Update profile data with geocoded information
+    profile.value.formattedAddress = result.data.formattedAddress;
+    profile.value.location = result.data.location;
+  }
+};
+
 // Load profile when logged in
-  onMounted(() => {
+onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       const refDoc = doc(db, "users", user.uid);
@@ -495,35 +552,19 @@ const handleUploadComplete = (files) => {
   });
 });
 
-import { findUserByUsername, setUserDoc, getCurrentUser } from '../services/firebase'
+import { setUserDoc, getCurrentUser } from "../services/firebase";
 
 // Save profile to Firestore
 const saveProfile = async () => {
   const user = auth.currentUser;
   if (!user) return alert("You must be logged in!");
 
-  // Validate username uniqueness (if provided)
-  const desiredUsername = (profile.value.username || "").trim();
-  if (desiredUsername) {
-    try {
-      const existing = await findUserByUsername(desiredUsername)
-      if (existing && existing.id !== user.uid) {
-        alert('That username is already taken. Please choose another.');
-        return;
-      }
-    } catch (err) {
-      console.error('Error validating username uniqueness:', err);
-      alert('Could not validate username uniqueness. Please try again.');
-      return;
-    }
-  }
-
   // Persist to users/{uid}
-  const result = await setUserDoc(user.uid, profile.value, { merge: true })
+  const result = await setUserDoc(user.uid, profile.value, { merge: true });
   if (result && result.success) {
-    alert('Profile saved successfully!')
+    alert("Profile saved successfully!");
   } else {
-    alert('Failed to save profile. Please try again.')
+    alert("Failed to save profile. Please try again.");
   }
 };
 

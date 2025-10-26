@@ -428,12 +428,7 @@ const formatFileSize = (bytes) => {
 };
 
 const goBack = () => {
-  // Check if there's a previous page in history
-  if (window.history.length > 1) {
-    router.go(-1); // Go back to previous page
-  } else {
-    router.push("/parent-dashboard"); // Fallback to dashboard
-  }
+    router.push("/parent-dashboard"); // go to parent dashboard
 };
 
 const editAssignment = () => {
@@ -1096,6 +1091,35 @@ onMounted(async () => {
                 Cover Letter
               </h6>
               <p class="text-muted">{{ selectedApplicant.coverLetter }}</p>
+            </div>
+            <!-- Tutor Credentials Section -->
+            <div
+              v-if="selectedApplicant.tutorDocuments && selectedApplicant.tutorDocuments.length"
+              class="mt-4"
+            >
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-file-earmark-text me-2"></i>
+                Credentials & Certifications
+              </h6>
+
+              <div class="list-group shadow-sm">
+                <a
+                  v-for="(doc, idx) in selectedApplicant.tutorDocuments"
+                  :key="idx"
+                  :href="doc.url"
+                  target="_blank"
+                  class="list-group-item list-group-item-action d-flex justify-content-between align-items-center flex-wrap"
+                >
+                  <div>
+                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                    <strong>{{ doc.name }}</strong>
+                    <small class="d-block text-muted">
+                      Uploaded on: {{ new Date(doc.uploadDate).toLocaleDateString() }}
+                    </small>
+                  </div>
+                  <i class="bi bi-box-arrow-up-right text-primary"></i>
+                </a>
+              </div>
             </div>
 
             <div class="mt-4">

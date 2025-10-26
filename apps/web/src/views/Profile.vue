@@ -241,6 +241,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Transaction History - Only show for own profile -->
+      <div
+        class="row g-4 mt-4"
+        v-if="!loading && !isPublicView && profile.uid && currentUser && profile.uid === currentUser.uid"
+      >
+        <div class="col-12">
+          <TransactionHistory
+            :user-id="profile.uid"
+            :user-type="userRole"
+            @view-transaction="handleViewTransaction"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -265,6 +279,7 @@ import {
 } from "firebase/firestore";
 import { useRoute } from "vue-router";
 import router from "../router/routes";
+import TransactionHistory from "../components/TransactionHistory.vue";
 
 // Add Firebase data
 const profile = ref({
@@ -282,16 +297,21 @@ const profile = ref({
   children: [],
   postalCode: "",
   formattedAddress: "",
+  uid: "",
 });
 
 const userRole = ref(null); // 'tutor' or 'parent'
 const uploadedDocuments = ref([]);
+const loading = ref(true);
+const currentUser = ref(null); 
 
 const route = useRoute();
 const isPublicView = ref(false);
 const currentUserId = ref(null);
+
 onAuthStateChanged(auth, (user) => {
   currentUserId.value = user ? user.uid : null;
+  currentUser.value = user;
 });
 
 const profileId = computed(
@@ -326,6 +346,7 @@ onMounted(async () => {
     } catch (err) {
       console.error("Error loading public profile:", err);
     }
+    loading.value = false; 
     return;
   }
 
@@ -335,11 +356,13 @@ onMounted(async () => {
 
     const u = await getUserDoc(uid);
     if (u) {
-      profile.value = u;
+      profile.value = { ...u, uid }; // add uid to profile
       uploadedDocuments.value = u.uploadedDocuments || [];
+      currentUser.value = auth.currentUser;
     } else {
       alert("Please log in to view your profile.");
     }
+    loading.value = false;
   };
 
   const userNow = auth.currentUser;
@@ -351,6 +374,7 @@ onMounted(async () => {
         await loadProfile(user.uid);
       } else {
         alert("Please log in to view your profile.");
+        loading.value = false;
       }
       if (typeof unsub === "function") unsub();
     });
@@ -366,6 +390,11 @@ const messageTutor = () => {
 
 const editProfile = () => {
   router.push("/editprofile");
+};
+
+// ADD THIS FUNCTION
+const handleViewTransaction = (transaction) => {
+  console.log('View transaction:', transaction);
 };
 </script>
 

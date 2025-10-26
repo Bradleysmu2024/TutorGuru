@@ -18,10 +18,10 @@
         @update:filters="updateFilters"
       />
 
-      <LoadingState 
-        v-if="loading" 
-        :loading="true" 
-        message="Loading opportunities..." 
+      <LoadingState
+        v-if="loading"
+        :loading="true"
+        message="Loading opportunities..."
       />
 
       <div v-else-if="filteredJobs.length === 0" class="text-center py-5">
@@ -37,7 +37,11 @@
           class="col-md-6 col-lg-4"
         >
           <!-- pass the current user's application status for this job (if any) -->
-          <JobCard :job="job" :appliedStatus="userApplications[job.id]" @apply="handleApply" />
+          <JobCard
+            :job="job"
+            :appliedStatus="userApplications[job.id]"
+            @apply="handleApply"
+          />
         </div>
       </div>
     </div>
@@ -119,16 +123,22 @@ import { Modal } from "bootstrap";
 import SearchFilter from "../components/SearchFilter.vue";
 import JobCard from "../components/JobCard.vue";
 import LoadingState from "../components/LoadingState.vue";
-import { dummyJobPostings } from "../data/dummyData";
+
 import {
   getSubjects,
   getLevels,
   getLocations,
   submitApplication,
 } from "../services/firebase";
-import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  collectionGroup,
+  query,
+  where,
+} from "firebase/firestore";
 import { db, auth } from "../services/firebase";
-import { getCurrentUser } from '../services/firebase'
+import { getCurrentUser } from "../services/firebase";
 
 const subjects = ref([]);
 const levels = ref([]);
@@ -172,19 +182,22 @@ onMounted(async () => {
   try {
     const user = await getCurrentUser();
     if (user && user.uid) {
-      const q = query(collectionGroup(db, 'applications'), where('tutorId', '==', user.uid));
+      const q = query(
+        collectionGroup(db, "applications"),
+        where("tutorId", "==", user.uid)
+      );
       const snap = await getDocs(q);
       const map = {};
-      snap.docs.forEach(d => {
+      snap.docs.forEach((d) => {
         const data = d.data();
         if (data && data.assignmentId) {
-          map[data.assignmentId] = data.status || 'pending';
+          map[data.assignmentId] = data.status || "pending";
         }
       });
       userApplications.value = map;
     }
   } catch (e) {
-    console.warn('Failed to load user applications map', e);
+    console.warn("Failed to load user applications map", e);
   }
 });
 
@@ -225,25 +238,32 @@ const filteredJobs = computed(() => {
     // Exclude closed assignments from tutor view by default.
     // Exception: if the user explicitly filters for 'rejected' and this tutor's application was rejected,
     // show the closed assignment so the tutor can review their rejected applications.
-    const statusFilter = filters.value.status || '';
-    if (job.status === 'closed') {
+    const statusFilter = filters.value.status || "";
+    if (job.status === "closed") {
       // Allow closed assignments to pass only when the tutor explicitly filters
       // for rejected or approved applications and they have that application state.
-      if (!((statusFilter === 'rejected' && userApplications.value[job.id] === 'rejected') ||
-            (statusFilter === 'approved' && userApplications.value[job.id] === 'approved'))) {
+      if (
+        !(
+          (statusFilter === "rejected" &&
+            userApplications.value[job.id] === "rejected") ||
+          (statusFilter === "approved" &&
+            userApplications.value[job.id] === "approved")
+        )
+      ) {
         return false;
       }
       // otherwise allow closed+rejected/approved for this tutor to pass through
     }
-    const norm = (s) => (s || '').toString().toLowerCase().trim();
+    const norm = (s) => (s || "").toString().toLowerCase().trim();
     const matchesSubject =
-      !filters.value.subject || norm(job.subject) === norm(filters.value.subject);
+      !filters.value.subject ||
+      norm(job.subject) === norm(filters.value.subject);
     const matchesLevel =
       !filters.value.level || norm(job.level) === norm(filters.value.level);
     const matchesLocation = (() => {
-      const f = (filters.value.location || '').toString().trim();
+      const f = (filters.value.location || "").toString().trim();
       if (!f) return true;
-      const jobLoc = (job.location || '').toString();
+      const jobLoc = (job.location || "").toString();
       // match when filter is a substring of job location (case-insensitive)
       return norm(jobLoc).includes(norm(f));
     })();
@@ -257,17 +277,23 @@ const filteredJobs = computed(() => {
     // Handle 'status' filter mapping: '', 'open', 'applied', 'rejected'
     // Note: statusFilter already declared above to support closed-assignment exception
     let matchesStatus = true;
-    if (statusFilter === 'open') {
-      matchesStatus = job.status === 'open';
-    } else if (statusFilter === 'applied') {
+    if (statusFilter === "open") {
+      matchesStatus = job.status === "open";
+    } else if (statusFilter === "applied") {
       matchesStatus = !!userApplications.value[job.id];
-    } else if (statusFilter === 'rejected') {
-      matchesStatus = userApplications.value[job.id] === 'rejected';
-    } else if (statusFilter === 'approved') {
-      matchesStatus = userApplications.value[job.id] === 'approved';
+    } else if (statusFilter === "rejected") {
+      matchesStatus = userApplications.value[job.id] === "rejected";
+    } else if (statusFilter === "approved") {
+      matchesStatus = userApplications.value[job.id] === "approved";
     }
 
-    return matchesSubject && matchesLevel && matchesLocation && matchesSearch && matchesStatus;
+    return (
+      matchesSubject &&
+      matchesLevel &&
+      matchesLocation &&
+      matchesSearch &&
+      matchesStatus
+    );
   });
 });
 
@@ -328,7 +354,10 @@ const handleSubmitApplication = async () => {
 
       // Mark this job as applied for the current user immediately (optimistic update)
       if (selectedJob.value && selectedJob.value.id) {
-        userApplications.value = { ...userApplications.value, [selectedJob.value.id]: 'pending' };
+        userApplications.value = {
+          ...userApplications.value,
+          [selectedJob.value.id]: "pending",
+        };
       }
       // Reload jobs to reflect updated status
       await loadJobs();

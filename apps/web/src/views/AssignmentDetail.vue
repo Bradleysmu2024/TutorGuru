@@ -3,7 +3,6 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { useRoute, useRouter } from "vue-router";
-import { dummyParentAssignments, dummyTutorProfiles } from "../data/dummyData";
 import {
   getAssignmentById,
   deleteAssignment,
@@ -112,19 +111,8 @@ const loadAssignment = async () => {
         await loadTutorDetails(remote.selectedTutorId);
       }
     } else {
-      // fallback to local dummy data for development
-      assignment.value =
-        dummyParentAssignments.find((a) => a.id === assignmentId) || null;
-
-      // Load tutor profiles for applicants (if present) - for dummy data
-      if (assignment.value && assignment.value.applicants) {
-        assignment.value.applicants = (assignment.value.applicants || []).map(
-          (app) => {
-            const profile = dummyTutorProfiles.find((t) => t.id === app.id);
-            return { ...app, ...profile };
-          }
-        );
-      }
+      // No assignment found
+      assignment.value = null;
     }
 
     loading.value = false;

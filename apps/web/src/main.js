@@ -50,6 +50,11 @@ const customDarkTheme = {
 import { VueFire, VueFireAuth } from "vuefire";
 import { firebaseApp } from "./services/firebase"; // Export your app from firebase.js
 
+// PrimeVue
+import PrimeVue from "primevue/config";
+import ToastService from "primevue/toastservice";
+import Aura from "@primeuix/themes/aura";
+
 // Text area Auto size
 // import TextareaAutosize from 'vue-textarea-autosize'
 
@@ -68,6 +73,15 @@ const vuetify = createVuetify({
 const app = createApp(App);
 app.use(router);
 app.use(vuetify);
+app.use(PrimeVue, {
+  theme: {
+    preset: Aura, // follow docs, for PrimeVue components
+    options: {
+      darkModeSelector: ".dark-mode", // CSS class selector for automatic dark mode switching
+    },
+  },
+});
+app.use(ToastService);
 app.use(VueFire, {
   firebaseApp,
   modules: [VueFireAuth()],

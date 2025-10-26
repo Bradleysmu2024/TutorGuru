@@ -384,7 +384,9 @@ import {
 import { uploadUserAvatar } from "../services/firebase";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
+import { useToast } from "../composables/useToast";
 
+const toast = useToast();
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
 
@@ -440,21 +442,25 @@ const handleAvatarChange = async (e) => {
 
 const uploadAvatar = async (file) => {
   const user = auth.currentUser;
-  if (!user) return alert("You must be logged in to change your photo.");
+  if (!user)
+    return toast.error(
+      "You must be logged in to change your photo",
+      "Authentication Required"
+    );
 
   avatarUploading.value = true;
   try {
     const res = await uploadUserAvatar(user.uid, file, "tutors");
     if (res.success) {
       profile.value.avatar = res.url;
-      alert("Profile photo updated successfully!");
+      toast.success("Profile photo updated successfully!", "Photo Updated");
     } else {
       console.error("uploadUserAvatar failed:", res.error);
-      alert("Failed to upload avatar. Please try again.");
+      toast.error("Failed to upload avatar. Please try again", "Upload Failed");
     }
   } catch (err) {
     console.error("Avatar upload error:", err);
-    alert("Failed to upload avatar. Please try again.");
+    toast.error("Failed to upload avatar. Please try again", "Upload Error");
   } finally {
     avatarUploading.value = false;
   }
@@ -474,10 +480,17 @@ const handleFilesSelected = (files) => {
 
 const uploadDocuments = async () => {
   const user = auth.currentUser;
-  if (!user) return alert("You must be logged in to upload documents!");
+  if (!user)
+    return toast.error(
+      "You must be logged in to upload documents",
+      "Authentication Required"
+    );
 
   if (selectedFiles.value.length === 0) {
-    return alert("Please select at least one file.");
+    return toast.warning(
+      "Please select at least one file",
+      "No Files Selected"
+    );
   }
 
   const storage = getStorage();
@@ -503,11 +516,11 @@ const uploadDocuments = async () => {
     uploadedDocuments.value.push(...newUploads);
     await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value });
 
-    alert("✅ Documents uploaded successfully!");
+    toast.success("Documents uploaded successfully!", "Upload Complete");
     selectedFiles.value = [];
   } catch (err) {
     console.error("Upload error:", err);
-    alert("Error uploading files. Please try again.");
+    toast.error("Error uploading files. Please try again", "Upload Error");
   }
 };
 
@@ -520,7 +533,7 @@ const handleUploadComplete = (files) => {
     });
   });
   selectedFiles.value = [];
-  alert("Documents uploaded successfully!");
+  toast.success("Documents uploaded successfully!", "Upload Complete");
 };
 
 // Auto-validate and geocode postal code
@@ -546,7 +559,7 @@ onMounted(() => {
         profile.value = snap.data();
         uploadedDocuments.value = snap.data().uploadedDocuments || [];
       } else {
-        alert("Please log in to view your profile.");
+        toast.warning("Please log in to view your profile", "Login Required");
       }
     }
   });
@@ -557,14 +570,18 @@ import { setUserDoc, getCurrentUser } from "../services/firebase";
 // Save profile to Firestore
 const saveProfile = async () => {
   const user = auth.currentUser;
-  if (!user) return alert("You must be logged in!");
+  if (!user)
+    return toast.error(
+      "You must be logged in to save your profile",
+      "Authentication Required"
+    );
 
   // Persist to users/{uid}
   const result = await setUserDoc(user.uid, profile.value, { merge: true });
   if (result && result.success) {
-    alert("Profile saved successfully!");
+    toast.success("Profile saved successfully!", "Profile Saved");
   } else {
-    alert("Failed to save profile. Please try again.");
+    toast.error("Failed to save profile. Please try again", "Save Failed");
   }
 };
 

@@ -1,8 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 import { useRoute, useRouter } from "vue-router";
+import { useToast } from "../composables/useToast";
 import {
   getAssignmentById,
   deleteAssignment,
@@ -22,6 +23,7 @@ import PaymentCard from "../components/PaymentCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import LoadingState from "../components/LoadingState.vue";
 
+const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 const assignment = ref(null);
@@ -57,10 +59,14 @@ const hasReviewed = computed(() => {
 const userReview = computed(() => {
   try {
     const reviews = assignment.value?.review || [];
-    console.log('User reviews:', reviews[0].comment);
+    console.log("User reviews:", reviews[0].comment);
     if (!Array.isArray(reviews) || reviews.length === 0) return null;
     return (
-      {comment: reviews[0].comment, rating: reviews[0].rating, reviewDate: reviews[0].createdAt} || null
+      {
+        comment: reviews[0].comment,
+        rating: reviews[0].rating,
+        reviewDate: reviews[0].createdAt,
+      } || null
     );
   } catch (e) {
     return null;
@@ -127,7 +133,7 @@ onMounted(async () => {
   try {
     currentUser.value = await getCurrentUser();
   } catch (err) {
-    console.warn('Could not get current user for feedback permissions', err);
+    console.warn("Could not get current user for feedback permissions", err);
   }
 });
 
@@ -139,7 +145,10 @@ const openFeedbackModal = () => {
 
 const submitReviewHandler = async () => {
   if (hasReviewed.value) {
-    alert('You have already submitted feedback for this assignment.');
+    toast.warning(
+      "You have already submitted feedback for this assignment",
+      "Already Reviewed"
+    );
     return;
   }
   try {
@@ -152,13 +161,16 @@ const submitReviewHandler = async () => {
       feedbackSubmitted.value = true;
       showFeedbackModal.value = false;
       await loadAssignment();
-      alert('Thank you for your feedback');
+      toast.success("Thank you for your feedback", "Feedback Submitted");
     } else {
-      throw new Error('Failed to submit feedback');
+      throw new Error("Failed to submit feedback");
     }
   } catch (err) {
-    console.error('Error submitting review', err);
-    alert('Failed to submit review. Please try again.');
+    console.error("Error submitting review", err);
+    toast.error(
+      "Failed to submit review. Please try again",
+      "Submission Failed"
+    );
   }
 };
 
@@ -168,23 +180,25 @@ const downloadFile = (file) => {
   try {
     if (file && file.url) {
       // Open the file URL in a new tab/window
-      window.open(file.url, '_blank')
+      window.open(file.url, "_blank");
     } else {
-      alert('File not available for download.')
+      toast.error("File not available for download", "Download Failed");
     }
   } catch (err) {
-    console.error('Error downloading file:', err)
-    alert('Failed to download file')
+    console.error("Error downloading file:", err);
+    toast.error("Failed to download file", "Download Error");
   }
 };
 
 const downloadAllFiles = async () => {
   try {
     const files = assignment.value.files || [];
-    if (files.length === 0) return alert('No files to download');
+    if (files.length === 0)
+      return toast.warning("No files to download", "No Files Available");
 
     const zip = new JSZip();
-    const folder = zip.folder(`assignment_${assignment.value.id || 'files'}`) || zip;
+    const folder =
+      zip.folder(`assignment_${assignment.value.id || "files"}`) || zip;
 
     const fetchPromises = (files || []).map(async (f) => {
       if (!f || !f.url) return null;
@@ -196,7 +210,7 @@ const downloadAllFiles = async () => {
         folder.file(filename, blob);
         return true;
       } catch (err) {
-        console.warn('Failed to fetch file for zipping', f, err);
+        console.warn("Failed to fetch file for zipping", f, err);
         return false;
       }
     });
@@ -204,15 +218,21 @@ const downloadAllFiles = async () => {
     const results = await Promise.all(fetchPromises);
 
     if (!results.some(Boolean)) {
-      return alert('Failed to fetch any files for download');
+      return toast.error(
+        "Failed to fetch any files for download",
+        "Download Failed"
+      );
     }
 
-    const content = await zip.generateAsync({ type: 'blob' });
-    const zipName = `${(assignment.value.title || 'assignment').replace(/[^a-z0-9_-]/gi, '_')}_files.zip`;
+    const content = await zip.generateAsync({ type: "blob" });
+    const zipName = `${(assignment.value.title || "assignment").replace(
+      /[^a-z0-9_-]/gi,
+      "_"
+    )}_files.zip`;
     saveAs(content, zipName);
   } catch (err) {
-    console.error('Error downloading all files as zip:', err);
-    alert('Failed to create ZIP of files');
+    console.error("Error downloading all files as zip:", err);
+    toast.error("Failed to create ZIP of files", "ZIP Error");
   }
 };
 
@@ -230,16 +250,19 @@ const closeProfileModal = () => {
 const messageTutorFromModal = async () => {
   const app = selectedApplicant.value;
   const tutorIdentifier = await getUsernameById(app.tutorId);
-  if (!app) return alert('No tutor selected');
+  if (!app) return toast.warning("No tutor selected", "Selection Required");
 
   if (!tutorIdentifier) {
-    return alert('Unable to start chat: missing tutor identifier.');
+    return toast.error(
+      "Unable to start chat: missing tutor identifier",
+      "Chat Error"
+    );
   }
 
   // Close modal then navigate to chat view with tutor query parameter
   showTutorProfileModal.value = false;
   selectedApplicant.value = null;
-  router.push({ path: '/chat', query: { tutor: tutorIdentifier } });
+  router.push({ path: "/chat", query: { tutor: tutorIdentifier } });
 };
 
 const selectTutorForAssignment = async (application) => {
@@ -259,21 +282,24 @@ const selectTutorForAssignment = async (application) => {
     );
 
     if (result.success) {
-      alert("Tutor selected successfully! The assignment has been closed.");
+      toast.success(
+        "Tutor selected successfully! The assignment has been closed",
+        "Tutor Selected"
+      );
       // Reload assignment to reflect changes
       await loadAssignment();
 
-  // console.log('app', application)
-  // console.log('assignment', assignment.value)
-  // application.tutorName
-  // application.tutorId
-  // application.tutorEmail
-  //assignment.selectedDays ['Monday', 'Tuesday']
-  //assignment.sessionDuration 2 (hour(s))
-  //assignment.sessionsPerWeek 2 (visual data)
-  //assignment.contractDuration 1 (month(s))
+      // console.log('app', application)
+      // console.log('assignment', assignment.value)
+      // application.tutorName
+      // application.tutorId
+      // application.tutorEmail
+      //assignment.selectedDays ['Monday', 'Tuesday']
+      //assignment.sessionDuration 2 (hour(s))
+      //assignment.sessionsPerWeek 2 (visual data)
+      //assignment.contractDuration 1 (month(s))
 
-  function getWeekdayDatesInRange(startDate, endDate, weekdays) {
+      function getWeekdayDatesInRange(startDate, endDate, weekdays) {
         const start = new Date(startDate);
         const end = new Date(endDate);
         const result = [];
@@ -293,67 +319,96 @@ const selectTutorForAssignment = async (application) => {
         return result;
       }
 
-  function convertInput(input) {
-    const date = new Date(input);
+      function convertInput(input) {
+        const date = new Date(input);
 
-    // Format output
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}+08:00`;
-  }
-
-      const start = new Date(application.startDate)
-      const end = new Date(start)
-      end.setDate(start.getDate() + 30 * assignment.value.contractDuration)
-      const days_obj = {
-        'Sunday': 0,
-        'Monday': 1,
-        'Tuesday': 2,
-        'Wednesday': 3,
-        'Thursday': 4,
-        'Friday': 5,
-        'Saturday': 6
+        // Format output
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+          date.getDate()
+        )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+          date.getSeconds()
+        )}+08:00`;
       }
+
+      const start = new Date(application.startDate);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 30 * assignment.value.contractDuration);
+      const days_obj = {
+        Sunday: 0,
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6,
+      };
       // console.log('test',assignment.value.selectedDays)
-      const selected_days = assignment.value.selectedDays.map(day => days_obj[day]);
+      const selected_days = assignment.value.selectedDays.map(
+        (day) => days_obj[day]
+      );
       let days = getWeekdayDatesInRange(start, end, selected_days);
-      days = days.map(d => d.toDateString());
-      console.log(days)
+      days = days.map((d) => d.toDateString());
+      console.log(days);
 
       const colors_obj = {
-      default: "#039be5",   // blue (peacock)
-      1: "#7986cb",         // soft purple (lavender)
-      2: "#33b679",         // light green (sage)
-      3: "#8e24aa",         // purple (grape)
-      4: "#e67c73",         // pinkish red (flamingo)
-      5: "#f6bf26",         // yellow (banana)
-      6: "#f4511e",         // orange (tangerine)
-      8: "#616161",         // grey (graphite)
-      9: "#3f51b5",         // indigo blue (blueberry)
-      10: "#0b8043",        // dark green (basil)
-      11: "#d50000",        // bright red (tomato)
+        default: "#039be5", // blue (peacock)
+        1: "#7986cb", // soft purple (lavender)
+        2: "#33b679", // light green (sage)
+        3: "#8e24aa", // purple (grape)
+        4: "#e67c73", // pinkish red (flamingo)
+        5: "#f6bf26", // yellow (banana)
+        6: "#f4511e", // orange (tangerine)
+        8: "#616161", // grey (graphite)
+        9: "#3f51b5", // indigo blue (blueberry)
+        10: "#0b8043", // dark green (basil)
+        11: "#d50000", // bright red (tomato)
       };
-      let randomColor = Object.values(colors_obj)[Math.floor(Math.random() * Object.values(colors_obj).length)];
-      for (let d of days){
-        let startDate = new Date(d)
+      let randomColor =
+        Object.values(colors_obj)[
+          Math.floor(Math.random() * Object.values(colors_obj).length)
+        ];
+      for (let d of days) {
+        let startDate = new Date(d);
         const timeStr = assignment.value.sessionStartTime || "12:00"; // default to "12:00"
-        const [hours, minutes] = timeStr.split(":").map(Number)
+        const [hours, minutes] = timeStr.split(":").map(Number);
         startDate.setHours(hours, minutes, 0, 0); // set hours, minutes, seconds, ms
-        let endDate = new Date(d)
-        endDate.setHours(startDate.getHours() + assignment.value.sessionDuration) // add session Duration to find out ending time
-        startDate = convertInput(startDate)
-        endDate = convertInput(endDate)
-        console.log(startDate)
-        console.log(endDate)
-        await addEvent_('calendar', `${assignment.value.title} + ${assignment.value.subject}`, assignment.value.description, startDate, endDate, randomColor, assignment.value.parentId)
-        await addEvent_('calendar', `${assignment.value.title} + ${assignment.value.subject}`, assignment.value.description, startDate, endDate, randomColor, application.tutorId)
+        let endDate = new Date(d);
+        endDate.setHours(
+          startDate.getHours() + assignment.value.sessionDuration
+        ); // add session Duration to find out ending time
+        startDate = convertInput(startDate);
+        endDate = convertInput(endDate);
+        console.log(startDate);
+        console.log(endDate);
+        await addEvent_(
+          "calendar",
+          `${assignment.value.title} + ${assignment.value.subject}`,
+          assignment.value.description,
+          startDate,
+          endDate,
+          randomColor,
+          assignment.value.parentId
+        );
+        await addEvent_(
+          "calendar",
+          `${assignment.value.title} + ${assignment.value.subject}`,
+          assignment.value.description,
+          startDate,
+          endDate,
+          randomColor,
+          application.tutorId
+        );
       }
-
     } else {
-      alert(`Failed to select tutor: ${result.error}`);
+      toast.error(
+        `Failed to select tutor: ${result.error}`,
+        "Selection Failed"
+      );
     }
   } catch (error) {
     console.error("Error selecting tutor:", error);
-    alert("Failed to select tutor. Please try again.");
+    toast.error("Failed to select tutor. Please try again", "Error");
   }
 };
 
@@ -370,14 +425,20 @@ const rejectTutorApplication = async (application) => {
     const result = await rejectApplication(assignment.value.id, application.id);
 
     if (result.success) {
-      alert("Application rejected.");
+      toast.success(
+        "Application rejected successfully",
+        "Application Rejected"
+      );
       await loadAssignment();
     } else {
-      alert(`Failed to reject application: ${result.error}`);
+      toast.error(
+        `Failed to reject application: ${result.error}`,
+        "Rejection Failed"
+      );
     }
   } catch (error) {
     console.error("Error rejecting application:", error);
-    alert("Failed to reject application. Please try again.");
+    toast.error("Failed to reject application. Please try again", "Error");
   }
 };
 
@@ -416,7 +477,7 @@ const formatFileSize = (bytes) => {
 };
 
 const goBack = () => {
-    router.push("/parent-dashboard"); // go to parent dashboard
+  router.push("/parent-dashboard"); // go to parent dashboard
 };
 
 const editAssignment = () => {
@@ -452,7 +513,7 @@ const deleteAssignmentHandler = async () => {
     const assignmentId = assignment.value?.id || route.params.id;
 
     if (!assignmentId) {
-      alert("Assignment ID not found");
+      toast.error("Assignment ID not found", "Not Found");
       return;
     }
 
@@ -463,7 +524,7 @@ const deleteAssignmentHandler = async () => {
       throw new Error(result?.error || "Failed to delete assignment");
     }
 
-    alert("Assignment deleted successfully!");
+    toast.success("Assignment deleted successfully!", "Deleted");
 
     // Redirect to parent dashboard
     router.push({
@@ -472,7 +533,10 @@ const deleteAssignmentHandler = async () => {
     });
   } catch (error) {
     console.error("Error deleting assignment:", error);
-    alert(`Failed to delete assignment: ${error.message}`);
+    toast.error(
+      `Failed to delete assignment: ${error.message}`,
+      "Delete Failed"
+    );
   }
 };
 
@@ -575,7 +639,7 @@ onMounted(async () => {
                     <i class="bi bi-cash me-2"></i>
                     {{ assignment.rate }}
                   </span>
-                  <span 
+                  <span
                     v-if="assignment.location !== 'Online'"
                     class="badge bg-warning me-2"
                   >
@@ -607,8 +671,15 @@ onMounted(async () => {
                     <div class="detail-box">
                       <i class="bi bi-calendar-range text-info me-2"></i>
                       <div>
-                        <small class="text-muted d-block">Contract Duration</small>
-                        <strong>{{ assignment.contractDuration || assignment.duration }} month(s)</strong>
+                        <small class="text-muted d-block"
+                          >Contract Duration</small
+                        >
+                        <strong
+                          >{{
+                            assignment.contractDuration || assignment.duration
+                          }}
+                          month(s)</strong
+                        >
                       </div>
                     </div>
                   </div>
@@ -617,8 +688,15 @@ onMounted(async () => {
                       <i class="bi bi-calendar-week text-primary me-2"></i>
                       <div>
                         <small class="text-muted d-block">Tutoring Days</small>
-                        <strong v-if="assignment.selectedDays && assignment.selectedDays.length > 0">
-                          {{ assignment.selectedDays.join(', ') }} ({{ assignment.selectedDays.length }})
+                        <strong
+                          v-if="
+                            assignment.selectedDays &&
+                            assignment.selectedDays.length > 0
+                          "
+                        >
+                          {{ assignment.selectedDays.join(", ") }} ({{
+                            assignment.selectedDays.length
+                          }})
                         </strong>
                         <strong v-else>
                           {{ assignment.sessionsPerWeek || 1 }}x per week
@@ -630,8 +708,17 @@ onMounted(async () => {
                     <div class="detail-box">
                       <i class="bi bi-clock text-warning me-2"></i>
                       <div>
-                        <small class="text-muted d-block">Session Duration</small>
-                        <strong>{{ assignment.sessionDuration || assignment.hoursPerSession || 1 }} hour(s)</strong>
+                        <small class="text-muted d-block"
+                          >Session Duration</small
+                        >
+                        <strong
+                          >{{
+                            assignment.sessionDuration ||
+                            assignment.hoursPerSession ||
+                            1
+                          }}
+                          hour(s)</strong
+                        >
                       </div>
                     </div>
                   </div>
@@ -652,7 +739,9 @@ onMounted(async () => {
                     <div class="detail-box">
                       <i class="bi bi-cash text-success me-2"></i>
                       <div>
-                        <small class="text-muted d-block">Session Start Time</small>
+                        <small class="text-muted d-block"
+                          >Session Start Time</small
+                        >
                         <strong>{{ assignment.sessionStartTime }}</strong>
                       </div>
                     </div>
@@ -910,7 +999,9 @@ onMounted(async () => {
                   <StatusBadge :status="assignment.status" />
                 </div>
                 <div class="info-item mb-3">
-                  <small class="text-muted d-block">Applications Received</small>
+                  <small class="text-muted d-block"
+                    >Applications Received</small
+                  >
                   <strong>{{ applications.length }}</strong>
                 </div>
                 <hr />
@@ -931,36 +1022,71 @@ onMounted(async () => {
                   </button>
                 </div>
                 <!-- Feedback card placed below Assignment Info card -->
-                <div v-if="showFeedbackModal && !feedbackSubmitted && !hasReviewed" class="card mt-3 border-primary">
+                <div
+                  v-if="showFeedbackModal && !feedbackSubmitted && !hasReviewed"
+                  class="card mt-3 border-primary"
+                >
                   <div class="card-body">
-                    <h6 class="fw-semibold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Leave Feedback</h6>
+                    <h6 class="fw-semibold mb-3">
+                      <i class="bi bi-star-fill text-warning me-2"></i>Leave
+                      Feedback
+                    </h6>
                     <div class="mb-3">
                       <label class="form-label">Rating</label>
-                      <select v-model.number="feedbackRating" class="form-select">
-                        <option v-for="n in 5" :key="n" :value="n">{{ n }} star{{ n>1 ? 's' : '' }}</option>
+                      <select
+                        v-model.number="feedbackRating"
+                        class="form-select"
+                      >
+                        <option v-for="n in 5" :key="n" :value="n">
+                          {{ n }} star{{ n > 1 ? "s" : "" }}
+                        </option>
                       </select>
                     </div>
                     <div class="mb-3">
                       <label class="form-label">Comment</label>
-                      <textarea v-model="feedbackComment" class="form-control" rows="3" placeholder="Share your experience..."></textarea>
+                      <textarea
+                        v-model="feedbackComment"
+                        class="form-control"
+                        rows="3"
+                        placeholder="Share your experience..."
+                      ></textarea>
                     </div>
                     <div class="d-flex gap-2">
-                      <button class="btn btn-outline-secondary" @click="showFeedbackModal = false">Cancel</button>
-                      <button class="btn btn-primary ms-auto" @click="submitReviewHandler">Submit Review</button>
+                      <button
+                        class="btn btn-outline-secondary"
+                        @click="showFeedbackModal = false"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        class="btn btn-primary ms-auto"
+                        @click="submitReviewHandler"
+                      >
+                        Submit Review
+                      </button>
                     </div>
                   </div>
                 </div>
-                <div v-if="feedbackSubmitted" class="alert alert-success mt-3">Thank you — your feedback has been submitted.</div>
+                <div v-if="feedbackSubmitted" class="alert alert-success mt-3">
+                  Thank you — your feedback has been submitted.
+                </div>
 
                 <!-- Display the user's submitted review if present -->
                 <div v-if="userReview" class="card mt-3 border-success">
                   <div class="card-body">
-                    <h6 class="fw-semibold mb-2"><i class="bi bi-star-fill text-warning me-2"></i>Your Review</h6>
+                    <h6 class="fw-semibold mb-2">
+                      <i class="bi bi-star-fill text-warning me-2"></i>Your
+                      Review
+                    </h6>
                     <div class="mb-2">
-                      <strong class="text-warning">{{ userReview.rating }} / 5</strong>
+                      <strong class="text-warning"
+                        >{{ userReview.rating }} / 5</strong
+                      >
                     </div>
                     <div class="mb-2 text-muted">{{ userReview.comment }}</div>
-                    <div class="small text-muted">Submitted: {{ formatDate(userReview.reviewDate) }}</div>
+                    <div class="small text-muted">
+                      Submitted: {{ formatDate(userReview.reviewDate) }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1041,7 +1167,10 @@ onMounted(async () => {
             </div>
             <!-- Subjects Taught Section -->
             <div
-              v-if="selectedApplicant.tutorTeaching && selectedApplicant.tutorTeaching.length"
+              v-if="
+                selectedApplicant.tutorTeaching &&
+                selectedApplicant.tutorTeaching.length
+              "
               class="mt-4"
             >
               <h6 class="fw-semibold mb-3">
@@ -1082,7 +1211,10 @@ onMounted(async () => {
             </div>
             <!-- Tutor Credentials Section -->
             <div
-              v-if="selectedApplicant.tutorDocuments && selectedApplicant.tutorDocuments.length"
+              v-if="
+                selectedApplicant.tutorDocuments &&
+                selectedApplicant.tutorDocuments.length
+              "
               class="mt-4"
             >
               <h6 class="fw-semibold mb-3">
@@ -1102,7 +1234,8 @@ onMounted(async () => {
                     <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
                     <strong>{{ doc.name }}</strong>
                     <small class="d-block text-muted">
-                      Uploaded on: {{ new Date(doc.uploadDate).toLocaleDateString() }}
+                      Uploaded on:
+                      {{ new Date(doc.uploadDate).toLocaleDateString() }}
                     </small>
                   </div>
                   <i class="bi bi-box-arrow-up-right text-primary"></i>
@@ -1151,7 +1284,7 @@ onMounted(async () => {
     </div>
   </div>
 
-    <!-- feedback card replaced modal; UI now appended below Assignment Info -->
+  <!-- feedback card replaced modal; UI now appended below Assignment Info -->
 </template>
 
 <style scoped>

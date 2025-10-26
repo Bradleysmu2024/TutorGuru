@@ -93,10 +93,13 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, computed } from "vue";
+import { defineProps, computed } from "vue";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import StatusBadge from "./StatusBadge.vue";
+import { useToast } from "../composables/useToast";
+
+const toast = useToast();
 
 const props = defineProps({
   job: {
@@ -188,7 +191,8 @@ const formatDate = (dateVal) => {
 
 const downloadFiles = async () => {
   try {
-    if (!job.files || job.files.length === 0) return alert("No files attached");
+    if (!job.files || job.files.length === 0)
+      return toast.warning("No files attached to this assignment", "No Files");
 
     const zip = new JSZip();
     const folder = zip.folder(`assignment_${job.id || "files"}`) || zip;
@@ -213,7 +217,10 @@ const downloadFiles = async () => {
     const results = await Promise.all(fetchPromises);
 
     if (!results.some(Boolean)) {
-      return alert("Failed to fetch any files for download");
+      return toast.error(
+        "Failed to fetch any files for download",
+        "Download Failed"
+      );
     }
 
     const content = await zip.generateAsync({ type: "blob" });
@@ -224,7 +231,7 @@ const downloadFiles = async () => {
     saveAs(content, zipName);
   } catch (err) {
     console.error("Error creating zip:", err);
-    alert("Failed to create ZIP of files");
+    toast.error("Failed to create ZIP of files", "ZIP Error");
   }
 };
 </script>

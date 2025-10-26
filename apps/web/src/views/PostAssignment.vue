@@ -12,14 +12,16 @@ import {
   getLevelsWithGrades,
   uploadFile,
 } from "../services/firebase";
-import { getCurrentUser } from '../services/firebase'
+import { getCurrentUser } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
+import { useToast } from "../composables/useToast";
 
 const router = useRouter();
 const route = useRoute();
 const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
 const submitting = ref(false);
+const toast = useToast();
 
 // Edit mode
 const isEditMode = ref(false);
@@ -45,49 +47,48 @@ const locations = ref([]);
 const levelsWithGrades = ref([]);
 
 const formData = ref({
-  title: '',
-  subject: '',
-  level: '',
-  studentGrade: '',
-  description: '',
+  title: "",
+  subject: "",
+  level: "",
+  studentGrade: "",
+  description: "",
   requirements: [],
-  contractDuration: 1, 
+  contractDuration: 1,
   sessionDuration: 1,
-  sessionStartTime: '12:00',
+  sessionStartTime: "12:00",
   rate: 40,
   review: [],
   selectedDays: [], // Array of day names ['Monday', 'Wednesday']
-  location: '',
-  postalCode: '',
+  location: "",
+  postalCode: "",
   lat: null,
   lng: null,
-  files: []
-})
+  files: [],
+});
 
 // Days of the week options
 const daysOfWeek = [
-  { value: 'Monday', label: 'Mon', fullLabel: 'Monday' },
-  { value: 'Tuesday', label: 'Tue', fullLabel: 'Tuesday' },
-  { value: 'Wednesday', label: 'Wed', fullLabel: 'Wednesday' },
-  { value: 'Thursday', label: 'Thu', fullLabel: 'Thursday' },
-  { value: 'Friday', label: 'Fri', fullLabel: 'Friday' },
-  { value: 'Saturday', label: 'Sat', fullLabel: 'Saturday' },
-  { value: 'Sunday', label: 'Sun', fullLabel: 'Sunday' }
-]
+  { value: "Monday", label: "Mon", fullLabel: "Monday" },
+  { value: "Tuesday", label: "Tue", fullLabel: "Tuesday" },
+  { value: "Wednesday", label: "Wed", fullLabel: "Wednesday" },
+  { value: "Thursday", label: "Thu", fullLabel: "Thursday" },
+  { value: "Friday", label: "Fri", fullLabel: "Friday" },
+  { value: "Saturday", label: "Sat", fullLabel: "Saturday" },
+  { value: "Sunday", label: "Sun", fullLabel: "Sunday" },
+];
 
 // Toggle day selection
 const toggleDay = (day) => {
-  const index = formData.value.selectedDays.indexOf(day)
+  const index = formData.value.selectedDays.indexOf(day);
   if (index > -1) {
-    formData.value.selectedDays.splice(index, 1)
+    formData.value.selectedDays.splice(index, 1);
   } else {
-    formData.value.selectedDays.push(day)
+    formData.value.selectedDays.push(day);
   }
-}
+};
 
 // Computed: sessions per week (derived from selected days)
-const sessionsPerWeek = computed(() => formData.value.selectedDays.length)
-
+const sessionsPerWeek = computed(() => formData.value.selectedDays.length);
 
 const availableGrades = computed(() => {
   if (!formData.value.level || formData.value.level === "All Levels") {
@@ -160,7 +161,7 @@ onMounted(async () => {
             : assignment.requirements || "",
           contractDuration: assignment.contractDuration || 1,
           sessionDuration: assignment.sessionDuration || 1,
-          sessionStartTime: assignment.sessionStartTime || '12:00',
+          sessionStartTime: assignment.sessionStartTime || "12:00",
           rate: assignment.rate || 40,
           selectedDays: assignment.selectedDays || [], // Load selected days
           location: assignment.location || "",
@@ -173,7 +174,7 @@ onMounted(async () => {
           isOnline.value = true;
         }
 
-  // If we have coordinates, mark postal as validated
+        // If we have coordinates, mark postal as validated
         if (assignment.lat && assignment.lng) {
           geocodedData.value = {
             lat: assignment.lat,
@@ -188,7 +189,7 @@ onMounted(async () => {
           selectedFiles.value = assignment.files.map((f) => ({ ...f }));
         }
       } else {
-        alert("Assignment not found");
+        toast.error("Assignment not found", "Not Found");
         router.push("/parent-dashboard");
       }
     }
@@ -215,7 +216,10 @@ const submitAssignment = async () => {
   try {
     const user = await getCurrentUser();
     if (!user || !user.uid) {
-      alert("You must be logged in as a parent to post an assignment");
+      toast.error(
+        "You must be logged in as a parent to post an assignment",
+        "Authentication Required"
+      );
       submitting.value = false;
       return;
     }
@@ -231,14 +235,16 @@ const submitAssignment = async () => {
     const assignmentData = {
       ...formData.value,
       sessionsPerWeek: sessionsPerWeek.value,
-      requirements: (function() {
+      requirements: (function () {
         const req = formData.value.requirements;
         if (!req) return [];
         if (Array.isArray(req)) {
-          return req.map((r) => (typeof r === 'string' ? r.trim() : '')).filter(Boolean);
+          return req
+            .map((r) => (typeof r === "string" ? r.trim() : ""))
+            .filter(Boolean);
         }
         return String(req)
-          .split('\n')
+          .split("\n")
           .map((r) => r.trim())
           .filter(Boolean);
       })(),
@@ -268,20 +274,28 @@ const submitAssignment = async () => {
       // Edit flow: upload any newly selected files first, then update assignment with combined files
       try {
         // Determine which existing files the user kept (selectedFiles contains both metadata and File objects)
-        const keptExisting = (selectedFiles.value || []).filter((f) => f && f.url);
+        const keptExisting = (selectedFiles.value || []).filter(
+          (f) => f && f.url
+        );
 
         // Files to upload are the File objects in selectedFiles
         const newFilesMeta = [];
-        const filesToUpload = (selectedFiles.value || []).filter((f) => f && f instanceof File);
+        const filesToUpload = (selectedFiles.value || []).filter(
+          (f) => f && f instanceof File
+        );
 
         for (const f of filesToUpload) {
           const safeName = `${Date.now()}_${f.name}`;
           const path = `assignments/${assignmentId.value}/${safeName}`;
           const uploadRes = await uploadFile(f, path);
           if (uploadRes.success) {
-            newFilesMeta.push({ name: f.name, size: f.size, url: uploadRes.url });
+            newFilesMeta.push({
+              name: f.name,
+              size: f.size,
+              url: uploadRes.url,
+            });
           } else {
-            console.warn('Failed to upload file', f.name, uploadRes.error);
+            console.warn("Failed to upload file", f.name, uploadRes.error);
           }
         }
 
@@ -291,7 +305,7 @@ const submitAssignment = async () => {
         // Update assignment doc
         result = await updateAssignment(assignmentId.value, assignmentData);
       } catch (err) {
-        console.error('Error uploading files during update:', err);
+        console.error("Error uploading files during update:", err);
         throw err;
       }
     } else {
@@ -299,7 +313,7 @@ const submitAssignment = async () => {
       result = await createAssignment(user.uid, assignmentData);
 
       if (!result?.success) {
-        throw new Error(result?.error || 'Failed to create assignment');
+        throw new Error(result?.error || "Failed to create assignment");
       }
 
       const createdId = result.id;
@@ -312,15 +326,21 @@ const submitAssignment = async () => {
             const path = `assignments/${createdId}/${safeName}`;
             const uploadRes = await uploadFile(f, path);
             if (uploadRes.success) {
-              uploadedFiles.push({ name: f.name, size: f.size, url: uploadRes.url });
+              uploadedFiles.push({
+                name: f.name,
+                size: f.size,
+                url: uploadRes.url,
+              });
             } else {
-              console.warn('Failed to upload file', f.name, uploadRes.error);
+              console.warn("Failed to upload file", f.name, uploadRes.error);
             }
           }
         }
 
         // Also include any metadata items that might already be present in selectedFiles
-        const existingMeta = (selectedFiles.value || []).filter((f) => f && f.url);
+        const existingMeta = (selectedFiles.value || []).filter(
+          (f) => f && f.url
+        );
         const finalFiles = [...existingMeta, ...uploadedFiles];
 
         if (finalFiles.length > 0) {
@@ -328,15 +348,21 @@ const submitAssignment = async () => {
           await updateAssignment(createdId, { files: finalFiles });
         }
       } catch (err) {
-        console.error('Error uploading files after create:', err);
+        console.error("Error uploading files after create:", err);
         // We don't fail the whole create flow here but inform user
-        alert('Assignment created but some files failed to upload.');
+        toast.warning(
+          "Assignment created but some files failed to upload.",
+          "Partial Success"
+        );
       }
     }
 
     submitting.value = false;
-    alert(
-      `Assignment ${isEditMode.value ? "updated" : "posted"} successfully!`
+    toast.success(
+      `Your assignment has been ${
+        isEditMode.value ? "updated" : "posted"
+      } successfully!`,
+      isEditMode.value ? "Assignment Updated" : "Assignment Posted"
     );
     router.push({
       path: "/parent-dashboard",
@@ -347,66 +373,96 @@ const submitAssignment = async () => {
       `Error ${isEditMode.value ? "updating" : "posting"} assignment:`,
       error
     );
-    alert(
+    toast.error(
       error?.message ||
         `Failed to ${
           isEditMode.value ? "update" : "post"
-        } assignment. Please try again.`
+        } assignment. Please try again.`,
+      "Error"
     );
     submitting.value = false;
   }
 };
 
 const validateForm = () => {
-  if (!formData.value.title || 
-      !formData.value.subject || 
-      !formData.value.level ||
-      !formData.value.contractDuration ||
-      !formData.value.sessionDuration ||
-      !formData.value.sessionStartTime ||
-      !formData.value.rate) {
-    alert('Please fill in all required fields')
-    return false
+  if (
+    !formData.value.title ||
+    !formData.value.subject ||
+    !formData.value.level ||
+    !formData.value.contractDuration ||
+    !formData.value.sessionDuration ||
+    !formData.value.sessionStartTime ||
+    !formData.value.rate
+  ) {
+    toast.warning("Please fill in all required fields", "Validation Error");
+    return false;
   }
 
   // Only require postal code verification for physical locations
   if (!isOnline.value) {
     if (!formData.value.postalCode) {
-      alert("Please enter your postal code or select 'Online' mode");
+      toast.warning(
+        "Please enter your postal code or select 'Online' mode",
+        "Location Required"
+      );
       return false;
     }
 
     if (!postalSuccess.value) {
-      alert("Please verify your postal code by clicking the location button");
+      toast.warning(
+        "Please verify your postal code by clicking the location button",
+        "Verification Required"
+      );
       return false;
     }
   }
-  
-    // Validate number fields
-  if (formData.value.contractDuration < 1 || formData.value.contractDuration > 24) {
-    alert('Contract duration must be between 1 and 24 months')
-    return false
+
+  // Validate number fields
+  if (
+    formData.value.contractDuration < 1 ||
+    formData.value.contractDuration > 24
+  ) {
+    toast.warning(
+      "Contract duration must be between 1 and 24 months",
+      "Invalid Duration"
+    );
+    return false;
   }
 
-  if (formData.value.sessionDuration < 0.5 || formData.value.sessionDuration > 4) {
-    alert('Session duration must be between 0.5 and 4 hours')
-    return false
+  if (
+    formData.value.sessionDuration < 0.5 ||
+    formData.value.sessionDuration > 4
+  ) {
+    toast.warning(
+      "Session duration must be between 0.5 and 4 hours",
+      "Invalid Duration"
+    );
+    return false;
   }
 
-  if (formData.value.sessionStartTime < "09:00" || formData.value.sessionStartTime > "18:00"){
-    alert('Session start time must be between 9 am and 6 pm inclusive')
-    return false
+  if (
+    formData.value.sessionStartTime < "09:00" ||
+    formData.value.sessionStartTime > "18:00"
+  ) {
+    toast.warning(
+      "Session start time must be between 9 am and 6 pm inclusive",
+      "Invalid Time"
+    );
+    return false;
   }
 
   if (formData.value.rate < 20 || formData.value.rate > 200) {
-    alert('Hourly rate must be between $20 and $200')
-    return false
+    toast.warning("Hourly rate must be between $20 and $200", "Invalid Rate");
+    return false;
   }
 
   // Validate at least one day is selected
   if (formData.value.selectedDays.length === 0) {
-    alert('Please select at least one day per week for tutoring sessions')
-    return false
+    toast.warning(
+      "Please select at least one day per week for tutoring sessions",
+      "Days Required"
+    );
+    return false;
   }
 
   return true;
@@ -622,7 +678,7 @@ const cancel = () => {
                     v-model="formData.description"
                     class="form-control"
                     rows="4"
-                    placeholder="Describe what help your child needs..."
+                    placeholder="What challenges is your child facing, or what goals are you hoping to achieve?"
                     required
                   ></textarea>
                 </div>
@@ -640,34 +696,38 @@ const cancel = () => {
                   >
                 </div>
 
-              <!-- Day Picker -->
-              <div class="mb-3">
-                <label class="form-label">
-                  Tutoring Days <span class="text-danger">*</span>
-                </label>
-                <div class="day-picker">
-                  <button
-                    v-for="day in daysOfWeek"
-                    :key="day.value"
-                    type="button"
-                    class="day-btn"
-                    :class="{ active: formData.selectedDays.includes(day.value) }"
-                    @click="toggleDay(day.value)"
-                  >
-                    <span class="day-label">{{ day.label }}</span>
-                    <span class="day-full">{{ day.fullLabel }}</span>
-                  </button>
+                <!-- Day Picker -->
+                <div class="mb-3">
+                  <label class="form-label">
+                    Tutoring Days <span class="text-danger">*</span>
+                  </label>
+                  <div class="day-picker">
+                    <button
+                      v-for="day in daysOfWeek"
+                      :key="day.value"
+                      type="button"
+                      class="day-btn"
+                      :class="{
+                        active: formData.selectedDays.includes(day.value),
+                      }"
+                      @click="toggleDay(day.value)"
+                    >
+                      <span class="day-label">{{ day.label }}</span>
+                      <span class="day-full">{{ day.fullLabel }}</span>
+                    </button>
+                  </div>
+                  <small class="text-muted d-block mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Selected:
+                    <strong v-if="formData.selectedDays.length > 0">
+                      {{ formData.selectedDays.join(", ") }}
+                      ({{ sessionsPerWeek }} session{{
+                        sessionsPerWeek !== 1 ? "s" : ""
+                      }}/week)
+                    </strong>
+                    <span v-else class="text-danger">No days selected</span>
+                  </small>
                 </div>
-                <small class="text-muted d-block mt-2">
-                  <i class="bi bi-info-circle me-1"></i>
-                  Selected: 
-                  <strong v-if="formData.selectedDays.length > 0">
-                    {{ formData.selectedDays.join(', ') }} 
-                    ({{ sessionsPerWeek }} session{{ sessionsPerWeek !== 1 ? 's' : '' }}/week)
-                  </strong>
-                  <span v-else class="text-danger">No days selected</span>
-                </small>
-              </div>
 
                 <div class="row g-3 mb-3">
                   <div class="col-md-6">
@@ -682,7 +742,9 @@ const cancel = () => {
                       placeholder="Enter duration in months (e.g., 3)"
                       required
                     />
-                    <small class="text-muted">How many months do you need tutoring?</small>
+                    <small class="text-muted"
+                      >How many months do you need tutoring?</small
+                    >
                   </div>
                   <div class="col-md-6">
                     <label class="form-label">Session Duration (Hours)</label>
@@ -697,51 +759,55 @@ const cancel = () => {
                       placeholder="Enter hours per session (e.g., 1.5)"
                       required
                     />
-                    <small class="text-muted">Duration of each tutoring session</small>
+                    <small class="text-muted"
+                      >Duration of each tutoring session</small
+                    >
                   </div>
                 </div>
 
                 <!-- Hourly Rate -->
-                 <div class="row g-3">
-                 <div class="mb-3 col-md-6">
-                  <label for="rate" class="form-label">
-                    Session Start Time (Time)
-                  </label>
-                  <div class="input-group">
-                    <input
-                      v-model="formData.sessionStartTime"
-                      type="time"
-                      min="09:00"
-                      max="18:00"         
-                      step="1800"          
-                      class="form-control"
-                      id="sessionStartTime"
-                      required
-                    />
+                <div class="row g-3">
+                  <div class="mb-3 col-md-6">
+                    <label for="rate" class="form-label">
+                      Session Start Time (Time)
+                    </label>
+                    <div class="input-group">
+                      <input
+                        v-model="formData.sessionStartTime"
+                        type="time"
+                        min="09:00"
+                        max="18:00"
+                        step="1800"
+                        class="form-control"
+                        id="sessionStartTime"
+                        required
+                      />
+                    </div>
+                    <small class="text-muted"
+                      >The start time for each session</small
+                    >
                   </div>
-                  <small class="text-muted">The start time for each session</small>
-                </div>
-                <div class="mb-3 col-md-6">
-                  <label for="rate" class="form-label">
-                    Hourly Rate (SGD) <span class="text-danger">*</span>
-                  </label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input
-                      v-model.number="formData.rate"
-                      type="number"
-                      min="20"
-                      max="200"
-                      step="5"
-                      class="form-control"
-                      id="rate"
-                      placeholder="Enter hourly rate (e.g., 50)"
-                      required
-                    />
-                    <span class="input-group-text">/hr</span>
+                  <div class="mb-3 col-md-6">
+                    <label for="rate" class="form-label">
+                      Hourly Rate (SGD) <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input
+                        v-model.number="formData.rate"
+                        type="number"
+                        min="20"
+                        max="200"
+                        step="5"
+                        class="form-control"
+                        id="rate"
+                        placeholder="Enter hourly rate (e.g., 50)"
+                        required
+                      />
+                      <span class="input-group-text">/hr</span>
+                    </div>
+                    <small class="text-muted">Your budget per hour</small>
                   </div>
-                  <small class="text-muted">Your budget per hour</small>
-                </div>
                 </div>
               </form>
             </div>

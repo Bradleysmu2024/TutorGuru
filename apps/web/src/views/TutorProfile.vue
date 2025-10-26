@@ -237,19 +237,19 @@
                   </select>
 
                   <label class="form-label">Levels</label>
-                  <select
+                  <div v-for="level in levels" :key="level" class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    :id="'level-' + level"
+                    :value="level"
                     v-model="item.levels"
-                    class="form-select"
-                    multiple
-                    size="4"
-                  >
-                    <option v-for="level in levels" :key="level" :value="level">
-                      {{ level }}
-                    </option>
-                  </select>
-                  <small class="text-muted"
-                    >Hold Ctrl/Cmd to select multiple</small
-                  >
+                  />
+                  <label class="form-check-label" :for="'level-' + level">
+                    {{ level }}
+                  </label>
+                </div>
+
                 </div>
 
                 <button

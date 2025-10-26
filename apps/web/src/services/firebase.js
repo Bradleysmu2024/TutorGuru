@@ -247,7 +247,8 @@ export const submitApplication = async (
       tutorAvatar: tutorData.avatar || "",
       tutorExperience: tutorData.experience || 0,
       tutorRating: tutorData.rating || null,
-       tutorTeaching: tutorData.teaching || [],
+      tutorTeaching: tutorData.teaching || [],
+      tutorDocuments: tutorData.uploadedDocuments || [],
       coverLetter: applicationData.coverLetter,
       startDate: applicationData.startDate,
       status: "pending", // pending, approved, rejected

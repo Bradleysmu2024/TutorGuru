@@ -428,12 +428,7 @@ const formatFileSize = (bytes) => {
 };
 
 const goBack = () => {
-  // Check if there's a previous page in history
-  if (window.history.length > 1) {
-    router.go(-1); // Go back to previous page
-  } else {
-    router.push("/parent-dashboard"); // Fallback to dashboard
-  }
+    router.push("/parent-dashboard"); // go to parent dashboard
 };
 
 const editAssignment = () => {

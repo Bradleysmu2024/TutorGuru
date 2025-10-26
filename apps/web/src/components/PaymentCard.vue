@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { createPaymentRecord, auth, db } from '../services/firebase'
+import { createPaymentRecord, auth, db, getUserDoc } from '../services/firebase'
 import { createPaymentSession } from '../services/stripe'
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
 
@@ -121,6 +121,10 @@ const initiatePayment = async () => {
       throw new Error('User not authenticated. Please log in.')
     }
 
+    // Fetch parent details
+    const parentDoc = await getUserDoc(currentUser.uid)
+    const parentName = parentDoc?.name || 'Unknown Parent'
+
     const existingPayment = await checkPaymentStatus()
 
     if (existingPayment && existingPayment.status === 'completed') {
@@ -137,10 +141,11 @@ const initiatePayment = async () => {
     } else {
       paymentId = await createPaymentRecord(assignmentId, {
         tutorId: selectedTutorId,
+        tutorName: tutor.name || tutor.tutorName || 'Unknown Tutor',
         parentId: currentUser.uid,
+        parentName: parentName,
         amount: totalAmount,
         assignmentTitle: props.assignment.title,
-        tutorName: tutor.name || tutor.tutorName || 'Unknown Tutor',
         tutorRate: tutor.rate || props.assignment.rate
       })
       console.log('Created new payment record:', paymentId)

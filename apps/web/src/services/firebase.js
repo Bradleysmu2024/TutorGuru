@@ -39,9 +39,9 @@ import {
   deleteObject,
   connectStorageEmulator,
 } from "firebase/storage";
-import { ref as vueRef } from 'vue'
+import { ref as vueRef } from "vue";
 
-// TODO: Replace with your Firebase config
+//Replace with your Firebase config in .env file
 const firebaseConfig = {
   apiKey: process.env.VUE_APP_API_KEY,
   authDomain: process.env.VUE_APP_AUTH_DOMAIN,
@@ -124,8 +124,8 @@ export const applyToJob = async (jobId, tutorId, applicationData) => {
 // Assignments
 export const createAssignment = async (parentId, assignmentData) => {
   try {
-    const user = auth.currentUser
-    if (!user) throw new Error('User not authenticated')
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
 
     // Normalize data with new fields
     const normalizedData = {
@@ -134,67 +134,75 @@ export const createAssignment = async (parentId, assignmentData) => {
       rate: Number(assignmentData.rate) || 0,
       contractDuration: Number(assignmentData.contractDuration) || 1,
       sessionDuration: Number(assignmentData.sessionDuration) || 1,
-      sessionStartTime: assignmentData.sessionStartTime || '12:00',
-      sessionsPerWeek: assignmentData.selectedDays?.length || Number(assignmentData.sessionsPerWeek) || 1,
-      selectedDays: Array.isArray(assignmentData.selectedDays) ? assignmentData.selectedDays : [],
-      status: 'open',
+      sessionStartTime: assignmentData.sessionStartTime || "12:00",
+      sessionsPerWeek:
+        assignmentData.selectedDays?.length ||
+        Number(assignmentData.sessionsPerWeek) ||
+        1,
+      selectedDays: Array.isArray(assignmentData.selectedDays)
+        ? assignmentData.selectedDays
+        : [],
+      status: "open",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }
+    };
 
     // Remove any undefined/null values
-    Object.keys(normalizedData).forEach(key => {
+    Object.keys(normalizedData).forEach((key) => {
       if (normalizedData[key] === undefined || normalizedData[key] === null) {
-        delete normalizedData[key]
+        delete normalizedData[key];
       }
-    })
+    });
 
-    const docRef = await addDoc(
-      collection(db, 'assignments'),
-      normalizedData
-    )
+    const docRef = await addDoc(collection(db, "assignments"), normalizedData);
 
-    return { success: true, id: docRef.id, data: normalizedData }
+    return { success: true, id: docRef.id, data: normalizedData };
   } catch (error) {
-    console.error('Error creating assignment:', error)
-    return { success: false, error: error.message }
+    console.error("Error creating assignment:", error);
+    return { success: false, error: error.message };
   }
-}
+};
 
 export const updateAssignment = async (assignmentId, updates) => {
   try {
     // Normalize numeric fields if present
-    const normalizedUpdates = { ...updates }
+    const normalizedUpdates = { ...updates };
 
-    if ('rate' in updates) normalizedUpdates.rate = Number(updates.rate) || 0
-    if ('contractDuration' in updates) normalizedUpdates.contractDuration = Number(updates.contractDuration) || 1
-    if ('sessionDuration' in updates) normalizedUpdates.sessionDuration = Number(updates.sessionDuration) || 1
-    if ('sessionStartTime' in updates) normalizedUpdates.sessionStartTime = updates.sessionStartTime || '12:00'
-    if ('selectedDays' in updates) {
-      normalizedUpdates.selectedDays = Array.isArray(updates.selectedDays) ? updates.selectedDays : []
-      normalizedUpdates.sessionsPerWeek = normalizedUpdates.selectedDays.length
+    if ("rate" in updates) normalizedUpdates.rate = Number(updates.rate) || 0;
+    if ("contractDuration" in updates)
+      normalizedUpdates.contractDuration =
+        Number(updates.contractDuration) || 1;
+    if ("sessionDuration" in updates)
+      normalizedUpdates.sessionDuration = Number(updates.sessionDuration) || 1;
+    if ("sessionStartTime" in updates)
+      normalizedUpdates.sessionStartTime = updates.sessionStartTime || "12:00";
+    if ("selectedDays" in updates) {
+      normalizedUpdates.selectedDays = Array.isArray(updates.selectedDays)
+        ? updates.selectedDays
+        : [];
+      normalizedUpdates.sessionsPerWeek = normalizedUpdates.selectedDays.length;
     }
 
-    normalizedUpdates.updatedAt = new Date().toISOString()
+    normalizedUpdates.updatedAt = new Date().toISOString();
 
     // Remove any undefined/null values
-    Object.keys(normalizedUpdates).forEach(key => {
-      if (normalizedUpdates[key] === undefined || normalizedUpdates[key] === null) {
-        delete normalizedUpdates[key]
+    Object.keys(normalizedUpdates).forEach((key) => {
+      if (
+        normalizedUpdates[key] === undefined ||
+        normalizedUpdates[key] === null
+      ) {
+        delete normalizedUpdates[key];
       }
-    })
+    });
 
-    await updateDoc(
-      doc(db, 'assignments', assignmentId),
-      normalizedUpdates
-    )
+    await updateDoc(doc(db, "assignments", assignmentId), normalizedUpdates);
 
-    return { success: true }
+    return { success: true };
   } catch (error) {
-    console.error('Error updating assignment:', error)
-    return { success: false, error: error.message }
+    console.error("Error updating assignment:", error);
+    return { success: false, error: error.message };
   }
-}
+};
 
 export const deleteAssignment = async (assignmentId) => {
   try {
@@ -229,7 +237,10 @@ export const submitApplication = async (
     );
     const existingSnap = await getDocs(existingQuery);
     if (!existingSnap.empty) {
-      return { success: false, error: "Tutor has already applied to this assignment" };
+      return {
+        success: false,
+        error: "Tutor has already applied to this assignment",
+      };
     }
     // Get tutor details for the application
     const tutorDoc = await getDoc(doc(db, "users", tutorId));
@@ -386,14 +397,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-            ? a.createdAt.seconds * 1000
-            : 0;
+          ? a.createdAt.seconds * 1000
+          : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-            ? b.createdAt.seconds * 1000
-            : 0;
+          ? b.createdAt.seconds * 1000
+          : 0;
       return tb - ta;
     });
     return items;
@@ -469,11 +480,14 @@ export const loginStatus = vueRef(false);
 onAuthStateChanged(auth, (user) => {
   loginStatus.value = !!user;
   if (user) {
-    if (!localStorage.getItem('user')) {
-      localStorage.setItem('user', JSON.stringify({ uid: user.uid, email: user.email }));
+    if (!localStorage.getItem("user")) {
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ uid: user.uid, email: user.email })
+      );
     }
   } else {
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   }
 });
 
@@ -1200,7 +1214,7 @@ export const getCurrentUser = async () => {
         auth,
         (user) => {
           // unsubscribe immediately after receiving the value
-          if (typeof removeListener === 'function') removeListener();
+          if (typeof removeListener === "function") removeListener();
           resolve(user);
         },
         (err) => {
@@ -1209,7 +1223,7 @@ export const getCurrentUser = async () => {
       );
     });
   } catch (error) {
-    console.error('Error getting currentUser:', error);
+    console.error("Error getting currentUser:", error);
     return null;
   }
 };
@@ -1218,23 +1232,23 @@ export const getCurrentUser = async () => {
 export const getUserDoc = async (uid) => {
   try {
     if (!uid) return null;
-    const ref = doc(db, 'users', uid);
+    const ref = doc(db, "users", uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     return { id: snap.id, ...snap.data() };
   } catch (err) {
-    console.error('Error fetching user doc:', err);
+    console.error("Error fetching user doc:", err);
     return null;
   }
 };
 
 export const setUserDoc = async (uid, data, options = { merge: true }) => {
   try {
-    if (!uid) throw new Error('Missing uid');
-    await setDoc(doc(db, 'users', uid), data, options);
+    if (!uid) throw new Error("Missing uid");
+    await setDoc(doc(db, "users", uid), data, options);
     return { success: true };
   } catch (err) {
-    console.error('Error setting user doc:', err);
+    console.error("Error setting user doc:", err);
     return { success: false, error: err };
   }
 };
@@ -1243,13 +1257,13 @@ export const setUserDoc = async (uid, data, options = { merge: true }) => {
 export const getUsernameById = async (uid) => {
   try {
     if (!uid) return null;
-    const ref = doc(db, 'users', uid);
+    const ref = doc(db, "users", uid);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     const data = snap.data();
     return data && data.username ? data.username : null;
   } catch (err) {
-    console.error('Error fetching username by id:', err);
+    console.error("Error fetching username by id:", err);
     return null;
   }
 };
@@ -1260,16 +1274,16 @@ export const getUsernameById = async (uid) => {
  * @param {File} file
  * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
  */
-export const uploadUserAvatar = async (uid, file, folder = 'users') => {
+export const uploadUserAvatar = async (uid, file, folder = "users") => {
   try {
-    if (!uid) throw new Error('Missing uid');
-    if (!file) throw new Error('Missing file');
+    if (!uid) throw new Error("Missing uid");
+    if (!file) throw new Error("Missing file");
 
     // get previous avatar URL (if any)
     const userDoc = await getUserDoc(uid);
-    const oldUrl = userDoc ? (userDoc.avatar || userDoc.avator) : null;
+    const oldUrl = userDoc ? userDoc.avatar || userDoc.avator : null;
 
-    const ext = (file.name || '').split('.').pop();
+    const ext = (file.name || "").split(".").pop();
     const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
     const storageRef = ref(storage, path);
     const snapshot = await uploadBytes(storageRef, file);
@@ -1279,24 +1293,24 @@ export const uploadUserAvatar = async (uid, file, folder = 'users') => {
     await setUserDoc(uid, { avatar: url }, { merge: true });
 
     // attempt to delete old avatar if it looks like a firebase storage URL
-    if (oldUrl && oldUrl.includes('firebasestorage.googleapis.com')) {
+    if (oldUrl && oldUrl.includes("firebasestorage.googleapis.com")) {
       try {
-        const parts = oldUrl.split('/o/');
+        const parts = oldUrl.split("/o/");
         if (parts.length > 1) {
           const pathAndQuery = parts[1];
-          const encodedPath = pathAndQuery.split('?')[0];
+          const encodedPath = pathAndQuery.split("?")[0];
           const storagePath = decodeURIComponent(encodedPath);
           const oldRef = ref(storage, storagePath);
           await deleteObject(oldRef);
         }
       } catch (delErr) {
-        console.warn('Failed to delete old avatar from storage:', delErr);
+        console.warn("Failed to delete old avatar from storage:", delErr);
       }
     }
 
     return { success: true, url };
   } catch (err) {
-    console.error('Error in uploadUserAvatar:', err);
+    console.error("Error in uploadUserAvatar:", err);
     return { success: false, error: err.message || err };
   }
 };
@@ -1304,13 +1318,13 @@ export const uploadUserAvatar = async (uid, file, folder = 'users') => {
 export const findUserByUsername = async (username) => {
   try {
     if (!username) return null;
-    const q = query(collection(db, 'users'), where('username', '==', username));
+    const q = query(collection(db, "users"), where("username", "==", username));
     const snap = await getDocs(q);
     if (snap.empty) return null;
     const docRef = snap.docs[0];
     return { id: docRef.id, ...docRef.data() };
   } catch (err) {
-    console.error('Error finding user by username:', err);
+    console.error("Error finding user by username:", err);
     return null;
   }
 };
@@ -1319,18 +1333,17 @@ export const listAllUsers = async (role = null) => {
   try {
     let snap;
     if (role) {
-      const q = query(collection(db, 'users'), where('role', '==', role));
+      const q = query(collection(db, "users"), where("role", "==", role));
       snap = await getDocs(q);
     } else {
-      snap = await getDocs(collection(db, 'users'));
+      snap = await getDocs(collection(db, "users"));
     }
     return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   } catch (err) {
-    console.error('Error listing users:', err);
+    console.error("Error listing users:", err);
     return [];
   }
 };
-
 
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {
@@ -1403,7 +1416,7 @@ export const completePayment = async (assignmentId, sessionId) => {
  */
 export const submitFeedback = async (assignmentId, rating, comment) => {
   try {
-    if (!assignmentId) return { success: false, error: 'Missing assignmentId' };
+    if (!assignmentId) return { success: false, error: "Missing assignmentId" };
 
     const assignmentRef = doc(db, "assignments", assignmentId);
     const assignmentSnap = await getDoc(assignmentRef);
@@ -1423,9 +1436,12 @@ export const submitFeedback = async (assignmentId, rating, comment) => {
       return { success: true };
     }
 
-    return { success: false, error: 'Assignment not found' };
+    return { success: false, error: "Assignment not found" };
   } catch (assignmentErr) {
-    console.warn("Failed to append review to assignment document:", assignmentErr);
+    console.warn(
+      "Failed to append review to assignment document:",
+      assignmentErr
+    );
     return { success: false, error: assignmentErr.message || assignmentErr };
   }
 };

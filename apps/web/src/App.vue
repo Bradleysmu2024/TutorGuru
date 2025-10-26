@@ -6,6 +6,7 @@
         <router-view />
       </main>
       <Footer v-if="!isChatPage" />
+      <Toast position="top-right" />
     </div>
   </v-app>
 </template>
@@ -13,6 +14,7 @@
 <script setup>
 import NavBar from "./components/NavBar.vue";
 import Footer from "./components/Footer.vue";
+import Toast from "primevue/toast";
 import { useRoute } from "vue-router";
 import { computed, onMounted } from "vue";
 import { useTheme } from "vuetify";

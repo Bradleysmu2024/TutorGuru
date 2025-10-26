@@ -28,6 +28,15 @@ body.dark-mode section.bg-white {
   background-color: #1e1e1e !important;
 }
 
+body.dark-mode .hero-search-section::before {
+  background: rgba(
+    0,
+    0,
+    0,
+    0.467
+  ) !important; /* darker overlay for dark mode */
+}
+
 body.dark-mode .search-input {
   background-color: #2a2a2a !important;
   color: #e0e0e0 !important;
@@ -49,6 +58,15 @@ body.dark-mode .search-btn:hover {
 /* Home Page Sections */
 body.dark-mode .features-section {
   background-color: #121212 !important;
+}
+
+body.dark-mode .features-section::before {
+  background: rgba(
+    0,
+    0,
+    0,
+    0.209
+  ) !important; /* darker overlay for dark mode */
 }
 
 body.dark-mode .feature-card {
@@ -360,7 +378,7 @@ body.dark-mode .text-dark {
 }
 
 body.dark-mode .text-muted {
-  color: #999 !important;
+  color: #f3f3f3 !important;
 }
 
 /* Borders */

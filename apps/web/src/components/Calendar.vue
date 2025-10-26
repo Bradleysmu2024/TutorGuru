@@ -3,39 +3,69 @@
     <v-col>
       <v-sheet height="64">
         <v-toolbar flat>
-          <v-btn size="small" class="me-4" color="primary" variant="outlined" dark @click="dialog = true">
+          <v-btn
+            size="small"
+            class="me-4"
+            color="primary"
+            variant="outlined"
+            dark
+            @click="dialog = true"
+          >
             New Event
           </v-btn>
-          <v-btn size="small" type="button" color="primary" variant="outlined" class="me-4" @click="sync_from_google()">
+          <v-btn
+            size="small"
+            type="button"
+            color="primary"
+            variant="outlined"
+            class="me-4"
+            @click="sync_from_google()"
+          >
             Sync
           </v-btn>
           <!-- <v-btn class="me-4" color="grey-darken-2" variant="outlined" @click="setToday">
             Today
           </v-btn> -->
-          <v-btn color="grey-darken-2" size="small" variant="text" icon @click="prev">
-            <v-icon size="small">
-              mdi-chevron-left
-            </v-icon>
+          <v-btn
+            color="grey-darken-2"
+            size="small"
+            variant="text"
+            icon
+            @click="prev"
+          >
+            <v-icon size="small"> mdi-chevron-left </v-icon>
           </v-btn>
-          <v-btn color="grey-darken-2" size="small" variant="text" icon @click="next">
-            <v-icon size="small">
-              mdi-chevron-right
-            </v-icon>
+          <v-btn
+            color="grey-darken-2"
+            size="small"
+            variant="text"
+            icon
+            @click="next"
+          >
+            <v-icon size="small"> mdi-chevron-right </v-icon>
           </v-btn>
           <v-toolbar-title v-if="calendar" class="d-none d-sm-flex">
             {{ calendar.title }}
           </v-toolbar-title>
           <v-menu location="bottom end">
             <template v-slot:activator="{ props }">
-              <v-btn size="small" color="grey-darken-2" variant="outlined" v-bind="props">
+              <v-btn
+                size="small"
+                color="grey-darken-2"
+                variant="outlined"
+                v-bind="props"
+              >
                 <span>{{ typeToLabel[type] }}</span>
-                <v-icon end>
-                  mdi-menu-down
-                </v-icon>
+                <v-icon end> mdi-menu-down </v-icon>
               </v-btn>
             </template>
             <v-list>
-              <v-list-item @click="type = 'day'; setToday">
+              <v-list-item
+                @click="
+                  type = 'day';
+                  setToday;
+                "
+              >
                 <v-list-item-title>Day</v-list-item-title>
               </v-list-item>
               <v-list-item @click="type = 'week'">
@@ -56,12 +86,33 @@
         <v-card>
           <v-container>
             <v-form @submit.prevent="addEvent">
-              <v-text-field v-model="name" type="text" label="event name (required)"></v-text-field>
-              <v-text-field v-model="details" type="text" label="details"></v-text-field>
-              <v-text-field v-model="start" type="datetime-local" label="start (required)"></v-text-field>
-              <v-text-field v-model="end" type="datetime-local" label="end (required)"></v-text-field>
+              <v-text-field
+                v-model="name"
+                type="text"
+                label="event name (required)"
+              ></v-text-field>
+              <v-text-field
+                v-model="details"
+                type="text"
+                label="details"
+              ></v-text-field>
+              <v-text-field
+                v-model="start"
+                type="datetime-local"
+                label="start (required)"
+              ></v-text-field>
+              <v-text-field
+                v-model="end"
+                type="datetime-local"
+                label="end (required)"
+              ></v-text-field>
               <v-color-picker v-model="color" class="mb-4"></v-color-picker>
-              <v-btn type="submit" color="primary" class="mr-4" @click.stop="dialog = false">
+              <v-btn
+                type="submit"
+                color="primary"
+                class="mr-4"
+                @click.stop="dialog = false"
+              >
                 Create Event
               </v-btn>
             </v-form>
@@ -70,10 +121,24 @@
       </v-dialog>
 
       <v-sheet height="600">
-        <v-calendar ref="calendar" v-model="focus" :event-color="getEventColor" :events="events" :type="type"
-          color="primary" @change="updateRange" @click:date="viewDay" @click:event="showEvent"
-          @click:more="viewDay"></v-calendar>
-        <v-menu v-model="selectedOpen" :activator="selectedElement" :close-on-content-click="false" location="end">
+        <v-calendar
+          ref="calendar"
+          v-model="focus"
+          :event-color="getEventColor"
+          :events="events"
+          :type="type"
+          color="primary"
+          @change="updateRange"
+          @click:date="viewDay"
+          @click:event="showEvent"
+          @click:more="viewDay"
+        ></v-calendar>
+        <v-menu
+          v-model="selectedOpen"
+          :activator="selectedElement"
+          :close-on-content-click="false"
+          location="end"
+        >
           <v-card color="grey-lighten-4" min-width="350px" flat>
             <v-toolbar :color="selectedEvent.color" dark>
               <v-btn @click="deleteEvent(selectedEvent.id)" icon>
@@ -92,19 +157,35 @@
                 {{ selectedEvent.details }}
               </form>
               <form v-else>
-                <textarea v-model="selectedEvent.details" type="text" style="width:100%" :min-height="100"
-                  placeholder="add note"></textarea>
+                <textarea
+                  v-model="selectedEvent.details"
+                  type="text"
+                  style="width: 100%"
+                  :min-height="100"
+                  placeholder="add note"
+                ></textarea>
               </form>
             </v-card-text>
             <v-card-actions>
-              <v-btn color="secondary" variant="text" @click="selectedOpen = false">
+              <v-btn
+                color="secondary"
+                variant="text"
+                @click="selectedOpen = false"
+              >
                 Close
               </v-btn>
-              <v-btn variant="text" v-if="currentlyEditing !== selectedEvent.id"
-                @click.prevent="editEvent(selectedEvent)">
+              <v-btn
+                variant="text"
+                v-if="currentlyEditing !== selectedEvent.id"
+                @click.prevent="editEvent(selectedEvent)"
+              >
                 Edit
               </v-btn>
-              <v-btn variant="text" v-else @click.prevent="updateEvent(selectedEvent)">
+              <v-btn
+                variant="text"
+                v-else
+                @click.prevent="updateEvent(selectedEvent)"
+              >
                 Save
               </v-btn>
             </v-card-actions>
@@ -116,74 +197,87 @@
 </template>
 
 <script setup>
-import { db, getEvents as firebaseGetEvents, getEvent_, addEvent_, updateEvent_, deleteEvent_, signInWithGoogle, clearEvents_ } from '../services/firebase'
-import { onMounted, ref } from 'vue'
+import {
+  db,
+  getEvents as firebaseGetEvents,
+  getEvent_,
+  addEvent_,
+  updateEvent_,
+  deleteEvent_,
+  signInWithGoogle,
+  clearEvents_,
+} from "../services/firebase";
+import { onMounted, ref } from "vue";
+import { useToast } from "../composables/useToast";
 
+const toast = useToast();
 const userToken = ref(localStorage.getItem("user"));
-const calendar = ref()
+const calendar = ref();
 
 const typeToLabel = {
-  month: 'Month',
-  week: 'Week',
-  day: 'Day',
-  '4day': '4 Days',
-}
+  month: "Month",
+  week: "Week",
+  day: "Day",
+  "4day": "4 Days",
+};
 
-const focus = ref('')
-const type = ref('month')
-const selectedEvent = ref({})
-const selectedElement = ref(null)
-const selectedOpen = ref(false)
-const events = ref([])
-const currentlyEditing = ref('')
-const dialog = ref(false)
+const focus = ref("");
+const type = ref("month");
+const selectedEvent = ref({});
+const selectedElement = ref(null);
+const selectedOpen = ref(false);
+const events = ref([]);
+const currentlyEditing = ref("");
+const dialog = ref(false);
 
-const name = ref(null)
-const details = ref(null)
-const start = ref(null)
-const end = ref(null)
-const color = ref('#14B8A6')
+const name = ref(null);
+const details = ref(null);
+const start = ref(null);
+const end = ref(null);
+const color = ref("#14B8A6");
 
 onMounted(() => {
-  calendar.value.checkChange()
-})
+  calendar.value.checkChange();
+});
 
 async function getEvents(type) {
   try {
-    const user = JSON.parse(localStorage.getItem('user'))
-    let querySnapshot = await getEvent_(type, user.uid)
-    let events = []
+    const user = JSON.parse(localStorage.getItem("user"));
+    let querySnapshot = await getEvent_(type, user.uid);
+    let events = [];
     if (querySnapshot) {
-      querySnapshot.forEach(doc => {
+      querySnapshot.forEach((doc) => {
         // console.log(doc)
         // const data = doc.data()
 
         // Convert Firestore date fields to JS Date strings
-        const startDate = new Date(doc.start)  // assuming 'start' is stored as ISO string
-        const endDate = new Date(doc.end)      // assuming 'end' is stored as ISO string
+        const startDate = new Date(doc.start); // assuming 'start' is stored as ISO string
+        const endDate = new Date(doc.end); // assuming 'end' is stored as ISO string
 
         events.push({
-          id: doc.id, ...doc, start: startDate,   // e.g., "Sun Oct 12 2025 23:00:00 GMT+0800 (Singapore Standard Time)"
-          end: endDate
-        })
+          id: doc.id,
+          ...doc,
+          start: startDate, // e.g., "Sun Oct 12 2025 23:00:00 GMT+0800 (Singapore Standard Time)"
+          end: endDate,
+        });
         // console.log(doc.id, doc, 'start:', startDate, 'end:', endDate)
-      })
+      });
     }
-    console.log(type, events)
-    return events
+    console.log(type, events);
+    return events;
   } catch (error) {
-    console.error('Error fetching events:', error)
+    console.error("Error fetching events:", error);
   }
 }
 
 async function addEvent() {
   try {
-    const user = JSON.parse(localStorage.getItem('user'))
+    const user = JSON.parse(localStorage.getItem("user"));
     if (name.value && start.value && end.value) {
-      start.value = convertInput(start.value)
-      end.value = convertInput(end.value)
+      start.value = convertInput(start.value);
+      end.value = convertInput(end.value);
       const response = await addEvent_(
-        'calendar',
+        "calendar",
         name.value,
         details.value,
         start.value,
@@ -192,39 +286,43 @@ async function addEvent() {
         user.uid
       );
 
-      await updateRange('', '')
+      await updateRange("", "");
       name.value = "";
       details.value = "";
       start.value = "";
       end.value = "";
       color.value = "#14B8A6";
     } else {
-      alert('Name, start and end are required');
+      toast.warning("Name, start and end are required", "Incomplete Event");
     }
   } catch (error) {
-    console.error('Error adding new event', error)
+    console.error("Error adding new event", error);
   }
 }
 
 async function updateEvent(ev) {
   try {
-    const user = JSON.parse(localStorage.getItem('user'))
-    const response = await updateEvent_(this.currentlyEditing, ev.details, user.uid)
-    selectedOpen.value = false
-    currentlyEditing.value = null
+    const user = JSON.parse(localStorage.getItem("user"));
+    const response = await updateEvent_(
+      this.currentlyEditing,
+      ev.details,
+      user.uid
+    );
+    selectedOpen.value = false;
+    currentlyEditing.value = null;
   } catch (error) {
-    console.error('Error updating event:', error)
+    console.error("Error updating event:", error);
   }
 }
 
 async function deleteEvent(ev) {
   try {
-    const user = JSON.parse(localStorage.getItem('user'))
-    const response = await deleteEvent_(ev, user.uid)
-    selectedOpen.value = false
-    await updateRange('', '')
+    const user = JSON.parse(localStorage.getItem("user"));
+    const response = await deleteEvent_(ev, user.uid);
+    selectedOpen.value = false;
+    await updateRange("", "");
   } catch (error) {
-    console.error('Error deleting event:', error)
+    console.error("Error deleting event:", error);
   }
 }
 
@@ -232,107 +330,133 @@ function convertInput(input) {
   const date = new Date(input);
 
   // Format output
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}+08:00`;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+    date.getSeconds()
+  )}+08:00`;
 }
 
 function viewDay(nativeEvent, { date }) {
-  focus.value = date
-  type.value = 'day'
+  focus.value = date;
+  type.value = "day";
 }
 function getEventColor(event) {
-  return event.color
+  return event.color;
 }
 function setToday() {
-  focus.value = ''
+  focus.value = "";
 }
 function prev() {
-  calendar.value.prev()
+  calendar.value.prev();
 }
 function next() {
-  calendar.value.next()
+  calendar.value.next();
 }
 function editEvent(event) {
-  currentlyEditing.value = event.id
+  currentlyEditing.value = event.id;
 }
 
 function showEvent(nativeEvent, { event }) {
   const open = () => {
-    selectedEvent.value = event
-    selectedElement.value = nativeEvent.target
-    requestAnimationFrame(() => requestAnimationFrame(() => selectedOpen.value = true))
-  }
+    selectedEvent.value = event;
+    selectedElement.value = nativeEvent.target;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => (selectedOpen.value = true))
+    );
+  };
   if (selectedOpen.value) {
-    selectedOpen.value = false
-    requestAnimationFrame(() => requestAnimationFrame(() => open()))
+    selectedOpen.value = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => open()));
   } else {
-    open()
+    open();
   }
-  nativeEvent.stopPropagation()
+  nativeEvent.stopPropagation();
 }
 async function updateRange({ start, end }) {
-  events.value = [...await getEvents('calendar') , ...await getEvents('google')]
+  events.value = [
+    ...(await getEvents("calendar")),
+    ...(await getEvents("google")),
+  ];
 }
 
 // sync your calendar events from google calendar to firebase storage
 async function sync_from_google() {
   try {
-    let events = []
+    let events = [];
     const colors_obj = {
-      default: "#039be5",   // blue (peacock)
-      1: "#7986cb",         // soft purple (lavender)
-      2: "#33b679",         // light green (sage)
-      3: "#8e24aa",         // purple (grape)
-      4: "#e67c73",         // pinkish red (flamingo)
-      5: "#f6bf26",         // yellow (banana)
-      6: "#f4511e",         // orange (tangerine)
-      8: "#616161",         // grey (graphite)
-      9: "#3f51b5",         // indigo blue (blueberry)
-      10: "#0b8043",        // dark green (basil)
-      11: "#d50000",        // bright red (tomato)
+      default: "#039be5", // blue (peacock)
+      1: "#7986cb", // soft purple (lavender)
+      2: "#33b679", // light green (sage)
+      3: "#8e24aa", // purple (grape)
+      4: "#e67c73", // pinkish red (flamingo)
+      5: "#f6bf26", // yellow (banana)
+      6: "#f4511e", // orange (tangerine)
+      8: "#616161", // grey (graphite)
+      9: "#3f51b5", // indigo blue (blueberry)
+      10: "#0b8043", // dark green (basil)
+      11: "#d50000", // bright red (tomato)
     };
-    const user_ = JSON.parse(localStorage.getItem('user'));
+    const user_ = JSON.parse(localStorage.getItem("user"));
     const now = new Date(Date.now());
     // console.log(now)
     // check for existing google api token, expiry time, within 5 mins of expiry time
-    if (!user_.token || !user_.expiry || (now >= new Date(user_.expiry) - 5 * 60 * 1000)) {
-      console.log('Invalid/Expired Google Token')
-      const result = confirm("Google Login Required! Are you sure you want to login to Google to sync calendar?");
-      if (result) { // Confirm to Google Login
-        const response_ = await signInWithGoogle()
+    if (
+      !user_.token ||
+      !user_.expiry ||
+      now >= new Date(user_.expiry) - 5 * 60 * 1000
+    ) {
+      console.log("Invalid/Expired Google Token");
+      const result = confirm(
+        "Google Login Required! Are you sure you want to login to Google to sync calendar?"
+      );
+      if (result) {
+        // Confirm to Google Login
+        const response_ = await signInWithGoogle();
         // console.log(response_)
         const expiryTime = Date.now() + 3600 * 1000; // 1 hour
-        user_.token = response_.token
-        user_.expiry = new Date(expiryTime)
-        localStorage.setItem("user", JSON.stringify(user_))
-        await sync_from_google()
-        console.log('Google Login successful! Calendar has been synced.')
+        user_.token = response_.token;
+        user_.expiry = new Date(expiryTime);
+        localStorage.setItem("user", JSON.stringify(user_));
+        await sync_from_google();
+        console.log("Google Login successful! Calendar has been synced.");
       }
     } else {
       // console.log(user_.token, user_.expiry)
-      const response = await firebaseGetEvents(user_.token, 'primary', 'month')
+      const response = await firebaseGetEvents(user_.token, "primary", "month");
       // console.log(response)
-      response.calendar.forEach(event => {
+      response.calendar.forEach((event) => {
         events.push({
           name: event.summary ?? "(No title)",
           details: event.description ?? "(No Description)",
           start: event.start.dateTime,
           end: event.end.dateTime,
-          colorId: colors_obj[event.colorId] ?? colors_obj.default
-        })
+          colorId: colors_obj[event.colorId] ?? colors_obj.default,
+        });
         // console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
       });
-      await clearEvents_('google',user_.uid)
+      await clearEvents_("google", user_.uid);
       // console.log(events)
       for (let ev of events) {
-        await addEvent_('google', ev.name, ev.details, ev.start, ev.end, ev.colorId, user_.uid)
+        await addEvent_(
+          "google",
+          ev.name,
+          ev.details,
+          ev.start,
+          ev.end,
+          ev.colorId,
+          user_.uid
+        );
       }
-      await updateRange('', '')
-      alert('successfully synced from Google Calendar')
+      await updateRange("", "");
+      toast.success(
+        "Successfully synced from Google Calendar",
+        "Sync Complete"
+      );
     }
   } catch (error) {
-    console.error('Error getting event', error)
+    console.error("Error getting event", error);
   }
 }
-
 </script>

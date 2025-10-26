@@ -14,8 +14,8 @@
         </div>
         <div class="modal-body">
           <p class="text-muted mb-3">
-            Enter the email associated with your account and
-            we'll send you password reset instructions.
+            Enter the email associated with your account and we'll send you
+            password reset instructions.
           </p>
 
           <div v-if="error" class="alert alert-danger">
@@ -25,17 +25,17 @@
           <div class="mb-3">
             <label class="form-label">Your Email Address</label>
             <div class="input-group">
-            <span class="input-group-text">
-              <i class="bi bi-envelope"></i>
-            </span>
-            
-            <input
-              v-model="localResetEmail"
-              type="email"
-              class="form-control"
-              placeholder="your@email.com"
-              :disabled="loading"
-            />
+              <span class="input-group-text">
+                <i class="bi bi-envelope"></i>
+              </span>
+
+              <input
+                v-model="localResetEmail"
+                type="email"
+                class="form-control"
+                placeholder="your@email.com"
+                :disabled="loading"
+              />
             </div>
           </div>
 
@@ -72,7 +72,9 @@
               <span class="spinner-border spinner-border-sm me-2"></span>
               Updating...
             </span>
-            <span v-else> <i class="bi bi-check2 me-2"></i>Reset Password </span>
+            <span v-else>
+              <i class="bi bi-check2 me-2"></i>Reset Password
+            </span>
           </button>
         </div>
       </div>
@@ -84,7 +86,9 @@
 import { ref, watch } from "vue";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../services/firebase";
+import { useToast } from "../composables/useToast";
 
+const toast = useToast();
 
 const props = defineProps({
   show: {
@@ -134,24 +138,26 @@ const handleSubmit = async () => {
     error.value = "Please provide your email address.";
     return;
   }
-  
+
   error.value = "";
   loading.value = true;
 
   try {
     // Send Password Reset Email
-    console.log('email entered:',localResetEmail.value)
+    console.log("email entered:", localResetEmail.value);
     await sendPasswordResetEmail(auth, localResetEmail.value);
-    
+
     loading.value = false;
     // Success! Emit event and close modal
     emit("update:show", false);
-    alert(
-      "If this email is registered, a reset link has been sent to your inbox."
+    toast.success(
+      "If this email is registered, a reset link has been sent to your inbox",
+      "Reset Email Sent"
     );
   } catch (err) {
     console.error("Error sending password reset email:", err);
-    error.value = err.message || "Failed to send password reset email. Please try again.";
+    error.value =
+      err.message || "Failed to send password reset email. Please try again.";
   } finally {
     loading.value = false;
   }

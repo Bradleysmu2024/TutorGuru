@@ -245,7 +245,13 @@
       <!-- Transaction History - Only show for own profile -->
       <div
         class="row g-4 mt-4"
-        v-if="!loading && !isPublicView && profile.uid && currentUser && profile.uid === currentUser.uid"
+        v-if="
+          !loading &&
+          !isPublicView &&
+          profile.uid &&
+          currentUser &&
+          profile.uid === currentUser.uid
+        "
       >
         <div class="col-12">
           <TransactionHistory
@@ -279,7 +285,10 @@ import {
 } from "firebase/firestore";
 import { useRoute } from "vue-router";
 import router from "../router/routes";
+import { useToast } from "../composables/useToast";
 import TransactionHistory from "../components/TransactionHistory.vue";
+
+const toast = useToast();
 
 // Add Firebase data
 const profile = ref({
@@ -303,7 +312,7 @@ const profile = ref({
 const userRole = ref(null); // 'tutor' or 'parent'
 const uploadedDocuments = ref([]);
 const loading = ref(true);
-const currentUser = ref(null); 
+const currentUser = ref(null);
 
 const route = useRoute();
 const isPublicView = ref(false);
@@ -346,7 +355,7 @@ onMounted(async () => {
     } catch (err) {
       console.error("Error loading public profile:", err);
     }
-    loading.value = false; 
+    loading.value = false;
     return;
   }
 
@@ -360,7 +369,7 @@ onMounted(async () => {
       uploadedDocuments.value = u.uploadedDocuments || [];
       currentUser.value = auth.currentUser;
     } else {
-      alert("Please log in to view your profile.");
+      toast.warning("Please log in to view your profile", "Login Required");
     }
     loading.value = false;
   };
@@ -373,7 +382,7 @@ onMounted(async () => {
       if (user) {
         await loadProfile(user.uid);
       } else {
-        alert("Please log in to view your profile.");
+        toast.warning("Please log in to view your profile", "Login Required");
         loading.value = false;
       }
       if (typeof unsub === "function") unsub();
@@ -384,7 +393,10 @@ onMounted(async () => {
 // Start a chat with this tutor (navigates to /chat?tutorId=<username>)
 const messageTutor = () => {
   if (!profile.value || !profile.value.username)
-    return alert("Unable to start chat: missing tutor username.");
+    return toast.error(
+      "Unable to start chat: missing tutor username",
+      "Chat Error"
+    );
   router.push({ path: "/chat", query: { tutor: profile.value.username } });
 };
 
@@ -394,7 +406,7 @@ const editProfile = () => {
 
 // ADD THIS FUNCTION
 const handleViewTransaction = (transaction) => {
-  console.log('View transaction:', transaction);
+  console.log("View transaction:", transaction);
 };
 </script>
 

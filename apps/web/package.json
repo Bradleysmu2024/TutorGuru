@@ -11,6 +11,7 @@
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "@popperjs/core": "^2.11.8",
+    "@primeuix/themes": "^1.2.5",
     "@stripe/stripe-js": "^8.1.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "bootstrap": "^5.3.8",
@@ -25,6 +26,7 @@
     "leaflet": "^1.9.4",
     "next": "15.5.4",
     "postinstall": "^0.11.2",
+    "primevue": "^4.4.1",
     "stripe": "^19.1.0",
     "unplugin-vue-components": "^29.1.0",
     "vue": "^3.5.21",

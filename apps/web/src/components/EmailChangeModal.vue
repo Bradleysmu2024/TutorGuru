@@ -79,6 +79,9 @@ import { ref, watch } from "vue";
 import { updateUserEmail, getCurrentUser } from "../services/firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
+import { useToast } from "../composables/useToast";
+
+const toast = useToast();
 
 const props = defineProps({
   show: {
@@ -169,8 +172,9 @@ const handleSubmit = async () => {
     emit("email-changed", localNewEmail.value);
     emit("update:show", false);
 
-    alert(
-      "Email updated successfully! You can now log in with your new email."
+    toast.success(
+      "Email updated successfully! You can now log in with your new email",
+      "Email Updated"
     );
   } catch (err) {
     console.error("Error changing email:", err);

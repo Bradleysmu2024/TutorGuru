@@ -123,6 +123,7 @@ import { Modal } from "bootstrap";
 import SearchFilter from "../components/SearchFilter.vue";
 import JobCard from "../components/JobCard.vue";
 import LoadingState from "../components/LoadingState.vue";
+import { useToast } from "../composables/useToast";
 
 import {
   getSubjects,
@@ -140,6 +141,7 @@ import {
 import { db, auth } from "../services/firebase";
 import { getCurrentUser } from "../services/firebase";
 
+const toast = useToast();
 const subjects = ref([]);
 const levels = ref([]);
 const locations = ref([]);
@@ -314,12 +316,18 @@ const handleApply = (jobId) => {
 const handleSubmitApplication = async () => {
   // Validate inputs
   if (!application.value.coverLetter.trim()) {
-    alert("Please write a cover letter.");
+    toast.warning(
+      "Please write a cover letter before submitting your application",
+      "Cover Letter Required"
+    );
     return;
   }
 
   if (!application.value.startDate) {
-    alert("Please select an available start date.");
+    toast.warning(
+      "Please select an available start date from the assignment",
+      "Start Date Required"
+    );
     return;
   }
 
@@ -329,7 +337,10 @@ const handleSubmitApplication = async () => {
   today.setHours(0, 0, 0, 0); // Reset time to beginning of day for comparison
 
   if (selectedDate < today) {
-    alert("Start date cannot be in the past.");
+    toast.warning(
+      "Start date cannot be in the past. Please select a future date",
+      "Invalid Date"
+    );
     return;
   }
 
@@ -337,7 +348,10 @@ const handleSubmitApplication = async () => {
     // Get current user
     const user = await getCurrentUser();
     if (!user || !user.uid) {
-      alert("You must be logged in to apply for assignments.");
+      toast.error(
+        "You must be logged in to apply for assignments",
+        "Authentication Required"
+      );
       return;
     }
 
@@ -349,7 +363,10 @@ const handleSubmitApplication = async () => {
     );
 
     if (result.success) {
-      alert("Application submitted successfully!");
+      toast.success(
+        "Your application has been submitted successfully!",
+        "Application Submitted"
+      );
       applicationModal.hide();
 
       // Mark this job as applied for the current user immediately (optimistic update)
@@ -362,11 +379,14 @@ const handleSubmitApplication = async () => {
       // Reload jobs to reflect updated status
       await loadJobs();
     } else {
-      alert(`Failed to submit application: ${result.error}`);
+      toast.error(
+        `Failed to submit application: ${result.error}`,
+        "Submission Failed"
+      );
     }
   } catch (error) {
     console.error("Error submitting application:", error);
-    alert("Failed to submit application. Please try again.");
+    toast.error("Failed to submit application. Please try again", "Error");
   }
 };
 </script>

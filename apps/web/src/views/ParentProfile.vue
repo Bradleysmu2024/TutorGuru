@@ -2,13 +2,21 @@
 import { ref, onMounted } from "vue";
 import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
-import { uploadUserAvatar } from '../services/firebase'
-import { getCurrentUser } from '../services/firebase'
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { uploadUserAvatar } from "../services/firebase";
+import { getCurrentUser } from "../services/firebase";
 import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
+import { useToast } from "../composables/useToast";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
 
+const toast = useToast();
 const profile = ref({
   name: "",
   email: "",
@@ -57,21 +65,25 @@ const handleAvatarChange = async (e) => {
 
 const uploadAvatar = async (file) => {
   const user = await getCurrentUser();
-  if (!user || !user.uid) return alert('You must be logged in to change your photo.');
+  if (!user || !user.uid)
+    return toast.error(
+      "You must be logged in to change your photo",
+      "Authentication Required"
+    );
 
   avatarUploading.value = true;
   try {
-    const res = await uploadUserAvatar(user.uid, file, 'parents');
+    const res = await uploadUserAvatar(user.uid, file, "parents");
     if (res.success) {
       profile.value.avatar = res.url;
-      alert('Profile photo updated successfully!');
+      toast.success("Profile photo updated successfully!", "Photo Updated");
     } else {
-      console.error('uploadUserAvatar failed:', res.error);
-      alert('Failed to upload avatar. Please try again.');
+      console.error("uploadUserAvatar failed:", res.error);
+      toast.error("Failed to upload avatar. Please try again", "Upload Failed");
     }
   } catch (err) {
-    console.error('Parent avatar upload error:', err);
-    alert('Failed to upload avatar. Please try again.');
+    console.error("Parent avatar upload error:", err);
+    toast.error("Failed to upload avatar. Please try again", "Upload Error");
   } finally {
     avatarUploading.value = false;
   }
@@ -81,15 +93,18 @@ const saveProfile = async () => {
   try {
     const user = await getCurrentUser();
     if (!user || !user.uid) {
-      alert("You must be logged in to save your profile");
+      toast.error(
+        "You must be logged in to save your profile",
+        "Authentication Required"
+      );
       return;
     }
     // write profile into users/{uid}
     await setDoc(doc(db, "users", user.uid), profile.value, { merge: true });
-    alert("Profile saved successfully!");
+    toast.success("Profile saved successfully!", "Profile Saved");
   } catch (err) {
     console.error("Error saving profile:", err);
-    alert("Failed to save profile. Please try again.");
+    toast.error("Failed to save profile. Please try again", "Save Failed");
   }
 };
 
@@ -165,7 +180,9 @@ onMounted(async () => {
             <div class="card-body text-center">
               <div class="profile-avatar mb-3">
                 <img
-                  :src="profile.avatar || '../assets/images/profileplaceholder.JPG'"
+                  :src="
+                    profile.avatar || '../assets/images/profileplaceholder.JPG'
+                  "
                   alt="Profile"
                   class="rounded-circle img-fluid"
                   style="width: 150px; height: 150px; object-fit: cover"

@@ -1,154 +1,179 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
-import { createPaymentRecord, auth, db, getUserDoc } from '../services/firebase'
-import { createPaymentSession } from '../services/stripe'
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
+import { ref, computed, watch } from "vue";
+import {
+  createPaymentRecord,
+  auth,
+  db,
+  getUserDoc,
+} from "../services/firebase";
+import { createPaymentSession } from "../services/stripe";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from "firebase/firestore";
+import { useToast } from "../composables/useToast";
+
+const toast = useToast();
 
 const props = defineProps({
   assignment: {
     type: Object,
-    required: true
+    required: true,
   },
   selectedTutor: {
     type: Object,
-    default: null
-  }
-})
+    default: null,
+  },
+});
 
-const processing = ref(false)
-const paymentStatus = ref(null)
+const processing = ref(false);
+const paymentStatus = ref(null);
 
 // Check payment status when component mounts or assignment changes
 const checkPaymentStatus = async () => {
-  if (!props.assignment?.id) return
+  if (!props.assignment?.id) return;
 
   try {
-    const paymentsRef = collection(db, 'payments')
+    const paymentsRef = collection(db, "payments");
     const q = query(
       paymentsRef,
-      where('assignmentId', '==', props.assignment.id)
-    )
-    const querySnapshot = await getDocs(q)
+      where("assignmentId", "==", props.assignment.id)
+    );
+    const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
       const payments = querySnapshot.docs.map((doc) => ({
         id: doc.id,
-        ...doc.data()
-      }))
+        ...doc.data(),
+      }));
 
       payments.sort(
         (a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis()
-      )
-      paymentStatus.value = payments[0]
-      return payments[0]
+      );
+      paymentStatus.value = payments[0];
+      return payments[0];
     }
 
-    return null
+    return null;
   } catch (error) {
-    console.error('Error checking payment status:', error)
-    return null
+    console.error("Error checking payment status:", error);
+    return null;
   }
-}
+};
 
 // Watch for assignment changes
-watch(() => props.assignment?.id, async (newId) => {
-  if (newId) {
-    await checkPaymentStatus()
-  }
-}, { immediate: true })
+watch(
+  () => props.assignment?.id,
+  async (newId) => {
+    if (newId) {
+      await checkPaymentStatus();
+    }
+  },
+  { immediate: true }
+);
 
 const isPaymentCompleted = computed(() => {
-  return paymentStatus.value && paymentStatus.value.status === 'completed'
-})
+  return paymentStatus.value && paymentStatus.value.status === "completed";
+});
 
 // Emit a one-time event when payment becomes completed so parent can open feedback modal
-const emit = defineEmits(['payment-completed'])
-const paymentEventEmitted = ref(false)
+const emit = defineEmits(["payment-completed"]);
+const paymentEventEmitted = ref(false);
 
 watch(isPaymentCompleted, (val) => {
   if (val && !paymentEventEmitted.value) {
-    emit('payment-completed', { assignmentId: props.assignment?.id })
-    paymentEventEmitted.value = true
+    emit("payment-completed", { assignmentId: props.assignment?.id });
+    paymentEventEmitted.value = true;
   }
-})
+});
 
 const calculateTotalSessions = () => {
-  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1
-  const contractDuration = props.assignment?.contractDuration || 1
-  return sessionsPerWeek * 4 * contractDuration
-}
+  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1;
+  const contractDuration = props.assignment?.contractDuration || 1;
+  return sessionsPerWeek * 4 * contractDuration;
+};
 
 const calculateTotalAmount = () => {
-  const hourlyRate = props.selectedTutor?.rate || props.assignment?.rate || 0
-  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1
-  const contractDuration = props.assignment?.contractDuration || 1
-  const sessionDuration = props.assignment?.sessionDuration || 1
+  const hourlyRate = props.selectedTutor?.rate || props.assignment?.rate || 0;
+  const sessionsPerWeek = props.assignment?.selectedDays?.length || 1;
+  const contractDuration = props.assignment?.contractDuration || 1;
+  const sessionDuration = props.assignment?.sessionDuration || 1;
 
-  const totalSessions = sessionsPerWeek * 4 * contractDuration
-  return hourlyRate * totalSessions * sessionDuration
-}
+  const totalSessions = sessionsPerWeek * 4 * contractDuration;
+  return hourlyRate * totalSessions * sessionDuration;
+};
 
 const initiatePayment = async () => {
-  const assignmentId = props.assignment?.id
+  const assignmentId = props.assignment?.id;
 
   if (!assignmentId) {
-    alert('Assignment data is missing. Please refresh the page.')
-    return
+    toast.error(
+      "Assignment data is missing. Please refresh the page",
+      "Missing Data"
+    );
+    return;
   }
 
-  const selectedTutorId = props.assignment?.selectedTutorId
+  const selectedTutorId = props.assignment?.selectedTutorId;
   if (!selectedTutorId) {
-    alert('No tutor has been selected for this assignment.')
-    return
+    toast.warning(
+      "No tutor has been selected for this assignment",
+      "Tutor Not Selected"
+    );
+    return;
   }
 
-  if (!confirm('Proceed to payment for this assignment?')) {
-    return
+  if (!confirm("Proceed to payment for this assignment?")) {
+    return;
   }
 
-  processing.value = true
+  processing.value = true;
   try {
-    const tutor = props.selectedTutor
+    const tutor = props.selectedTutor;
 
     if (!tutor) {
-      throw new Error('Tutor information not found. Please contact support.')
+      throw new Error("Tutor information not found. Please contact support.");
     }
 
-    const totalAmount = calculateTotalAmount()
-    const currentUser = auth.currentUser
+    const totalAmount = calculateTotalAmount();
+    const currentUser = auth.currentUser;
 
     if (!currentUser) {
-      throw new Error('User not authenticated. Please log in.')
+      throw new Error("User not authenticated. Please log in.");
     }
 
     // Fetch parent details
-    const parentDoc = await getUserDoc(currentUser.uid)
-    const parentName = parentDoc?.name || 'Unknown Parent'
+    const parentDoc = await getUserDoc(currentUser.uid);
+    const parentName = parentDoc?.name || "Unknown Parent";
 
-    const existingPayment = await checkPaymentStatus()
+    const existingPayment = await checkPaymentStatus();
 
-    if (existingPayment && existingPayment.status === 'completed') {
-      alert('This assignment has already been paid for.')
-      processing.value = false
-      return
+    if (existingPayment && existingPayment.status === "completed") {
+      toast.info("This assignment has already been paid for", "Already Paid");
+      processing.value = false;
+      return;
     }
 
-    let paymentId
+    let paymentId;
 
-    if (existingPayment && existingPayment.status === 'pending') {
-      paymentId = existingPayment.id
-      console.log('Reusing existing payment record:', paymentId)
+    if (existingPayment && existingPayment.status === "pending") {
+      paymentId = existingPayment.id;
+      console.log("Reusing existing payment record:", paymentId);
     } else {
       paymentId = await createPaymentRecord(assignmentId, {
         tutorId: selectedTutorId,
-        tutorName: tutor.name || tutor.tutorName || 'Unknown Tutor',
+        tutorName: tutor.name || tutor.tutorName || "Unknown Tutor",
         parentId: currentUser.uid,
         parentName: parentName,
         amount: totalAmount,
         assignmentTitle: props.assignment.title,
-        tutorRate: tutor.rate || props.assignment.rate
-      })
-      console.log('Created new payment record:', paymentId)
+        tutorRate: tutor.rate || props.assignment.rate,
+      });
+      console.log("Created new payment record:", paymentId);
     }
 
     await createPaymentSession({
@@ -157,14 +182,17 @@ const initiatePayment = async () => {
       totalAmount: totalAmount,
       title: props.assignment.title,
       selectedTutor: tutor,
-    })
+    });
   } catch (error) {
-    console.error('Payment initiation error:', error)
-    alert(`Failed to initiate payment: ${error.message}`)
+    console.error("Payment initiation error:", error);
+    toast.error(
+      `Failed to initiate payment: ${error.message}`,
+      "Payment Failed"
+    );
   } finally {
-    processing.value = false
+    processing.value = false;
   }
-}
+};
 </script>
 
 <template>
@@ -207,7 +235,9 @@ const initiatePayment = async () => {
         </h4>
 
         <p class="mb-3">
-          <strong>Payment to: {{ selectedTutor?.name || 'Selected Tutor' }}</strong>
+          <strong
+            >Payment to: {{ selectedTutor?.name || "Selected Tutor" }}</strong
+          >
         </p>
 
         <table class="table">
@@ -221,19 +251,19 @@ const initiatePayment = async () => {
             <tr>
               <td>Total Sessions:</td>
               <td class="text-end">
-                {{ assignment.selectedDays.length }} × 4 × {{ assignment.contractDuration }} = 
+                {{ assignment.selectedDays.length }} × 4 ×
+                {{ assignment.contractDuration }} =
                 <strong>{{ calculateTotalSessions() }}</strong>
-                <br>
+                <br />
                 <small class="text-muted">
-                  ({{ assignment.selectedDays.join(', ') }} × 4 weeks/month × {{ assignment.contractDuration }} months)
+                  ({{ assignment.selectedDays.join(", ") }} × 4 weeks/month ×
+                  {{ assignment.contractDuration }} months)
                 </small>
               </td>
             </tr>
             <tr>
               <td>Duration per Session:</td>
-              <td class="text-end">
-                {{ assignment.sessionDuration }} hour(s)
-              </td>
+              <td class="text-end">{{ assignment.sessionDuration }} hour(s)</td>
             </tr>
             <tr class="table-success">
               <td><strong>Total Amount:</strong></td>

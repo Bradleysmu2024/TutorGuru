@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
-import { getCurrentUser } from '../services/firebase'
+import { getCurrentUser } from "../services/firebase";
 import { db, getAssignmentApplications } from "../services/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -60,8 +60,6 @@ const startRealtimeListener = async () => {
           const applications = await getAssignmentApplications(assignment.id);
           applicationCounts.value[assignment.id] = applications.length;
         }
-
-        console.log(assignments);
         loading.value = false;
         console.debug(
           "[ParentDashboard] realtime snapshot, count=",
@@ -237,10 +235,10 @@ const getApplicationCount = (assignmentId) => {
         </div>
       </div>
 
-      <LoadingState 
-        v-if="loading" 
-        :loading="true" 
-        message="Loading assignments..." 
+      <LoadingState
+        v-if="loading"
+        :loading="true"
+        message="Loading assignments..."
       />
 
       <div
@@ -284,7 +282,7 @@ const getApplicationCount = (assignmentId) => {
                     <i class="bi bi-geo-alt me-1"></i>
                     {{ assignment.location }}
                   </span>
-                  <span 
+                  <span
                     v-if="assignment.location !== 'Online'"
                     class="badge bg-warning me-2"
                   >

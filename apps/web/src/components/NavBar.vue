@@ -175,6 +175,10 @@
             </template>
           </template>
 
+          <li class="nav-item ms-lg-2">
+            <ThemeToggle />
+          </li>
+
           <li class="nav-item ms-lg-3" v-if="!loginStatus">
             <router-link
               to="/login"
@@ -204,9 +208,10 @@
 <script setup>
 import { ref, watch, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { loginStatus, getCurrentUser } from '../services/firebase'
+import { loginStatus, getCurrentUser } from "../services/firebase";
 import { getDoc, doc as fsDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
+import ThemeToggle from "./ThemeToggle.vue";
 
 const route = useRoute();
 const isOpen = ref(false);

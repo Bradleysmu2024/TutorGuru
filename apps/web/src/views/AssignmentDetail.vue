@@ -1056,6 +1056,39 @@ onMounted(async () => {
                 </div>
               </div>
             </div>
+            <!-- Subjects Taught Section -->
+            <div
+              v-if="selectedApplicant.tutorTeaching && selectedApplicant.tutorTeaching.length"
+              class="mt-4"
+            >
+              <h6 class="fw-semibold mb-3">
+                <i class="bi bi-book me-2"></i>
+                Subjects Taught
+              </h6>
+
+              <div class="row g-3">
+                <div
+                  v-for="(subjectObj, idx) in selectedApplicant.tutorTeaching"
+                  :key="idx"
+                  class="col-12 col-sm-6 col-md-4"
+                >
+                  <div class="card h-100 border-0 bg-light shadow-sm p-3">
+                    <h6 class="fw-semibold mb-2 text-primary text-truncate">
+                      {{ subjectObj.subject }}
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                      <span
+                        v-for="(lvl, i) in subjectObj.levels"
+                        :key="i"
+                        class="badge bg-secondary text-white"
+                      >
+                        {{ lvl }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div class="mt-4">
               <h6 class="fw-semibold mb-3">

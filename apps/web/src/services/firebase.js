@@ -397,14 +397,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-          ? a.createdAt.seconds * 1000
-          : 0;
+            ? a.createdAt.seconds * 1000
+            : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-          ? b.createdAt.seconds * 1000
-          : 0;
+            ? b.createdAt.seconds * 1000
+            : 0;
       return tb - ta;
     });
     return items;
@@ -600,8 +600,10 @@ export const getUserCalendars = async (token) => {
 // Google Calendar API - get Calendar by CalendarId (primary as default input)
 export const getPrimaryCalendar = async (token, calendarId = "primary") => {
   try {
+    // Use the proper calendar endpoint and encode calendarId
+    const encodedCalId = encodeURIComponent(calendarId);
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/calendarId?calendarId=${calendarId}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodedCalId}`,
       {
         method: "GET",
         headers: {
@@ -1125,15 +1127,14 @@ export const getLevels = async () => {
     if (docSnap.exists()) {
       const data = docSnap.data().list || [];
 
-      // Check if data is in new nested format (array of objects with 'name' field)
-      if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
-        // Extract just the level names for backward compatibility
-        return data.map((level) => level.name);
-      }
+        // Check if data is in new nested format (array of objects with 'name' field)
+        if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
+          // Extract just the level names for backward compatibility
+          return data.map((level) => level.name);
+        }
 
-      // If still in old format (array of strings), return as-is
-      return data;
-      console.log(data);
+        // If still in old format (array of strings), return as-is
+        return data;
     } else {
       console.log("No levels found!");
       return [];

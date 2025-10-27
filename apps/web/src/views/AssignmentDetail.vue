@@ -14,6 +14,7 @@ import {
   addEvent_,
   submitFeedback,
   getCurrentUser,
+  calculateTutorRating,
 } from "../services/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../services/firebase";
@@ -236,8 +237,9 @@ const downloadAllFiles = async () => {
   }
 };
 
-const viewTutorProfile = (application) => {
+const viewTutorProfile = async (application) => {
   selectedApplicant.value = application;
+  selectedApplicant.value.rating = (await calculateTutorRating(selectedApplicant.value.tutorId)).average + " ⭐";
   showTutorProfileModal.value = true;
 };
 
@@ -246,7 +248,6 @@ const closeProfileModal = () => {
   selectedApplicant.value = null;
 };
 
-// Start a chat with the selected applicant from the modal
 const messageTutorFromModal = async () => {
   const app = selectedApplicant.value;
   const tutorIdentifier = await getUsernameById(app.tutorId);
@@ -1130,6 +1131,7 @@ onMounted(async () => {
               />
               <h4 class="fw-bold mb-1">{{ selectedApplicant.tutorName }}</h4>
               <p class="text-muted mb-2">{{ selectedApplicant.tutorEmail }}</p>
+              <p class="text-muted mb-2">{{ selectedApplicant.rating }}</p>
               <div v-if="selectedApplicant.tutorRating" class="rating mb-3">
                 <span class="text-warning fs-5"
                   >★ {{ selectedApplicant.tutorRating }}</span

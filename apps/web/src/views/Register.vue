@@ -78,7 +78,6 @@ const handleRegister = async () => {
           experience: 0,
           avatar: "",
           role: "tutor",
-          rating: null,
           createdAt: new Date().toISOString(),
           verified: false,
         },

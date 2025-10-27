@@ -273,16 +273,9 @@ import {
   getUserRole,
   findUserByUsername,
   getUserDoc,
+  calculateTutorRating,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
 import { useRoute } from "vue-router";
 import router from "../router/routes";
 import { useToast } from "../composables/useToast";
@@ -349,6 +342,7 @@ onMounted(async () => {
         profile.value = u;
         uploadedDocuments.value = u.uploadedDocuments || [];
         userRole.value = u.role || "tutor";
+        profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
       } else {
         console.warn("User not found for username:", username);
       }
@@ -368,6 +362,7 @@ onMounted(async () => {
       profile.value = { ...u, uid }; // add uid to profile
       uploadedDocuments.value = u.uploadedDocuments || [];
       currentUser.value = auth.currentUser;
+      profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
     } else {
       toast.warning("Please log in to view your profile", "Login Required");
     }

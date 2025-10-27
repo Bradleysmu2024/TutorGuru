@@ -433,6 +433,53 @@ export const getAssignmentById = async (id) => {
   }
 };
 
+/**
+ * Calculate a tutor's average rating from all closed assignments where they were selected.
+ * Scans assignments with selectedTutorId == tutorId and status == 'closed',
+ * collects numeric ratings from each assignment.review (array) and returns the average.
+ * @param {string} tutorId
+ * @returns {Promise<{success: boolean, average?: number, count?: number, sum?: number, error?: string}>}
+ */
+export const calculateTutorRating = async (tutorId) => {
+  try {
+    if (!tutorId) return { success: false, error: "Missing tutorId" };
+    // Query closed assignments where this tutor was selected
+    const q = query(
+      collection(db, "assignments"),
+      where("selectedTutorId", "==", tutorId),
+      where("status", "==", "closed")
+    );
+
+    const snap = await getDocs(q);
+    if (snap.empty) return { success: true, average: 0, count: 0, sum: 0 };
+
+
+    let sum = 0;
+    let count = 0;
+
+    snap.docs.forEach((d) => {
+      const data = d.data() || {};
+      const reviews = data.review || data.reviews || [];
+      if (Array.isArray(reviews) && reviews.length > 0) {
+        reviews.forEach((r) => {
+          const raw = r.rating ?? null;
+          const num = Number(raw);
+          if (!Number.isNaN(num) && isFinite(num)) {
+            sum += num;
+            count += 1;
+          }
+        });
+      }
+    });
+
+    const average = count > 0 ? Math.round((sum / count) * 10) / 10 : 0; // 1 decimal
+    return { success: true, average, count, sum };
+  } catch (err) {
+    console.error("Error calculating tutor rating:", err);
+    return { success: false, error: err.message || String(err) };
+  }
+};
+
 // Storage functions
 export const uploadFile = async (file, path) => {
   try {
@@ -550,15 +597,6 @@ export const signInWithGoogle = async () => {
       expiry: new Date(expiryTime),
     };
   } catch (error) {
-    // Handle Errors here.
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    // The email of the user's account used.
-    const email = error.customData.email;
-    // The AuthCredential type that was used.
-    const errorCredential = GoogleAuthProvider.credentialFromError(error);
-    // ...
-
     console.error("Error logging in:", error);
     return {
       success: false,
@@ -1127,14 +1165,14 @@ export const getLevels = async () => {
     if (docSnap.exists()) {
       const data = docSnap.data().list || [];
 
-        // Check if data is in new nested format (array of objects with 'name' field)
-        if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
-          // Extract just the level names for backward compatibility
-          return data.map((level) => level.name);
-        }
+      // Check if data is in new nested format (array of objects with 'name' field)
+      if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
+        // Extract just the level names for backward compatibility
+        return data.map((level) => level.name);
+      }
 
-        // If still in old format (array of strings), return as-is
-        return data;
+      // If still in old format (array of strings), return as-is
+      return data;
     } else {
       console.log("No levels found!");
       return [];
@@ -1339,7 +1377,19 @@ export const listAllUsers = async (role = null) => {
     } else {
       snap = await getDocs(collection(db, "users"));
     }
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    const enriched = await Promise.all(
+      snap.docs.map(async (s) => {
+        const u = { id: s.id, ...s.data() };
+        const res = await calculateTutorRating(u.id);
+        if (res && res.success) {
+          return { ...u, rating: res.average || "-" };
+        }
+        return { ...u };
+      })
+    );
+
+    return enriched;
   } catch (err) {
     console.error("Error listing users:", err);
     return [];

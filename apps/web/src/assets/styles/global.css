@@ -81,24 +81,12 @@ html {
   }
 }
 
-/* Card hover effects */
-.card {
-  transition: all 0.3s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-}
+/* Card hover effects: use .hover-lift and .hover-shadow utilities instead of global overrides */
 
 /* Button enhancements */
 .btn {
-  transition: all 0.3s ease;
+  /* Prefer Bootstrap button styles. Use utility classes for elevation if required. */
   font-weight: 500;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Form focus states */
@@ -108,8 +96,37 @@ html {
   box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
 }
 
-/* Loading spinner */
-.spinner-border {
+/* Loading spinner: specific sizes provided by helpers below */
+
+/* Small helper utilities to keep consistent sizes across the app */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+.spinner-border-lg {
   width: 3rem;
   height: 3rem;
+  border-width: 0.3em;
+}
+
+/* Lightweight hover lift & shadow utilities to replace scoped card/button hover CSS */
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+}
+.hover-shadow:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+}
+
+/* Loading state container used by LoadingState.vue */
+.loading-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }

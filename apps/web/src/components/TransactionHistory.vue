@@ -247,48 +247,48 @@ const downloadCSV = () => {
 
           <!-- Summary Stats -->
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
-              <div class="stat-card">
-                <div class="stat-icon">
-                  <i class="bi bi-receipt"></i>
-                </div>
-                <div class="stat-content">
-                  <div class="stat-label">Total Transactions</div>
-                  <div class="stat-value">{{ transactions.length }}</div>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="stat-card">
-                <div class="stat-icon">
-                  <i class="bi bi-cash-stack"></i>
-                </div>
-                <div class="stat-content">
-                  <div class="stat-label">
-                    Total {{ userType === "parent" ? "Spent" : "Earned" }}
+              <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center p-3 bg-primary text-white rounded">
+                  <div class="stat-icon fs-2 me-3 opacity-75">
+                    <i class="bi bi-receipt"></i>
                   </div>
-                  <div class="stat-value">
-                    {{ formatCurrency(totalAmount) }}
+                  <div class="stat-content flex-grow-1">
+                    <div class="stat-label small text-white-50">Total Transactions</div>
+                    <div class="stat-value h4 fw-bold">{{ transactions.length }}</div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div class="col-md-4">
-              <div class="stat-card">
-                <div class="stat-icon">
-                  <i class="bi bi-check-circle"></i>
-                </div>
-                <div class="stat-content">
-                  <div class="stat-label">Completed</div>
-                  <div class="stat-value">
-                    {{
-                      transactions.filter((t) => t.status === "completed")
-                        .length
-                    }}
+              <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center p-3 bg-success text-white rounded">
+                  <div class="stat-icon fs-2 me-3 opacity-75">
+                    <i class="bi bi-cash-stack"></i>
+                  </div>
+                  <div class="stat-content flex-grow-1">
+                    <div class="stat-label small text-white-50">
+                      Total {{ userType === "parent" ? "Spent" : "Earned" }}
+                    </div>
+                    <div class="stat-value h4 fw-bold">
+                      {{ formatCurrency(totalAmount) }}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+              <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center p-3 bg-info text-white rounded">
+                  <div class="stat-icon fs-2 me-3 opacity-75">
+                    <i class="bi bi-check-circle"></i>
+                  </div>
+                  <div class="stat-content flex-grow-1">
+                    <div class="stat-label small text-white-50">Completed</div>
+                    <div class="stat-value h4 fw-bold">
+                      {{
+                        transactions.filter((t) => t.status === "completed")
+                          .length
+                      }}
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
 
           <!-- Filters and Sort -->
@@ -427,97 +427,19 @@ const downloadCSV = () => {
 </template>
 
 <style scoped>
-.transaction-history {
-  width: 100%;
-}
-
+/* Minimal overrides: keep Bootstrap for most styling and only adjust card radius */
 .card {
   border: none;
   border-radius: 0.75rem;
 }
 
-.stat-card {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: linear-gradient(135deg, #1867c0 0%, #2196f3 100%);
-  border-radius: 0.5rem;
-  color: white;
+/* Slight icon sizing for the stat tiles */
+.stat-icon i {
+  font-size: 1.6rem;
 }
 
-.stat-icon {
-  font-size: 2rem;
-  margin-right: 1rem;
-  opacity: 0.8;
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  opacity: 0.9;
-  margin-bottom: 0.25rem;
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.table {
-  margin-bottom: 0;
-}
-
-.table thead th {
-  border-bottom: 2px solid #dee2e6;
-  font-weight: 600;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  color: #6c757d;
-}
-
-.table tbody tr {
-  transition: all 0.2s;
-  background-color: #ffffff;
-}
-
-.table.table-hover {
-  --bs-table-hover-bg: #afafaf;
-}
-
-.badge {
-  padding: 0.35rem 0.75rem;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-/* Make collapse button more visible */
-.collapse-btn {
-  border: 1px solid #6c757d;
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.collapse-btn:hover {
-  background-color: #6c757d;
-  color: white;
-  transform: translateY(-1px);
-}
-
+/* Make collapse button icon slightly larger */
 .collapse-btn i {
-  font-size: 0.875rem;
-}
-
-@media (max-width: 768px) {
-  .stat-card {
-    margin-bottom: 1rem;
-  }
-
-  .table-responsive {
-    font-size: 0.875rem;
-  }
+  font-size: 0.95rem;
 }
 </style>

@@ -14,12 +14,12 @@
     <!-- Message List -->
     <div class="flex-grow-1 p-3 overflow-auto bg-light" style="min-height: 0;">
       
-  <div v-for="msg in messages" :key="msg.id" class="mb-3 d-flex"
+  <div v-for="msg in messages" :key="msg.id" class="mb-3 d-flex message-bubble"
      :class="msg.senderIsMe ? 'justify-content-end' : 'justify-content-start'">
      <div :class="msg.senderIsMe ? 'bg-primary' : 'bg-white border'"
        class="p-2 rounded-3" style="max-width: 60%;">
           {{ msg.text }}
-          <div class="small text-end text-muted" :class="msg.senderIsMe ? 'text-white' : 'text-dark'">{{ formatTime(msg.timestamp) }}</div>
+          <div class="small text-end" :class="msg.senderIsMe ? 'text-white' : 'text-muted'">{{ formatTime(msg.timestamp) }}</div>
         </div>
       </div>
     </div>

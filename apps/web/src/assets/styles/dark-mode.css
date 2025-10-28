@@ -144,7 +144,8 @@ body.dark-mode .container-fluid.d-flex.bg-light {
   background-color: #121212 !important;
 }
 
-body.dark-mode .border-end.bg-white {
+body.dark-mode .border-end.bg-white,
+body.dark-mode .border-top.bg-white {
   background-color: #1e1e1e !important;
 }
 
@@ -154,6 +155,14 @@ body.dark-mode .mobile-sidebar {
 
 body.dark-mode .mobile-backdrop {
   background: rgba(0, 0, 0, 0.7) !important;
+}
+
+body.dark-mode .message-bubble .text-white{
+  color: #FFFFFF !important;
+}
+
+body.dark-mode .message-bubble .text-muted{
+  color: rgba(33, 37, 41, 0.75) !important;
 }
 
 /* Chat Sidebar - User Names and Text */
@@ -280,6 +289,8 @@ body.dark-mode .btn-light:hover {
 /* Tables */
 body.dark-mode .table {
   color: #e0e0e0;
+  --bs-table-color : #e0e0e0;
+  --bs-table-hover-color : #e0e0e0;
   --bs-table-bg: #1e1e1e;
   --bs-table-striped-bg: #252525;
   --bs-table-hover-bg: #2a2a2a;
@@ -373,7 +384,8 @@ body.dark-mode .bg-light {
 }
 
 /* Text colors */
-body.dark-mode .text-dark {
+body.dark-mode .text-dark,
+body.dark-mode .text-grey-darken-2 {
   color: #e0e0e0 !important;
 }
 

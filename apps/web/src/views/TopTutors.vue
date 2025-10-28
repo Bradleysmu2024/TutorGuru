@@ -72,7 +72,6 @@ onMounted(async () => {
   loading.value = true
   try {
     const items = await listAllUsers('tutor')
-    // sort by rating desc (missing rating => 0)
     items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     tutors.value = items
   } catch (err) {

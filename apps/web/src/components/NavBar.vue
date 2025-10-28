@@ -309,10 +309,7 @@ watch(
   font-weight: 500;
 }
 
-.nav-link:hover {
-  color: #0d6efd;
-}
-
+.nav-link:hover,
 .nav-link.active {
   color: #0d6efd;
 }

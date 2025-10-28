@@ -218,8 +218,6 @@ const initiatePayment = async () => {
       </div>
     </div>
 
-    <!-- Feedback Modal moved to AssignmentDetail; PaymentCard now emits payment-completed event -->
-
     <!-- Payment Details Card (only if NOT paid) -->
     <div
       v-if="
@@ -277,18 +275,18 @@ const initiatePayment = async () => {
         </table>
 
         <button
-          class="btn btn-primary w-100"
+          class="btn btn-primary w-100 d-flex align-items-center justify-content-center"
           :disabled="processing"
           @click="initiatePayment"
         >
-          <span v-if="processing">
-            <span class="spinner-border spinner-border-sm me-2"></span>
-            Processing...
-          </span>
-          <span v-else>
-            <i class="bi bi-credit-card me-2"></i>
-            Proceed to Payment
-          </span>
+          <i v-if="!processing" class="bi bi-credit-card me-2"></i>
+          <span>{{ processing ? 'Processing...' : 'Proceed to Payment' }}</span>
+          <span
+            v-if="processing"
+            class="spinner-border spinner-border-sm ms-2"
+            role="status"
+            aria-hidden="true"
+          ></span>
         </button>
 
         <p class="text-center text-muted mt-2 mb-0">
@@ -303,5 +301,11 @@ const initiatePayment = async () => {
 .card {
   border: none;
   border-radius: 0.75rem;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
 }
 </style>

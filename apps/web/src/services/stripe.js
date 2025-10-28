@@ -38,6 +38,8 @@ export const createPaymentSession = async (assignmentData) => {
       amount: Math.round(Number(totalAmount) * 100),
       assignmentTitle: String(title || 'Assignment'),
       tutorName: String(selectedTutor?.name || 'Tutor'),
+      // only allowing card payments
+      paymentMethodTypes: ['card']
     }
     
     console.log('Payment Request:', requestBody)

@@ -28,13 +28,13 @@ exports.api = functions.https.onRequest((req, res) => {
         }
 
         const session = await stripe.checkout.sessions.create({
-          payment_method_types: ['card'],
+          payment_method_types: req.body.paymentMethodTypes || ['card'], // Only allow card payments
           line_items: [
             {
               price_data: {
                 currency: 'sgd',
                 product_data: {
-                  name: `Tutoring Assignment: ${assignmentTitle}`,
+                  name: assignmentTitle,
                   description: `Tutor: ${tutorName}`,
                 },
                 unit_amount: amount,
@@ -48,6 +48,8 @@ exports.api = functions.https.onRequest((req, res) => {
           metadata: {
             paymentId,
             assignmentId,
+            assignmentTitle,
+            tutorName,
           },
         });
 
@@ -62,12 +64,19 @@ exports.api = functions.https.onRequest((req, res) => {
     if (path.startsWith('/verify-payment/') && req.method === 'GET') {
       try {
         const sessionId = path.split('/verify-payment/')[1];
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        const session = await stripe.checkout.sessions.retrieve(sessionId, {
+          expand: ['line_items'] // to retrieve line_items details
+        });
 
         return res.json({
           status: session.payment_status,
           paymentId: session.metadata?.paymentId,
           assignmentId: session.metadata?.assignmentId,
+          amount: session.amount_total,
+          // Use metadata first, or fallback to line_items
+          assignmentTitle: session.metadata?.assignmentTitle || 
+                          session.line_items?.data[0]?.description || 'N/A',
+          tutorName: session.metadata?.tutorName || 'N/A'
         });
       } catch (error) {
         console.error('Error verifying payment:', error);

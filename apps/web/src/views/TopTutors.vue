@@ -15,7 +15,7 @@
       </div>
 
       <div v-if="loading" class="text-center py-5">
-        <LoadingState :loading="loading" color="primary" padding="py-5" />
+        <LoadingState :loading="loading" message="Loading tutors..." color="primary" padding="py-5" />
       </div>
 
       <div v-else-if="tutors.length === 0" class="text-center py-5 text-muted">

@@ -1,5 +1,5 @@
-<script setup>
-import { LINE_PATH_CONFIG } from '@/constants/mapSettings'
+<script>
+import { LINE_PATH_CONFIG } from '../composables/mapSettings'
 
 export default {
   props: {

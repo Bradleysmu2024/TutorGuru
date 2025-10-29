@@ -469,6 +469,18 @@ const formatDate = (date) => {
   }
 };
 
+const getEndTime = (start, duration) =>{
+    const [hour, minute] = start.split(':').map(Number)
+    const end = new Date()
+    
+    // Add both hours and fractional minutes
+    const totalMinutes = hour * 60 + minute + duration * 60
+    end.setHours(0, totalMinutes)
+
+    // Format back to "HH:MM"
+    return end.toTimeString().slice(0, 5)
+  }
+
 const formatFileSize = (bytes) => {
   if (bytes === 0) return "0 Bytes";
   const k = 1024;
@@ -638,7 +650,7 @@ onMounted(async () => {
                   </span>
                   <span class="badge bg-success me-2">
                     <i class="bi bi-cash me-2"></i>
-                    {{ assignment.rate }}
+                    ${{ assignment.rate }}/hr
                   </span>
                   <span
                     v-if="assignment.location !== 'Online'"
@@ -741,9 +753,9 @@ onMounted(async () => {
                       <i class="bi bi-cash text-success me-2"></i>
                       <div>
                         <small class="text-muted d-block"
-                          >Session Start Time</small
+                          >Session Time</small
                         >
-                        <strong>{{ assignment.sessionStartTime }}</strong>
+                        <strong>{{ assignment.sessionStartTime }} – {{ getEndTime(assignment.sessionStartTime, assignment.sessionDuration) }}</strong>
                       </div>
                     </div>
                   </div>

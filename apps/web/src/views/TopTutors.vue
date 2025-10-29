@@ -15,9 +15,7 @@
       </div>
 
       <div v-if="loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
-        </div>
+        <LoadingState :loading="loading" message="Loading tutors..." color="primary" padding="py-5" />
       </div>
 
       <div v-else-if="tutors.length === 0" class="text-center py-5 text-muted">
@@ -26,7 +24,7 @@
 
       <div v-else class="row g-4">
         <div v-for="t in filteredTutors" :key="t.id" class="col-md-6 col-lg-4">
-          <div class="card shadow-sm h-100">
+          <div class="card shadow-sm h-100 hover-lift hover-shadow">
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-center mb-3">
                 <img :src="t.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-3" width="64" height="64" />
@@ -53,6 +51,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { listAllUsers } from '../services/firebase'
+import LoadingState from '../components/LoadingState.vue'
 
 const tutors = ref([])
 const loading = ref(false)
@@ -72,7 +71,6 @@ onMounted(async () => {
   loading.value = true
   try {
     const items = await listAllUsers('tutor')
-    // sort by rating desc (missing rating => 0)
     items.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     tutors.value = items
   } catch (err) {

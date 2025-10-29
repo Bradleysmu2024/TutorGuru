@@ -50,18 +50,3 @@ const colorClass = computed(() => `text-${props.color}`);
 const containerClass = computed(() => props.padding);
 </script>
 
-<style scoped>
-.loading-state {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.spinner-border-lg {
-  width: 3rem;
-  height: 3rem;
-  border-width: 0.3em;
-}
-</style>

@@ -78,13 +78,22 @@
             </button>
 
             <button
-              v-if="job.status !== 'closed'"
+              v-if="displayStatus == 'applied'"
+              class="btn btn-danger btn-sm"
+              @click="$emit('withdraw', job.id)"
+            >
+              <i class="bi bi-send me-1"></i>
+              Withdraw
+            </button>
+            <button
+              v-else-if="job.status !== 'closed'"
               class="btn btn-primary btn-sm"
               @click="$emit('apply', job.id)"
             >
               <i class="bi bi-send me-1"></i>
               Apply Now
             </button>
+            
           </div>
         </div>
       </div>

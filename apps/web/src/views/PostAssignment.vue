@@ -509,7 +509,7 @@ const cancel = () => {
                     v-model="formData.title"
                     type="text"
                     class="form-control"
-                    placeholder="e.g., Help with Algebra Homework"
+                    placeholder="Help with Algebra Homework"
                     required
                   />
                 </div>
@@ -689,7 +689,7 @@ const cancel = () => {
                     v-model="formData.requirements"
                     class="form-control"
                     rows="3"
-                    placeholder="Enter each requirement on a new line&#10;e.g., Patient and encouraging&#10;Experience with O-Level curriculum"
+                    placeholder="Enter each requirement on a new line&#10;Patient and encouraging&#10;Experience with O-Level curriculum"
                   ></textarea>
                   <small class="text-muted"
                     >Enter each requirement on a new line</small

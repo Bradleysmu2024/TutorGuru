@@ -243,13 +243,13 @@ onMounted(async () => {
         </div>
 
         <div class="col-lg-8">
-          <div class="card shadow-sm mb-4">
-            <div class="card-body">
-              <h5 class="card-title mb-4">
-                <i class="bi bi-person-badge me-2"></i>
-                Personal Information
-              </h5>
-              <form @submit.prevent="saveProfile">
+          <form @submit.prevent="saveProfile">
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title mb-4">
+                  <i class="bi bi-person-badge me-2"></i>
+                  Personal Information
+                </h5>
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label">Full Name</label>
@@ -268,7 +268,6 @@ onMounted(async () => {
                         type="email"
                         class="form-control"
                         disabled
-                        style="background-color: #e9ecef"
                       />
                       <button
                         class="btn btn-outline-primary"
@@ -301,6 +300,7 @@ onMounted(async () => {
                         @blur="validateAndGeocodePostal"
                         @keyup.enter="validateAndGeocodePostal"
                         maxlength="6"
+                        required
                         :class="{
                           'is-invalid': postalError,
                           'is-valid': postalSuccess,
@@ -336,95 +336,105 @@ onMounted(async () => {
                     </small>
                   </div>
                 </div>
-                <div class="mt-3">
-                  <button type="submit" class="btn btn-primary text-white">
-                    <i class="bi bi-save me-2"></i>
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <div
-                class="d-flex justify-content-between align-items-center mb-4"
-              >
-                <h5 class="fw-semibold mb-0">
-                  <i class="bi bi-people me-2"></i>
-                  Children Information
-                </h5>
-                <button
-                  class="btn btn-sm btn-outline-primary"
-                  @click="addChild"
-                >
-                  <i class="bi bi-plus-circle me-2"></i>
-                  Add Child
-                </button>
               </div>
+            </div>
 
-              <div
-                v-for="(child, index) in profile.children"
-                :key="index"
-                class="child-card mb-3"
-              >
+            <div class="card shadow-sm">
+              <div class="card-body">
                 <div
-                  class="d-flex justify-content-between align-items-start mb-3"
+                  class="d-flex justify-content-between align-items-center mb-4"
                 >
-                  <h6 class="fw-semibold mb-0">Child {{ index + 1 }}</h6>
+                  <h5 class="fw-semibold mb-0">
+                    <i class="bi bi-people me-2"></i>
+                    Children Information
+                  </h5>
                   <button
-                    class="btn btn-sm btn-outline-danger"
-                    @click="removeChild(index)"
+                    class="btn btn-sm btn-outline-primary"
+                    type="button"
+                    @click="addChild"
                   >
-                    <i class="bi bi-trash"></i>
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Add Child
                   </button>
                 </div>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label class="form-label">Name</label>
-                    <input
-                      v-model="child.name"
-                      type="text"
-                      class="form-control"
-                      placeholder="Child's name"
-                    />
-                  </div>
-                  <div class="col-md-6">
-                    <label class="form-label">Grade</label>
-                    <select v-model="child.grade" class="form-select">
-                      <option value="">-- Select Grade --</option>
-                      <optgroup
-                        v-for="level in levelsWithGrades"
-                        :key="level.name"
-                        :label="level.name"
-                      >
-                        <option
-                          v-for="grade in level.grades"
-                          :key="grade"
-                          :value="grade"
-                        >
-                          {{ grade }}
-                        </option>
-                      </optgroup>
-                    </select>
-                  </div>
-                  <div class="col-12">
-                    <label class="form-label">Subjects Studying</label>
-                    <input
-                      v-model="child.subjects"
-                      type="text"
-                      class="form-control"
-                      placeholder="e.g., Mathematics, Science, English"
-                    />
-                    <small class="text-muted"
-                      >Separate subjects with commas</small
+
+                <div
+                  v-for="(child, index) in profile.children"
+                  :key="index"
+                  class="child-card mb-3"
+                >
+                  <div
+                    class="d-flex justify-content-between align-items-start mb-3"
+                  >
+                    <h6 class="fw-semibold mb-0">Child {{ index + 1 }}</h6>
+                    <button
+                      class="btn btn-sm btn-outline-danger"
+                      type="button"
+                      @click="removeChild(index)"
                     >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Name</label>
+                      <input
+                        v-model="child.name"
+                        type="text"
+                        class="form-control"
+                        placeholder="Child's name"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Grade</label>
+                      <select
+                        v-model="child.grade"
+                        class="form-select"
+                        required
+                      >
+                        <option value="">-- Select Grade --</option>
+                        <optgroup
+                          v-for="level in levelsWithGrades"
+                          :key="level.name"
+                          :label="level.name"
+                        >
+                          <option
+                            v-for="grade in level.grades"
+                            :key="grade"
+                            :value="grade"
+                          >
+                            {{ grade }}
+                          </option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label"
+                        >Subjects Studying (Optional)</label
+                      >
+                      <input
+                        v-model="child.subjects"
+                        type="text"
+                        class="form-control"
+                        placeholder="e.g., Mathematics, Science, English"
+                      />
+                      <small class="text-muted"
+                        >Separate subjects with commas</small
+                      >
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+
+            <div class="mt-3">
+              <button type="submit" class="btn btn-primary text-white">
+                <i class="bi bi-save me-2"></i>
+                Save Profile
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

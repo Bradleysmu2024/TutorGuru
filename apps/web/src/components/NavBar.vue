@@ -62,39 +62,6 @@
               </li>
               <li class="nav-item">
                 <router-link
-                  to="/calendar"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-person me-1"></i>
-                  Calendar
-                </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/profile"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-person me-1"></i>
-                  Profile
-                </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/tutor-maps"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-person me-1"></i>
-                  Assignment Map
-                </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
                   to="/chat"
                   class="nav-link"
                   active-class="active"
@@ -104,8 +71,69 @@
                   Messages
                 </router-link>
               </li>
+
+              <!-- Account Dropdown -->
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  @click.prevent="toggleDropdown"
+                  role="button"
+                  :aria-expanded="dropdownOpen"
+                >
+                  <i class="bi bi-person-circle me-1"></i>
+                  Account
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  :class="{ show: dropdownOpen }"
+                >
+                  <li>
+                    <router-link
+                      to="/profile"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-person me-2"></i>
+                      My Profile
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link
+                      to="/tutor-maps"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-geo-alt me-2"></i>
+                      Assignment Map
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link
+                      to="/calendar"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-calendar3 me-2"></i>
+                      Calendar
+                    </router-link>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <router-link
+                      to="/logout"
+                      class="dropdown-item text-danger"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-box-arrow-right me-2"></i>
+                      Logout
+                    </router-link>
+                  </li>
+                </ul>
+              </li>
             </template>
             <template v-else>
+              <!-- Parent Navigation - Streamlined -->
               <li class="nav-item">
                 <router-link
                   to="/parent-dashboard"
@@ -117,18 +145,7 @@
                   Dashboard
                 </router-link>
               </li>
-              <li class="nav-item">
-                <router-link
-                  to="/top-tutors"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-trophy me-1"></i>
-                  Top Tutor
-                </router-link>
-              </li>
-              <li class="nav-item">
+              <!-- <li class="nav-item">
                 <router-link
                   to="/post-assignment"
                   class="nav-link"
@@ -138,29 +155,7 @@
                   <i class="bi bi-plus-circle me-1"></i>
                   Post Assignment
                 </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/calendar"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-person me-1"></i>
-                  Calendar
-                </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/profile"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-person me-1"></i>
-                  Profile
-                </router-link>
-              </li>
+              </li> -->
               <li class="nav-item">
                 <router-link
                   to="/chat"
@@ -171,6 +166,56 @@
                   <i class="bi bi-chat-left-text me-1"></i>
                   Messages
                 </router-link>
+              </li>
+
+              <!-- Profile Dropdown -->
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  @click.prevent="toggleDropdown"
+                  role="button"
+                  :aria-expanded="dropdownOpen"
+                >
+                  <i class="bi bi-person-circle me-1"></i>
+                  Account
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  :class="{ show: dropdownOpen }"
+                >
+                  <li>
+                    <router-link
+                      to="/profile"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-person me-2"></i>
+                      My Profile
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link
+                      to="/calendar"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-calendar3 me-2"></i>
+                      Calendar
+                    </router-link>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <router-link
+                      to="/logout"
+                      class="dropdown-item text-danger"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-box-arrow-right me-2"></i>
+                      Logout
+                    </router-link>
+                  </li>
+                </ul>
               </li>
             </template>
           </template>
@@ -187,16 +232,6 @@
             >
               <i class="bi bi-box-arrow-in-right me-1"></i>
               Login
-            </router-link>
-          </li>
-          <li class="nav-item ms-lg-3" v-else>
-            <router-link
-              to="/logout"
-              class="btn btn-outline-primary btn-sm"
-              @click="closeNavbar"
-            >
-              <i class="bi bi-box-arrow-in-right me-1"></i>
-              Logout
             </router-link>
           </li>
         </ul>
@@ -314,6 +349,38 @@ watch(
   color: #0d6efd;
 }
 
+/* Dropdown styles */
+.dropdown-toggle::after {
+  margin-left: 0.3rem;
+}
+
+.dropdown-menu {
+  min-width: 200px;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: none;
+  margin-top: 0.5rem;
+}
+
+.dropdown-item {
+  padding: 0.6rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #0d6efd;
+}
+
+.dropdown-item.text-danger:hover {
+  background-color: #fff5f5;
+  color: #dc3545;
+}
+
+.dropdown-item i {
+  width: 20px;
+}
+
 /* Added manual collapse styles */
 .navbar-collapse {
   transition: height 0.35s ease;
@@ -335,6 +402,21 @@ watch(
   .nav-item.ms-lg-3 {
     margin-left: 0 !important;
     margin-top: 1rem;
+  }
+
+  /* Mobile dropdown styling */
+  .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    border: none;
+    box-shadow: none;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .dropdown-item {
+    padding: 0.75rem 1.5rem;
   }
 }
 </style>

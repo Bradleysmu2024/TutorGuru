@@ -291,7 +291,7 @@ const getApplicationCount = (assignmentId) => {
                   </span>
                   <span class="badge bg-success">
                     <i class="bi bi-cash me-1"></i>
-                    {{ assignment.rate }}
+                    ${{ assignment.rate }}/hr
                   </span>
                 </div>
               </div>

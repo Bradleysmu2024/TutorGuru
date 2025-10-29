@@ -39,15 +39,15 @@
       <div class="job-details mb-3">
         <div class="detail-item">
           <i class="bi bi-cash text-success me-2"></i>
-          <span class="fw-semibold">{{ job.rate }}</span>
+          <span class="fw-semibold">${{ job.rate }}/hr</span>
         </div>
         <div class="detail-item">
           <i class="bi bi-calendar-week text-primary me-2"></i>
-          <span>{{ job.sessionsPerWeek }}x per week</span>
+          <span>{{ job.sessionsPerWeek }}x per week ( {{ job.selectedDays.join(", ") }} )</span>
         </div>
         <div class="detail-item">
           <i class="bi bi-clock text-warning me-2"></i>
-          <span>{{ job.duration }}</span>
+          <span>{{ job.sessionStartTime }} – {{ getEndTime(job.sessionStartTime, job.sessionDuration) }} ({{ job.sessionDuration }} {{ job.sessionDuration == 1 ? "hr" : "hrs"}})</span>
         </div>
       </div>
 
@@ -234,4 +234,16 @@ const downloadFiles = async () => {
     toast.error("Failed to create ZIP of files", "ZIP Error");
   }
 };
+
+const getEndTime = (start, duration) =>{
+    const [hour, minute] = start.split(':').map(Number)
+    const end = new Date()
+    
+    // Add both hours and fractional minutes
+    const totalMinutes = hour * 60 + minute + duration * 60
+    end.setHours(0, totalMinutes)
+
+    // Format back to "HH:MM"
+    return end.toTimeString().slice(0, 5)
+  }
 </script>

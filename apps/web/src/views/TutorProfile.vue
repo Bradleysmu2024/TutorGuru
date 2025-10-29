@@ -106,7 +106,6 @@
                         v-model="profile.email"
                         type="email"
                         class="form-control"
-                        style="background-color: #e9ecef"
                         disabled
                       />
                       <button
@@ -146,6 +145,7 @@
                           'is-invalid': postalError,
                           'is-valid': postalSuccess,
                         }"
+                        required
                       />
                       <button
                         class="btn btn-outline-secondary"
@@ -238,18 +238,17 @@
 
                   <label class="form-label">Levels</label>
                   <div v-for="level in levels" :key="level" class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    :id="'level-' + level"
-                    :value="level"
-                    v-model="item.levels"
-                  />
-                  <label class="form-check-label" :for="'level-' + level">
-                    {{ level }}
-                  </label>
-                </div>
-
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      :id="'level-' + level"
+                      :value="level"
+                      v-model="item.levels"
+                    />
+                    <label class="form-check-label" :for="'level-' + level">
+                      {{ level }}
+                    </label>
+                  </div>
                 </div>
 
                 <button

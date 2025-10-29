@@ -35,9 +35,8 @@ const toast = useToast();
 const mapComponent = ref(null);
 const google = ref(null);
 const map = ref(null);
-const tutorMarker = ref(null); // 🔴 tutor’s location marker
-const assignments = ref([]);   // open assignments
-
+const tutorMarker = ref(null); 
+const assignments = ref([]);   
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const mapConfig = {
@@ -45,7 +44,7 @@ const mapConfig = {
   zoom: 12,
 };
 
-// Load map + assignments
+
 onMounted(async () => {
   // Wait until GoogleMapLoader actually creates the map
   let tries = 0
@@ -58,11 +57,11 @@ onMounted(async () => {
   google.value = window.google
 
   if (!map.value) {
-    console.error("❌ Map still not initialized after waiting.")
+    console.error(" Map still not initialized after waiting.")
     return
   }
 
-  console.log("✅ Map initialized:", map.value)
+  console.log(" Map initialized:", map.value)
 
 
   // Load all open assignments from Firestore
@@ -84,7 +83,7 @@ onMounted(async () => {
 });
 console.log(assignments.value)
 
-// --- When user searches postal code ---
+//  When user searches postal code 
 async function searchTutorLocation(postalCode) {
   if (!postalCode)
     return toast.warning("Please enter a postal code", "Postal Code Required");

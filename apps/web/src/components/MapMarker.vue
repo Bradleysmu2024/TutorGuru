@@ -27,32 +27,31 @@ export default {
         icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
     });
 
-    // --- Build InfoWindow content safely (no innerHTML) ---
+    //Build InfoWindow content safely 
     const contentDiv = document.createElement("div");
     contentDiv.style.fontSize = "14px";
 
-    // Subject
+
     const subjectEl = document.createElement("div");
     subjectEl.textContent = `Subject: ${a.subject || ""}`;
     contentDiv.appendChild(subjectEl);
 
-    // Level
     const levelEl = document.createElement("div");
     levelEl.textContent = `Level: ${a.level || ""}`;
     contentDiv.appendChild(levelEl);
 
-    // Title
+
     const titleEl = document.createElement("div");
     titleEl.textContent = `Title: ${a.title || ""}`;
     contentDiv.appendChild(titleEl);
 
-    // Address
+
     const addressEl = document.createElement("div");
     addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
     addressEl.style.marginBottom = "8px";
     contentDiv.appendChild(addressEl);
 
-    // Buttons container
+
     const btnGroup = document.createElement("div");
     btnGroup.style.marginBottom = "8px";
 
@@ -83,11 +82,11 @@ export default {
 
     let directionsRenderer = null;
 
-    // --- Handle marker click ---
+  
     marker.addListener("click", () => {
       infoWindow.open(map, marker);
 
-      // Attach safe event listeners (no innerHTML, no inline @click)
+      
       const handleRoute = (mode) => {
         if (!this.tutorMarker) {
           toast.warning("Set your tutor location first", "Location Required");
@@ -152,7 +151,7 @@ export default {
             const distance = leg.distance.text;
             const duration = leg.duration.text;
 
-            // ✅ Safe: textContent, not innerHTML
+            
             travelInfoEl.textContent = `${mode}: ${distance}, ${duration}`;
           } else {
             travelInfoEl.textContent = "Unable to find route.";

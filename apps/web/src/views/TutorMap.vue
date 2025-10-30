@@ -1,8 +1,10 @@
 <template>
   <div id="tutor-map-container">
     <!-- Search bar to set tutor location -->
-    <SearchBar @search="searchTutorLocation" />
+    <div class="toolbar">
+      <SearchBar @search="searchTutorLocation" />
 
+    </div>
     <!-- Google Map Loader -->
     <GoogleMapLoader
       ref="mapComponent"
@@ -30,6 +32,7 @@ import { useToast } from "../composables/useToast";
 import SearchBar from "../components/SearchBar.vue";
 import GoogleMapLoader from "../components/GoogleMapLoader.vue";
 import MapMarker from "../components/MapMarker.vue";
+
 
 const toast = useToast();
 const mapComponent = ref(null);

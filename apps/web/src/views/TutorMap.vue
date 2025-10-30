@@ -1,8 +1,10 @@
 <template>
   <div id="tutor-map-container">
     <!-- Search bar to set tutor location -->
-    <SearchBar @search="searchTutorLocation" />
+    <div class="toolbar">
+      <SearchBar @search="searchTutorLocation" @filter="applyFilter"/>
 
+    </div>
     <!-- Google Map Loader -->
     <GoogleMapLoader
       ref="mapComponent"
@@ -12,7 +14,7 @@
 
     <!-- Assignment markers -->
     <MapMarker
-      v-for="a in assignments"
+      v-for="a in filteredAssignments"
       :key="a.id"
       :google="google"
       :map="map"
@@ -31,21 +33,21 @@ import SearchBar from "../components/SearchBar.vue";
 import GoogleMapLoader from "../components/GoogleMapLoader.vue";
 import MapMarker from "../components/MapMarker.vue";
 
+
 const toast = useToast();
 const mapComponent = ref(null);
 const google = ref(null);
 const map = ref(null);
-const tutorMarker = ref(null); // 🔴 tutor’s location marker
-const assignments = ref([]);   // open assignments
-
+const tutorMarker = ref(null); 
+const assignments = ref([]);   
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
+const filteredAssignments = ref([]);
 const mapConfig = {
   center: { lat: 1.3521, lng: 103.8198 },
   zoom: 12,
 };
 
-// Load map + assignments
+
 onMounted(async () => {
   // Wait until GoogleMapLoader actually creates the map
   let tries = 0
@@ -58,18 +60,18 @@ onMounted(async () => {
   google.value = window.google
 
   if (!map.value) {
-    console.error("❌ Map still not initialized after waiting.")
+    console.error(" Map still not initialized after waiting.")
     return
   }
 
-  console.log("✅ Map initialized:", map.value)
+  console.log(" Map initialized:", map.value)
 
 
-  // Load all open assignments from Firestore
+  // existing load
   try {
     const q = query(collection(db, "assignments"), where("status", "==", "open"));
     const snapshot = await getDocs(q);
-    assignments.value = snapshot.docs.map((doc) => ({
+    assignments.value = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       position: {
@@ -77,6 +79,7 @@ onMounted(async () => {
         lng: doc.data().lng,
       },
     }));
+    filteredAssignments.value = assignments.value; // keep a working copy
     console.log("Loaded open assignments:", assignments.value.length);
   } catch (error) {
     console.error("Error fetching assignments:", error);
@@ -84,7 +87,7 @@ onMounted(async () => {
 });
 console.log(assignments.value)
 
-// --- When user searches postal code ---
+//  When user searches postal code 
 async function searchTutorLocation(postalCode) {
   if (!postalCode)
     return toast.warning("Please enter a postal code", "Postal Code Required");
@@ -127,6 +130,23 @@ async function searchTutorLocation(postalCode) {
     }
   });
 }
+
+// When user applys filters
+function applyFilter({ subjects, levels }) {
+  let filtered = assignments.value;
+
+  if (subjects.length > 0) {
+    filtered = filtered.filter(a => subjects.includes(a.subject));
+  }
+
+  if (levels.length > 0) {
+    filtered = filtered.filter(a => levels.includes(a.level));
+  }
+
+  filteredAssignments.value = filtered;
+  console.log("Filtered assignments:", filtered.length);
+}
+
 </script>
 
 <style scoped>

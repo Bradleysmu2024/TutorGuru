@@ -15,8 +15,8 @@ const props = defineProps({
   apiKey: { type: String, required: true },
 });
 
-const googleMap = ref(null);   // the <div> element
-const map = ref(null);         // will hold the Map instance
+const googleMap = ref(null);   
+const map = ref(null);         
 
 onMounted(async () => {
   try {
@@ -28,13 +28,13 @@ onMounted(async () => {
     const { Map } = await importLibrary("maps");
     await importLibrary("places");
 
-    // ✅ create and save the actual map
+    // create and save the actual map
     map.value = new Map(googleMap.value, props.mapConfig);
   } catch (err) {
     console.error("Failed to load Google Maps API:", err);
   }
 });
 
-// ✅ expose the real Map instance to the parent
+// expose the real Map instance to the parent
 defineExpose({ map });
 </script>

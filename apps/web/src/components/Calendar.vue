@@ -145,12 +145,12 @@
                 <v-icon>mdi-delete</v-icon>
               </v-btn>
               <v-toolbar-title>{{ selectedEvent.name }}</v-toolbar-title>
-              <v-btn icon>
+              <!-- <v-btn icon>
                 <v-icon>mdi-pencil</v-icon>
               </v-btn>
               <v-btn icon>
                 <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
+              </v-btn> -->
             </v-toolbar>
             <v-card-text>
               <form v-if="currentlyEditing !== selectedEvent.id">
@@ -263,7 +263,7 @@ async function getEvents(type) {
         // console.log(doc.id, doc, 'start:', startDate, 'end:', endDate)
       });
     }
-    console.log(type, events);
+    // console.log(type, events);
     return events;
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -271,6 +271,12 @@ async function getEvents(type) {
 }
 
 async function addEvent() {
+  const result = confirm(
+        "Are you sure you want to add this event?"
+      );
+  if(!result){
+    return
+  }
   try {
     const user = JSON.parse(localStorage.getItem("user"));
     if (name.value && start.value && end.value) {
@@ -301,6 +307,12 @@ async function addEvent() {
 }
 
 async function updateEvent(ev) {
+  const result = confirm(
+        "Are you sure you want to update this event?"
+      );
+  if(!result){
+    selectedOpen.value = false;
+  }
   try {
     const user = JSON.parse(localStorage.getItem("user"));
     const response = await updateEvent_(
@@ -316,6 +328,12 @@ async function updateEvent(ev) {
 }
 
 async function deleteEvent(ev) {
+  const result = confirm(
+        "Are you sure you want to delete this event?"
+      );
+  if(!result){
+    selectedOpen.value = false;
+  }
   try {
     const user = JSON.parse(localStorage.getItem("user"));
     const response = await deleteEvent_(ev, user.uid);
@@ -407,7 +425,7 @@ async function sync_from_google() {
       !user_.expiry ||
       now >= new Date(user_.expiry) - 5 * 60 * 1000
     ) {
-      console.log("Invalid/Expired Google Token");
+      toast.info("Invalid/Expired Google Token");
       const result = confirm(
         "Google Login Required! Are you sure you want to login to Google to sync calendar?"
       );
@@ -420,7 +438,7 @@ async function sync_from_google() {
         user_.expiry = new Date(expiryTime);
         localStorage.setItem("user", JSON.stringify(user_));
         await sync_from_google();
-        console.log("Google Login successful! Calendar has been synced.");
+        toast.success("Google Login successful! Calendar has been synced.");
       }
     } else {
       // console.log(user_.token, user_.expiry)

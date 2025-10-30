@@ -1,3 +1,28 @@
+<template>
+  <div id="tutor-map-container">
+    <!-- Floating Search Bar -->
+    <div class="tutor-search-bar shadow">
+      <div class="input-group">
+        <input
+          v-model="postalCode"
+          type="text"
+          class="form-control"
+          placeholder="Enter your postal code (e.g. 650123)"
+        />
+        <button class="btn btn-primary" @click="searchTutorLocation">
+          Search
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Google Map -->
+    <div id="tutor-map"></div>
+
+    
+  </div>
+</template>
+
 <script setup>
 console.log("Tutor Google Map with Mode Toggle ✅");
 
@@ -259,27 +284,7 @@ onMounted(async () => {
 });
 </script>
 
-<template>
-  <div id="tutor-map-container">
-    <!-- Floating Search Bar -->
-    <div class="tutor-search-bar shadow">
-      <div class="input-group">
-        <input
-          v-model="postalCode"
-          type="text"
-          class="form-control"
-          placeholder="Enter your postal code (e.g. 650123)"
-        />
-        <button class="btn btn-primary" @click="searchTutorLocation">
-          Search
-        </button>
-      </div>
-    </div>
 
-    <!-- Google Map -->
-    <div id="tutor-map"></div>
-  </div>
-</template>
 
 <style scoped>
 #tutor-map-container {

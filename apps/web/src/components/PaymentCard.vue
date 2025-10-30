@@ -225,7 +225,7 @@ const initiatePayment = async () => {
         assignment.selectedTutorId &&
         !isPaymentCompleted
       "
-      class="card shadow-sm mb-4 border-warning"
+      class="card shadow-sm mb-4 rounded-3 border border-warning"
     >
       <div class="card-body">
         <h4 class="card-title">
@@ -295,17 +295,5 @@ const initiatePayment = async () => {
       </div>
     </div>
   </div>
+
 </template>
-
-<style scoped>
-.card {
-  border: none;
-  border-radius: 0.75rem;
-}
-
-.spinner-border-sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.15em;
-}
-</style>

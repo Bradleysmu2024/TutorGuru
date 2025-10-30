@@ -12,31 +12,31 @@
       </button>
     </div>
     <div class="filter-group">
-      <select v-model="selectedSubject">
-        <option value="">All Subjects</option>
-        <option
-            v-for="subject in subjects"
-            :key="subject"
-            :value="subject"
-          >
-            {{ subject }}
-        </option>
-      </select>
-
-      <select v-model="selectedLevel">
-        <option value="">All Levels</option>
-          <option
-            v-for="level in levels"
-            :key="level"
-            :value="level"
-          >
-            {{ level }}
-          </option>
-
-      </select>
+      <Multiselect
+        v-model="selectedSubject"
+        :options="subjects"
+        :multiple="true"
+        :close-on-select="false"
+        :clear-on-select="false"
+        placeholder="Select subjects (optional)"
+        class="compact-select"
+      />
+      <Multiselect
+        v-model="selectedLevel"
+        :options="levels"
+        :multiple="true"
+        :close-on-select="false"
+        :clear-on-select="false"
+        placeholder="Select levels (optional)"
+        class="compact-select"
+      />
       <button class="btn btn-secondary" @click="applyFilter">Apply Filter</button>
     </div>
-  </div>
+
+
+      
+    </div>
+  
 </template>
 
 <script setup async>
@@ -56,6 +56,9 @@ import {
 } from "firebase/firestore";
 import { db, auth } from "../services/firebase";
 import { getCurrentUser } from "../services/firebase";
+import Multiselect from "vue-multiselect";
+import "vue-multiselect/dist/vue-multiselect.css"
+
 const postalCode = ref("")
 const emit = defineEmits(["search", "filter"]) // event to tell parent user searched
 const subjects = ref([]);
@@ -73,16 +76,21 @@ function emitSearch() {
   emit("search", postalCode.value.trim())
 }
 
-const selectedSubject = ref("")
-const selectedLevel = ref("")
+const selectedSubject = ref([])
+const selectedLevel = ref([])
 
 function applyFilter() {
-  if (!selectedSubject.value.trim() || !selectedLevel.value.trim()) return
+  const subjects = selectedSubject?.value || []
+  const levels = selectedLevel?.value || []
+
+  if (!subjects.length && !levels.length) return
+
   emit("filter", {
-    subject: selectedSubject.value,
-    level: selectedLevel.value
+    subjects,
+    levels
   })
 }
+
 
 
 
@@ -107,6 +115,32 @@ function applyFilter() {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: center;
+
+}
+
+/* make each multiselect smaller */
+.compact-select {
+  width: 150px;           /* reduce width */
+  font-size: 0.85rem;     /* smaller font */
+}
+
+/* make multiselect tags look slimmer */
+.compact-select .multiselect__tags {
+  min-height: 28px;
+  padding: 2px 6px;
+  z-index: 99999;
+}
+
+/* tighten dropdown menu spacing */
+.compact-select .multiselect__option {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+
+}
+
+/* compact the button to match size */
+.compact-btn {
+  font-size: 0.85rem;
+  padding: 4px 10px;
 }
 </style>

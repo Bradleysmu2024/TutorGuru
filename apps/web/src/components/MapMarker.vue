@@ -1,25 +1,56 @@
 <template></template>
 
-<script>
+<script setup>
 import { POINT_MARKER_ICON_CONFIG } from "../composables/mapSettings";
 import { useRouter } from "vue-router";
 import { useToast } from "../composables/useToast";
+import { onMounted, onBeforeUnmount, watch, ref } from "vue"
 
-export default {
-  props: {
-    google: { type: Object, required: true },
-    map: { type: Object, required: true },
-    assignment: { type: Object, required: true },
-    tutorMarker: { type: Object, default: null },
-  },
 
-  mounted() {
-    const google = this.google;
-    const map = this.map;
-    const a = this.assignment;
+  const props = defineProps({
+    google: Object,
+    map: Object, 
+    assignment: Object,
+    tutorMarker: Object,
+  })
+   function showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
+      const directionsService = new props.google.maps.DirectionsService();
+      const directionsRenderer = new props.google.maps.DirectionsRenderer({
+        map: props.map,
+      });
+
+      directionsService.route(
+        {
+          origin,
+          destination,
+          travelMode: mode,
+        },
+        (result, status) => {
+          if (status === "OK") {
+            directionsRenderer.setDirections(result);
+            setRenderer(directionsRenderer);
+
+            const leg = result.routes[0].legs[0];
+            const distance = leg.distance.text;
+            const duration = leg.duration.text;
+
+            
+            travelInfoEl.textContent = `${mode}: ${distance}, ${duration}`;
+          } else {
+            travelInfoEl.textContent = "Unable to find route."
+          }
+        }
+      );
+    }
+  const marker = ref(null)
+  onMounted(() => {
+    const google = props.google;
+    const map = props.map;
+    const a = props.assignment;
     const router = useRouter();
     const toast = useToast();
 
+    
     // Create marker
     const marker = new google.maps.Marker({
       position: a.position,
@@ -88,12 +119,12 @@ export default {
 
       
       const handleRoute = (mode) => {
-        if (!this.tutorMarker) {
+        if (!props.tutorMarker) {
           toast.warning("Set your tutor location first", "Location Required");
           return;
         }
 
-        const origin = this.tutorMarker.getPosition();
+        const origin = props.tutorMarker.getPosition();
         const destination = a.position;
 
         // Remove old route
@@ -101,7 +132,7 @@ export default {
           directionsRenderer.setMap(null);
         }
 
-        this.showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
           directionsRenderer = renderer;
         });
       };
@@ -127,38 +158,12 @@ export default {
         }
       });
     });
-  },
+  })
+onBeforeUnmount(() => {
+  if (marker.value) {
+    marker.value.setMap(null)
+    marker.value = null
+  }
+})
 
-  methods: {
-    showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
-      const directionsService = new this.google.maps.DirectionsService();
-      const directionsRenderer = new this.google.maps.DirectionsRenderer({
-        map: this.map,
-      });
-
-      directionsService.route(
-        {
-          origin,
-          destination,
-          travelMode: mode,
-        },
-        (result, status) => {
-          if (status === "OK") {
-            directionsRenderer.setDirections(result);
-            setRenderer(directionsRenderer);
-
-            const leg = result.routes[0].legs[0];
-            const distance = leg.distance.text;
-            const duration = leg.duration.text;
-
-            
-            travelInfoEl.textContent = `${mode}: ${distance}, ${duration}`;
-          } else {
-            travelInfoEl.textContent = "Unable to find route.";
-          }
-        }
-      );
-    },
-  },
-};
 </script>

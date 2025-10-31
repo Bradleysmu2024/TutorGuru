@@ -49,10 +49,9 @@ const mapConfig = {
 
 
 onMounted(async () => {
-  // Wait until GoogleMapLoader actually creates the map
   let tries = 0
   while (!mapComponent.value?.map && tries < 20) {
-    await new Promise(r => setTimeout(r, 250)) // wait 0.25s
+    await new Promise(r => setTimeout(r, 250))
     tries++
   }
 
@@ -63,8 +62,6 @@ onMounted(async () => {
     console.error(" Map still not initialized after waiting.")
     return
   }
-
-  console.log(" Map initialized:", map.value)
 
 
   // existing load
@@ -95,13 +92,12 @@ onMounted(async () => {
         .filter(Boolean);
 
       assignments.value = items;
-      filteredAssignments.value = items; // keep a working copy
+      filteredAssignments.value = items;
       console.log("Loaded open assignments:", assignments.value.length);
     } catch (error) {
       console.error("Error fetching assignments:", error);
     }
 });
-console.log(assignments.value)
 
 //  When user searches postal code 
 async function searchTutorLocation(postalCode) {

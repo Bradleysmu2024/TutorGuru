@@ -60,11 +60,9 @@ function createMarker() {
 
   // Validate assignment position before creating a marker
   if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
-    // nothing to create
     return;
   }
 
-  console.log("MapMarker: creating marker for assignment", a && a.id);
   marker.value = new google.maps.Marker({
     position: a.position,
     map,
@@ -173,43 +171,16 @@ function createMarker() {
 function removeMarker() {
   if (marker.value) {
     const google = props.google;
-    console.log("MapMarker: removing marker for assignment", props.assignment && props.assignment.id, "marker=", marker.value);
+    if (google && google.maps && google.maps.event && marker.value) {
+      google.maps.event.clearInstanceListeners(marker.value);
+      if (marker.value._infoWindow) google.maps.event.clearInstanceListeners(marker.value._infoWindow);
+      if (marker.value.setVisible) marker.value.setVisible(false);
+    }
+
     try {
-      // log which map the marker is on (if available)
-      try {
-        console.log("MapMarker: marker.getMap() before removal:", marker.value.getMap && marker.value.getMap());
-      } catch (e) {}
-
-      // close info window if present
-      try {
-        if (marker.value._infoWindow && marker.value._infoWindow.close) {
-          marker.value._infoWindow.close();
-        }
-      } catch (e) {}
-
-      // clear event listeners on marker and infoWindow
-      try {
-        if (google && google.maps && google.maps.event && marker.value) {
-          google.maps.event.clearInstanceListeners(marker.value);
-          if (marker.value._infoWindow) google.maps.event.clearInstanceListeners(marker.value._infoWindow);
-        }
-      } catch (e) {}
-
-      // try both visible and setMap(null)
-      try {
-        if (marker.value.setVisible) marker.value.setVisible(false);
-      } catch (e) {}
-      try {
-        marker.value.setMap(null);
-      } catch (e) {
-        console.warn("MapMarker: error setting marker.map = null", e);
-      }
-
-      try {
-        console.log("MapMarker: marker.getMap() after removal:", marker.value.getMap && marker.value.getMap());
-      } catch (e) {}
+      marker.value.setMap(null);
     } catch (e) {
-      // ignore
+      console.warn("MapMarker: error setting marker.map = null", e);
     }
     marker.value = null;
   }

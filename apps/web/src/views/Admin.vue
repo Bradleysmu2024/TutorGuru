@@ -3,57 +3,74 @@
     <h2 class="mb-3">Admin Console</h2>
 
     <section class="mb-4">
-      <h5>Tutors</h5>
-        <LoadingState :loading="loadingTutors" message="Loading tutors..." color="primary" />
-        <div v-if="!loadingTutors">
-          <div v-if="tutors.length === 0" class="text-muted">No tutors found.</div>
-          <ul class="list-group">
-            <li v-for="t in tutors" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong>{{ t.name || t.username || t.email }}</strong>
-                <div class="text-muted small">{{ t.email }}</div>
-                <div class="text-muted small">Verified: <strong>{{ t.verified ? 'Yes' : 'No' }}</strong></div>
-              </div>
-              <div class="d-flex gap-2">
-                <button v-if="!t.verified" class="btn btn-sm btn-success" @click="setVerified(t, true)">Verify</button>
-                <button v-else class="btn btn-sm btn-warning" @click="setVerified(t, false)">Unverify</button>
-                <button class="btn btn-sm btn-primary" @click="openEdit(t)">Edit</button>
-                <button class="btn btn-sm btn-danger" @click="deleteTutor(t)">Delete</button>
-              </div>
-            </li>
-          </ul>
+      <h5>Users</h5>
+      <div class="d-flex mb-3 gap-2 align-items-center">
+        <div style="min-width:160px">
+          <select class="form-select" v-model="roleFilter">
+            <option value="all">All roles</option>
+            <option value="tutor">tutor</option>
+            <option value="admin">admin</option>
+            <option value="parent">parent</option>
+          </select>
         </div>
+        <div class="flex-grow-1">
+          <input class="form-control" placeholder="Search by email, username or name" v-model="searchQuery" />
+        </div>
+        <div>
+          <button class="btn btn-outline-secondary" @click="clearFilters">Clear</button>
+        </div>
+      </div>
+      <LoadingState :loading="loadingUser" message="Loading users..." color="primary" />
+      <div v-if="!loadingUser">
+        <div v-if="filteredUsers.length === 0" class="text-muted">No users found.</div>
+        <ul class="list-group">
+          <li v-for="t in filteredUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ t.name || t.username || t.email }}</strong>
+              <div class="text-muted small">{{ t.email }}</div>
+              <div class="text-muted small">Role: <strong>{{ t.role || 'tutor' }}</strong></div>
+              <div class="text-muted small">Verified: <strong>{{ t.verified ? 'Yes' : 'No' }}</strong></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button :disabled="t.role !== 'tutor' || t.verified" v-if="!t.verified" class="btn btn-sm btn-success" @click="setVerified(t, true)">Verify</button>
+              <button v-else class="btn btn-sm btn-warning" @click="setVerified(t, false)">Unverify</button>
+              <button class="btn btn-sm btn-primary" @click="openEdit(t)">Edit</button>
+              <button class="btn btn-sm btn-danger" @click="deleteUser(t)">Delete</button>
+            </div>
+          </li>
+        </ul>
+      </div>
     </section>
 
     <!-- Edit Tutor Modal -->
-    <div v-if="editingTutor" class="modal fade show" style="display:block; background: rgba(0,0,0,0.4)" tabindex="-1" @click.self="cancelEdit">
+  <div v-if="editUser" class="modal fade show" style="display:block; background: rgba(0,0,0,0.4)" tabindex="-1" @click.self="cancelEdit">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Edit Tutor</h5>
+            <h5 class="modal-title">Edit User</h5>
             <button class="btn-close" @click="cancelEdit"></button>
           </div>
           <div class="modal-body">
-                    <div class="mb-3">
-                      <label class="form-label">Username</label>
-                      <input class="form-control" v-model="editForm.username" />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Name</label>
-                      <input class="form-control" v-model="editForm.name" />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Email</label>
-                      <input class="form-control" v-model="editForm.email" />
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Role</label>
-                      <select class="form-select" v-model="editForm.role">
-                        <option value="tutor">tutor</option>
-                        <option value="admin">admin</option>
-                        <option value="parent">parent</option>
-                      </select>
-                    </div>
+            <div class="mb-3">
+              <label class="form-label">Username</label>
+              <input class="form-control" v-model="editForm.username" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Name</label>
+              <input class="form-control" v-model="editForm.name" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input class="form-control" v-model="editForm.email" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Role</label>
+              <select class="form-select" v-model="editForm.role">
+                <option value="tutor">tutor</option>
+                <option value="admin">admin</option>
+                <option value="parent">parent</option>
+              </select>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" @click="cancelEdit">Cancel</button>
@@ -74,7 +91,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { db, setUserDoc } from '../services/firebase'
 import { collection, query, where, getDocs, setDoc, doc, deleteDoc } from 'firebase/firestore'
 import { useToast } from '../composables/useToast'
@@ -84,60 +101,80 @@ import LoadingState from '../components/LoadingState.vue'
 const toast = useToast()
 const router = useRouter()
 
-const tutors = ref([])
-const loadingTutors = ref(false)
+const users = ref([])
+const loadingUser = ref(false)
 const resetting = ref(false)
+const roleFilter = ref('all')
+const searchQuery = ref('')
 
-async function loadTutors() {
-  loadingTutors.value = true
-  tutors.value = []
+const filteredUsers = computed(() => {
+  const q = (searchQuery.value || '').trim().toLowerCase()
+  return users.value.filter(u => {
+    if (roleFilter.value && roleFilter.value !== 'all' && (u.role || 'tutor') !== roleFilter.value) return false
+    if (!q) return true
+    const name = (u.name || '').toLowerCase()
+    const email = (u.email || '').toLowerCase()
+    const username = (u.username || '').toLowerCase()
+    return name.includes(q) || email.includes(q) || username.includes(q)
+  })
+})
+
+    async function loadUser() {
+  loadingUser.value = true
+  users.value = []
   try {
-    const q = query(collection(db, 'users'), where('role', '==', 'tutor'))
-    const snap = await getDocs(q)
-    tutors.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    // load all users; client-side filtering will handle role/search
+      const q = query(collection(db, 'users'))
+      const snap = await getDocs(q)
+      users.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))
   } catch (err) {
-    console.error('Error loading tutors', err)
-    toast.error('Failed to load tutors')
+    console.error('Error loading users', err)
+    toast.error('Failed to load users')
   } finally {
-    loadingTutors.value = false
+    loadingUser.value = false
   }
+}
+
+function clearFilters() {
+  roleFilter.value = 'all'
+  searchQuery.value = ''
 }
 
 async function setVerified(t, value) {
   try {
     await setUserDoc(t.id, { verified: value }, { merge: true })
-    toast.success(`Tutor ${value ? 'verified' : 'unverified'}`)
+    toast.success(`User ${value ? 'verified' : 'unverified'}`)
     // update local list
-    const idx = tutors.value.findIndex(x => x.id === t.id)
-    if (idx !== -1) tutors.value[idx].verified = value
+    const idx = users.value.findIndex(x => x.id === t.id)
+    if (idx !== -1) users.value[idx].verified = value
   } catch (err) {
     console.error('Error updating verified', err)
-    toast.error('Failed to update tutor')
+    toast.error('Failed to update user')
   }
 }
 
-async function deleteTutor(t) {
-  if (!confirm(`Delete tutor ${t.name || t.email}? This cannot be undone.`)) return
+async function deleteUser(t) {
+  if (!confirm(`Delete user ${t.name || t.email}? This cannot be undone.`)) return
   try {
     await deleteDoc(doc(db, 'users', t.id))
-    tutors.value = tutors.value.filter(x => x.id !== t.id)
-    toast.success('Tutor deleted')
+    users.value = users.value.filter(x => x.id !== t.id)
+    toast.success('User deleted')
   } catch (err) {
-    console.error('Error deleting tutor', err)
-    toast.error('Failed to delete tutor')
+    console.error('Error deleting user', err)
+    toast.error('Failed to delete user')
   }
 }
 
-const editingTutor = ref(null)
+const editUser = ref(null)
 const editForm = ref({ username: '', name: '', email: '', role: 'tutor' })
 
 function openEdit(t) {
-  editingTutor.value = t
+  editUser.value = t
   editForm.value = { username: t.username || '', name: t.name || '', email: t.email || '', role: t.role || 'tutor' }
 }
 
 async function saveEdit() {
-  if (!editingTutor.value) return
+  if (!editUser.value) return
   // validate required fields
   if (!editForm.value.username || !editForm.value.email) {
     toast.error('Username and email are required')
@@ -145,31 +182,21 @@ async function saveEdit() {
   }
   try {
     const updates = { username: editForm.value.username, name: editForm.value.name, email: editForm.value.email, role: editForm.value.role }
-    await setUserDoc(editingTutor.value.id, updates, { merge: true })
+    await setUserDoc(editUser.value.id, updates, { merge: true })
     // update local list
-    const idx = tutors.value.findIndex(x => x.id === editingTutor.value.id)
-    if (idx !== -1) tutors.value[idx] = { ...tutors.value[idx], ...updates }
-    toast.success('Tutor updated')
-    editingTutor.value = null
+      const idx = users.value.findIndex(x => x.id === editUser.value.id)
+      if (idx !== -1) users.value[idx] = { ...users.value[idx], ...updates }
+    toast.success('User updated')
+    editUser.value = null
   } catch (err) {
-    console.error('Error saving tutor edits', err)
-    toast.error('Failed to save tutor')
+    console.error('Error saving user edits', err)
+    toast.error('Failed to save user')
   }
 }
 
 function cancelEdit() {
-  editingTutor.value = null
+  editUser.value = null
 }
-
-function viewTutor(t) {
-  if (t.username) {
-    router.push({ path: `/tutor/${t.username}` }).catch(() => {})
-  } else {
-    toast.info('Tutor has no public username')
-  }
-}
-
-
 
 const defaultLevels = [
   'All Levels',
@@ -282,7 +309,7 @@ async function resetSubjects() {
 }
 
 onMounted(() => {
-  loadTutors()
+  loadUser()
 })
 
 </script>

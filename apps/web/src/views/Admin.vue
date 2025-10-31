@@ -4,8 +4,8 @@
 
     <section class="mb-4">
       <h5>Unverified Tutors</h5>
-      <div v-if="loadingTutors">Loading tutors...</div>
-      <div v-else>
+      <LoadingState :loading="loadingTutors" message="Loading tutors..." color="primary" />
+      <div v-if="!loadingTutors">
         <div v-if="tutors.length === 0" class="text-muted">No unverified tutors.</div>
         <ul class="list-group">
           <li v-for="t in tutors" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
@@ -38,6 +38,7 @@ import { db, setUserDoc } from '../services/firebase'
 import { collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore'
 import { useToast } from '../composables/useToast'
 import { useRouter } from 'vue-router'
+import LoadingState from '../components/LoadingState.vue'
 
 const toast = useToast()
 const router = useRouter()
@@ -63,7 +64,6 @@ async function loadUnverifiedTutors() {
 }
 
 function viewTutor(t) {
-  // navigate to tutor profile if route exists
   if (t.username) {
     router.push({ path: `/tutor/${t.username}` }).catch(() => {})
   } else {
@@ -75,7 +75,6 @@ async function verifyTutor(t) {
   try {
     await setUserDoc(t.id, { verified: true }, { merge: true })
     toast.success('Tutor verified')
-    // remove from list
     tutors.value = tutors.value.filter(x => x.id !== t.id)
   } catch (err) {
     console.error('Error verifying tutor', err)

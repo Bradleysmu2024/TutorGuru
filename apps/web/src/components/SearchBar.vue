@@ -18,6 +18,7 @@
         :multiple="true"
         :close-on-select="false"
         :clear-on-select="false"
+        :show-labels="false"
         placeholder="Select subjects (optional)"
         class="compact-select"
       />
@@ -27,6 +28,7 @@
         :multiple="true"
         :close-on-select="false"
         :clear-on-select="false"
+        :show-labels="false"
         placeholder="Select levels (optional)"
         class="compact-select"
       />
@@ -124,7 +126,7 @@ function applyFilter() {
 
 /* make each multiselect smaller */
 .compact-select {
-  width: 150px;           /* reduce width */
+  width: 170px;
   font-size: 0.85rem;     /* smaller font */
 }
 
@@ -139,7 +141,6 @@ function applyFilter() {
 .compact-select .multiselect__option {
   padding: 4px 8px;
   font-size: 0.85rem;
-
 }
 
 /* compact the button to match size */

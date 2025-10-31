@@ -28,7 +28,6 @@ onMounted(async () => {
     const { Map } = await importLibrary("maps");
     await importLibrary("places");
 
-    // create and save the actual map
     map.value = new Map(googleMap.value, props.mapConfig);
   } catch (err) {
     console.error("Failed to load Google Maps API:", err);

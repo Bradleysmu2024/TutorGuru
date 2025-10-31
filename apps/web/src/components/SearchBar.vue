@@ -80,10 +80,14 @@ const selectedSubject = ref([])
 const selectedLevel = ref([])
 
 function applyFilter() {
-  const subjects = selectedSubject?.value || []
+  let subjects = selectedSubject?.value || []
   const levels = selectedLevel?.value || []
 
-  if (!subjects.length && !levels.length) return
+  // If both empty, auto-select "All Subjects" in the UI and treat as no-op filter
+  if (!subjects.length && !levels.length) {
+    subjects = ["All Subjects"]
+    selectedSubject.value = subjects
+  }
 
   emit("filter", {
     subjects,

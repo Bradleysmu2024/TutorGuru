@@ -1,4 +1,7 @@
-<template></template>
+<template>
+  <!-- renderless component: hidden root so Vue mounts/unmounts predictably -->
+  <div style="display:none" aria-hidden="true"></div>
+</template>
 
 <script setup>
 import { POINT_MARKER_ICON_CONFIG } from "../composables/mapSettings";
@@ -7,169 +10,237 @@ import { useToast } from "../composables/useToast";
 import { onMounted, onBeforeUnmount, watch, ref } from "vue"
 
 
-  const props = defineProps({
-    google: Object,
-    map: Object, 
-    assignment: Object,
-    tutorMarker: Object,
-  })
-   function showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
-      const directionsService = new props.google.maps.DirectionsService();
-      const directionsRenderer = new props.google.maps.DirectionsRenderer({
-        map: props.map,
+const props = defineProps({
+  google: Object,
+  map: Object,
+  assignment: Object,
+  tutorMarker: Object,
+})
+
+function showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
+  const directionsService = new props.google.maps.DirectionsService();
+  const directionsRenderer = new props.google.maps.DirectionsRenderer({
+    map: props.map,
+  });
+
+  directionsService.route(
+    {
+      origin,
+      destination,
+      travelMode: mode,
+    },
+    (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+        setRenderer(directionsRenderer);
+
+        const leg = result.routes[0].legs[0];
+        const distance = leg.distance.text;
+        const duration = leg.duration.text;
+
+        travelInfoEl.textContent = `${mode}: ${distance}, ${duration}`;
+      } else {
+        travelInfoEl.textContent = "Unable to find route."
+      }
+    }
+  );
+}
+
+const marker = ref(null)
+
+function createMarker() {
+  // guard: don't create twice
+  if (marker.value) return;
+
+  const google = props.google;
+  const map = props.map;
+  const a = props.assignment;
+  const router = useRouter();
+  const toast = useToast();
+
+  // Validate assignment position before creating a marker
+  if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
+    // nothing to create
+    return;
+  }
+
+  console.log("MapMarker: creating marker for assignment", a && a.id);
+  marker.value = new google.maps.Marker({
+    position: a.position,
+    map,
+    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+  });
+
+  //Build InfoWindow content safely
+  const contentDiv = document.createElement("div");
+  contentDiv.style.fontSize = "14px";
+
+  const subjectEl = document.createElement("div");
+  subjectEl.textContent = `Subject: ${a.subject || ""}`;
+  contentDiv.appendChild(subjectEl);
+
+  const levelEl = document.createElement("div");
+  levelEl.textContent = `Level: ${a.level || ""}`;
+  contentDiv.appendChild(levelEl);
+
+  const titleEl = document.createElement("div");
+  titleEl.textContent = `Title: ${a.title || ""}`;
+  contentDiv.appendChild(titleEl);
+
+  const addressEl = document.createElement("div");
+  addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
+  addressEl.style.marginBottom = "8px";
+  contentDiv.appendChild(addressEl);
+
+  const btnGroup = document.createElement("div");
+  btnGroup.style.marginBottom = "8px";
+
+  const makeBtn = (label, classes, emoji) => {
+    const btn = document.createElement("button");
+    btn.textContent = `${emoji} ${label}`;
+    btn.className = classes;
+    btn.style.marginRight = "6px";
+    return btn;
+  };
+
+  const driveBtn = makeBtn("Drive", "btn btn-sm btn-outline-primary", "🚗");
+  const walkBtn = makeBtn("Walk", "btn btn-sm btn-outline-success", "🚶");
+  const transitBtn = makeBtn("Transit", "btn btn-sm btn-outline-info", "🚇");
+  const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
+
+  btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
+  contentDiv.appendChild(btnGroup);
+
+  const travelInfoEl = document.createElement("div");
+  contentDiv.appendChild(travelInfoEl);
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: contentDiv,
+  });
+
+  // attach infoWindow reference to marker so cleanup can close it later
+  try {
+    marker.value._infoWindow = infoWindow;
+  } catch (e) {
+    // ignore
+  }
+
+  let directionsRenderer = null;
+
+  marker.value.addListener("click", () => {
+    infoWindow.open(map, marker.value);
+
+    const handleRoute = (mode) => {
+      if (!props.tutorMarker) {
+        toast.warning("Set your tutor location first", "Location Required");
+        return;
+      }
+
+      const origin = props.tutorMarker.getPosition();
+      const destination = a.position;
+
+      if (directionsRenderer) {
+        directionsRenderer.setMap(null);
+      }
+
+      showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+        directionsRenderer = renderer;
       });
-
-      directionsService.route(
-        {
-          origin,
-          destination,
-          travelMode: mode,
-        },
-        (result, status) => {
-          if (status === "OK") {
-            directionsRenderer.setDirections(result);
-            setRenderer(directionsRenderer);
-
-            const leg = result.routes[0].legs[0];
-            const distance = leg.distance.text;
-            const duration = leg.duration.text;
-
-            
-            travelInfoEl.textContent = `${mode}: ${distance}, ${duration}`;
-          } else {
-            travelInfoEl.textContent = "Unable to find route."
-          }
-        }
-      );
-    }
-  const marker = ref(null)
-  onMounted(() => {
-    const google = props.google;
-    const map = props.map;
-    const a = props.assignment;
-    const router = useRouter();
-    const toast = useToast();
-
-    // Validate assignment position before creating a marker
-    if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
-      console.error("MapMarker: invalid assignment position, skipping marker", a && a.id, a && a.position);
-      return;
-    }
-
-    // Create marker and store on the ref so onBeforeUnmount can remove it
-    marker.value = new google.maps.Marker({
-      position: a.position,
-      map,
-      icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-    });
-
-    //Build InfoWindow content safely 
-    const contentDiv = document.createElement("div");
-    contentDiv.style.fontSize = "14px";
-
-
-    const subjectEl = document.createElement("div");
-    subjectEl.textContent = `Subject: ${a.subject || ""}`;
-    contentDiv.appendChild(subjectEl);
-
-    const levelEl = document.createElement("div");
-    levelEl.textContent = `Level: ${a.level || ""}`;
-    contentDiv.appendChild(levelEl);
-
-
-    const titleEl = document.createElement("div");
-    titleEl.textContent = `Title: ${a.title || ""}`;
-    contentDiv.appendChild(titleEl);
-
-
-    const addressEl = document.createElement("div");
-    addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
-    addressEl.style.marginBottom = "8px";
-    contentDiv.appendChild(addressEl);
-
-
-    const btnGroup = document.createElement("div");
-    btnGroup.style.marginBottom = "8px";
-
-    const makeBtn = (label, classes, emoji) => {
-      const btn = document.createElement("button");
-      btn.textContent = `${emoji} ${label}`;
-      btn.className = classes;
-      btn.style.marginRight = "6px";
-      return btn;
     };
 
-    const driveBtn = makeBtn("Drive", "btn btn-sm btn-outline-primary", "🚗");
-    const walkBtn = makeBtn("Walk", "btn btn-sm btn-outline-success", "🚶");
-    const transitBtn = makeBtn("Transit", "btn btn-sm btn-outline-info", "🚇");
-    const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
+    driveBtn.addEventListener("click", () =>
+      handleRoute(google.maps.TravelMode.DRIVING)
+    );
+    walkBtn.addEventListener("click", () =>
+      handleRoute(google.maps.TravelMode.WALKING)
+    );
+    transitBtn.addEventListener("click", () =>
+      handleRoute(google.maps.TravelMode.TRANSIT)
+    );
 
-    btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
-    contentDiv.appendChild(btnGroup);
+    applyBtn.addEventListener("click", () => router.push("/dashboard"));
 
-    // Travel info
-    const travelInfoEl = document.createElement("div");
-    contentDiv.appendChild(travelInfoEl);
-
-    // Create info window
-    const infoWindow = new google.maps.InfoWindow({
-      content: contentDiv, // ✅ DOM node, no HTML string
+    infoWindow.addListener("closeclick", () => {
+      if (directionsRenderer) {
+        directionsRenderer.setMap(null);
+        directionsRenderer = null;
+        travelInfoEl.textContent = "";
+      }
     });
+  });
+}
 
-    let directionsRenderer = null;
-
-  
-    marker.value.addListener("click", () => {
-      infoWindow.open(map, marker.value);
-
-      
-      const handleRoute = (mode) => {
-        if (!props.tutorMarker) {
-          toast.warning("Set your tutor location first", "Location Required");
-          return;
-        }
-
-        const origin = props.tutorMarker.getPosition();
-        const destination = a.position;
-
-        // Remove old route
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-        }
-
-        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
-          directionsRenderer = renderer;
-        });
-      };
-
-      driveBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.DRIVING)
-      );
-      walkBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.WALKING)
-      );
-      transitBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.TRANSIT)
-      );
-
-      applyBtn.addEventListener("click", () => router.push("/dashboard"));
-
-      // Clear routes when InfoWindow closes
-      infoWindow.addListener("closeclick", () => {
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-          directionsRenderer = null;
-          travelInfoEl.textContent = "";
-        }
-      });
-    });
-  })
-onBeforeUnmount(() => {
-  // remove marker from map so it disappears when the component is unmounted
+function removeMarker() {
   if (marker.value) {
-    marker.value.setMap(null)
-    marker.value = null
+    const google = props.google;
+    console.log("MapMarker: removing marker for assignment", props.assignment && props.assignment.id, "marker=", marker.value);
+    try {
+      // log which map the marker is on (if available)
+      try {
+        console.log("MapMarker: marker.getMap() before removal:", marker.value.getMap && marker.value.getMap());
+      } catch (e) {}
+
+      // close info window if present
+      try {
+        if (marker.value._infoWindow && marker.value._infoWindow.close) {
+          marker.value._infoWindow.close();
+        }
+      } catch (e) {}
+
+      // clear event listeners on marker and infoWindow
+      try {
+        if (google && google.maps && google.maps.event && marker.value) {
+          google.maps.event.clearInstanceListeners(marker.value);
+          if (marker.value._infoWindow) google.maps.event.clearInstanceListeners(marker.value._infoWindow);
+        }
+      } catch (e) {}
+
+      // try both visible and setMap(null)
+      try {
+        if (marker.value.setVisible) marker.value.setVisible(false);
+      } catch (e) {}
+      try {
+        marker.value.setMap(null);
+      } catch (e) {
+        console.warn("MapMarker: error setting marker.map = null", e);
+      }
+
+      try {
+        console.log("MapMarker: marker.getMap() after removal:", marker.value.getMap && marker.value.getMap());
+      } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
+    marker.value = null;
   }
-})
+}
+
+onMounted(() => {
+  createMarker();
+});
+
+// If the parent filters data and removes this assignment, ensure the marker is removed.
+watch(() => props.assignment, (newA, oldA) => {
+  if (!newA) {
+    removeMarker();
+    return;
+  }
+  // if assignment changed, recreate marker
+  if (!oldA || newA.id !== oldA.id) {
+    removeMarker();
+    createMarker();
+  }
+});
+
+// If the map instance changes, attach marker to the new map
+watch(() => props.map, (newMap, oldMap) => {
+  if (!newMap) return;
+  if (marker.value) marker.value.setMap(newMap);
+  else createMarker();
+});
+
+onBeforeUnmount(() => {
+  removeMarker();
+});
 
 </script>

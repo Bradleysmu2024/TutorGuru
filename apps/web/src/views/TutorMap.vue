@@ -149,18 +149,25 @@ async function searchTutorLocation(postalCode) {
 
 // When user applys filters
 function applyFilter({ subjects, levels }) {
+  // Normalize "All" selections: if user selected an 'All' option, treat it as no filter
+  const isAllSelected = arr =>
+    !arr || arr.length === 0 || arr.some(v => typeof v === 'string' && (/^all(\s+subjects?)?$/i.test(v) || /^all(\s+levels?)?$/i.test(v) || /^all$/i.test(v)));
+
+  const subjectFilterActive = !isAllSelected(subjects);
+  const levelFilterActive = !isAllSelected(levels);
+
   let filtered = assignments.value;
 
-  if (subjects.length > 0) {
+  if (subjectFilterActive) {
     filtered = filtered.filter(a => subjects.includes(a.subject));
   }
 
-  if (levels.length > 0) {
+  if (levelFilterActive) {
     filtered = filtered.filter(a => levels.includes(a.level));
   }
 
   filteredAssignments.value = filtered;
-  console.log("Filtered assignments:", filtered.length);
+  console.log("Filtered assignments:", filtered.length, "ids:", filtered.map(f => f.id), "subjectFilterActive:", subjectFilterActive, "levelFilterActive:", levelFilterActive);
 }
 
 </script>

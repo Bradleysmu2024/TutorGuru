@@ -50,12 +50,17 @@ import { onMounted, onBeforeUnmount, watch, ref } from "vue"
     const router = useRouter();
     const toast = useToast();
 
-    
-    // Create marker
-    const marker = new google.maps.Marker({
+    // Validate assignment position before creating a marker
+    if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
+      console.error("MapMarker: invalid assignment position, skipping marker", a && a.id, a && a.position);
+      return;
+    }
+
+    // Create marker and store on the ref so onBeforeUnmount can remove it
+    marker.value = new google.maps.Marker({
       position: a.position,
       map,
-        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+      icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
     });
 
     //Build InfoWindow content safely 
@@ -114,8 +119,8 @@ import { onMounted, onBeforeUnmount, watch, ref } from "vue"
     let directionsRenderer = null;
 
   
-    marker.addListener("click", () => {
-      infoWindow.open(map, marker);
+    marker.value.addListener("click", () => {
+      infoWindow.open(map, marker.value);
 
       
       const handleRoute = (mode) => {
@@ -160,6 +165,7 @@ import { onMounted, onBeforeUnmount, watch, ref } from "vue"
     });
   })
 onBeforeUnmount(() => {
+  // remove marker from map so it disappears when the component is unmounted
   if (marker.value) {
     marker.value.setMap(null)
     marker.value = null

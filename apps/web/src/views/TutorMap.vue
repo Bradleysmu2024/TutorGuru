@@ -68,22 +68,38 @@ onMounted(async () => {
 
 
   // existing load
-  try {
-    const q = query(collection(db, "assignments"), where("status", "==", "open"));
-    const snapshot = await getDocs(q);
-    assignments.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      position: {
-        lat: doc.data().lat,
-        lng: doc.data().lng,
-      },
-    }));
-    filteredAssignments.value = assignments.value; // keep a working copy
-    console.log("Loaded open assignments:", assignments.value.length);
-  } catch (error) {
-    console.error("Error fetching assignments:", error);
-  }
+    try {
+      const q = query(collection(db, "assignments"), where("status", "==", "open"));
+      const snapshot = await getDocs(q);
+
+      // Coerce lat/lng to numbers and skip invalid entries to avoid Google Maps errors
+      const items = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          const rawLat = data.lat ?? data.position?.lat;
+          const rawLng = data.lng ?? data.position?.lng;
+          const lat = parseFloat(rawLat);
+          const lng = parseFloat(rawLng);
+
+          if (!isFinite(lat) || !isFinite(lng)) {
+            console.warn(`Skipping assignment ${doc.id} due to invalid lat/lng:`, rawLat, rawLng);
+            return null;
+          }
+
+          return {
+            id: doc.id,
+            ...data,
+            position: { lat, lng },
+          };
+        })
+        .filter(Boolean);
+
+      assignments.value = items;
+      filteredAssignments.value = items; // keep a working copy
+      console.log("Loaded open assignments:", assignments.value.length);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+    }
 });
 console.log(assignments.value)
 

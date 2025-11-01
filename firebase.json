@@ -11,5 +11,9 @@
         "*.local"
       ]
     }
-  ]
+  ],
+  "firestore": {
+    "rules": "apps/web/firestore.rules",
+    "indexes": "apps/web/firestore.indexes.json"
+  }
 }

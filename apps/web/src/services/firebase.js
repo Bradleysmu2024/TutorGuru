@@ -397,14 +397,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-            ? a.createdAt.seconds * 1000
-            : 0;
+          ? a.createdAt.seconds * 1000
+          : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-            ? b.createdAt.seconds * 1000
-            : 0;
+          ? b.createdAt.seconds * 1000
+          : 0;
       return tb - ta;
     });
     return items;
@@ -452,7 +452,6 @@ export const calculateTutorRating = async (tutorId) => {
 
     const snap = await getDocs(q);
     if (snap.empty) return { success: true, average: 0, count: 0, sum: 0 };
-
 
     let sum = 0;
     let count = 0;
@@ -1399,12 +1398,26 @@ export const listAllUsers = async (role = null) => {
 // Payment functions
 export const createPaymentRecord = async (assignmentId, paymentData) => {
   try {
-    const docRef = await addDoc(collection(db, "payments"), {
+    const paymentsRef = collection(db, "payments");
+
+    const paymentDoc = {
       assignmentId,
-      ...paymentData,
+      tutorId: paymentData.tutorId,
+      tutorName: paymentData.tutorName,
+      parentId: paymentData.parentId,
+      parentName: paymentData.parentName,
+      amount: paymentData.amount,
+      assignmentTitle: paymentData.assignmentTitle,
+      tutorRate: paymentData.tutorRate,
       status: "pending",
+      paymentType: paymentData.paymentType || "full",
+      totalMonths: paymentData.totalMonths || 1,
+      monthNumber: paymentData.monthNumber || 1, // Which month this payment is for
       createdAt: serverTimestamp(),
-    });
+      updatedAt: serverTimestamp(),
+    };
+
+    const docRef = await addDoc(paymentsRef, paymentDoc);
     return docRef.id;
   } catch (error) {
     console.error("Error creating payment record:", error);
@@ -1415,48 +1428,79 @@ export const createPaymentRecord = async (assignmentId, paymentData) => {
 export const completePayment = async (assignmentId, sessionId) => {
   try {
     const paymentsRef = collection(db, "payments");
-
-    let q = query(paymentsRef, where("assignmentId", "==", assignmentId));
-    let querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      try {
-        const paymentDoc = await getDoc(doc(db, "payments", assignmentId));
-        if (paymentDoc.exists()) {
-          await updateDoc(doc(db, "payments", assignmentId), {
-            status: "completed",
-            sessionId,
-            paidAt: serverTimestamp(),
-          });
-          return { success: true };
-        }
-      } catch (docError) {
-        console.error("Payment not found by document ID");
-      }
-    }
+    const q = query(
+      paymentsRef,
+      where("assignmentId", "==", assignmentId),
+      where("stripeSessionId", "==", sessionId)
+    );
+    const querySnapshot = await getDocs(q);
 
     if (!querySnapshot.empty) {
       const paymentDoc = querySnapshot.docs[0];
+
       await updateDoc(doc(db, "payments", paymentDoc.id), {
         status: "completed",
-        sessionId,
         paidAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
-      return { success: true };
+
+      console.log("Payment completed successfully");
     }
-
-    console.warn("Payment record not found, creating new completed record");
-    await addDoc(collection(db, "payments"), {
-      assignmentId,
-      sessionId,
-      status: "completed",
-      paidAt: serverTimestamp(),
-      createdAt: serverTimestamp(),
-    });
-
-    return { success: true };
   } catch (error) {
     console.error("Error completing payment:", error);
+    throw error;
+  }
+};
+
+// Get payment summary for an assignment
+export const getPaymentSummary = async (assignmentId) => {
+  try {
+    const paymentsRef = collection(db, "payments");
+    const q = query(
+      paymentsRef,
+      where("assignmentId", "==", assignmentId),
+      where("status", "==", "completed")
+    );
+    const querySnapshot = await getDocs(q);
+
+    const payments = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    if (payments.length === 0) {
+      return {
+        payments: [],
+        totalMonths: 0,
+        monthsPaid: 0,
+        lastPayment: null,
+        isComplete: false,
+      };
+    }
+
+    // Sort by month number
+    payments.sort((a, b) => a.monthNumber - b.monthNumber);
+
+    const totalMonths = payments[0]?.totalMonths || 0;
+    const lastPayment = payments[payments.length - 1];
+
+    // For full payment, monthsPaid should be totalMonths
+    let monthsPaid;
+    if (payments[0]?.paymentType === "full") {
+      monthsPaid = totalMonths;
+    } else {
+      monthsPaid = payments.length;
+    }
+
+    return {
+      payments,
+      totalMonths,
+      monthsPaid,
+      lastPayment,
+      isComplete: monthsPaid >= totalMonths,
+    };
+  } catch (error) {
+    console.error("Error getting payment summary:", error);
     throw error;
   }
 };

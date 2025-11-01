@@ -541,6 +541,14 @@ async function handleWithdraw(jobId) {
     )
   );
 
+  await loadJobs();
+
+  const updated = { ...userApplications.value }
+  if (updated[jobId]) {
+    delete updated[jobId]
+    userApplications.value = updated
+  }
+
   // Mark this job as open for the current user immediately (optimistic update)
   // userApplications.value = {
   //         ...userApplications.value,
@@ -549,7 +557,7 @@ async function handleWithdraw(jobId) {
 
   // Reload jobs to reflect updated status
   
-  await loadJobs();
+  
 
   } catch (error) {
     console.error("Error withdrawal of application:", error);

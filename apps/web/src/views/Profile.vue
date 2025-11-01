@@ -436,7 +436,6 @@ const editProfile = () => {
   router.push("/editprofile");
 };
 
-// ADD THIS FUNCTION
 const handleViewTransaction = (transaction) => {
   console.log("View transaction:", transaction);
 };

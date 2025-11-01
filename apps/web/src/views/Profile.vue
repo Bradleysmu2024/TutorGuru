@@ -266,7 +266,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import {
   auth,
   db,
@@ -295,14 +295,13 @@ const profile = ref({
   experience: 0,
   avatar: "",
   verified: false,
-  // Parent-specific fields
   children: [],
   postalCode: "",
   formattedAddress: "",
   uid: "",
 });
 
-const userRole = ref(null); // 'tutor' or 'parent'
+const userRole = ref(null);
 const uploadedDocuments = ref([]);
 const loading = ref(true);
 const currentUser = ref(null);
@@ -327,12 +326,34 @@ const showMessageButton = computed(() => {
   );
 });
 
-// Check if viewing profile is a tutor (for conditional rendering)
 const isTutorProfile = computed(() => userRole.value === "tutor");
 const isParentProfile = computed(() => userRole.value === "parent");
 
-// Load profile when logged in
-onMounted(async () => {
+const resetProfileState = () => {
+  profile.value = {
+    name: "",
+    username: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    teaching: [{ subject: "", levels: [] }],
+    experience: 0,
+    avatar: "",
+    verified: false,
+    children: [],
+    postalCode: "",
+    formattedAddress: "",
+    uid: "",
+  };
+  uploadedDocuments.value = [];
+  userRole.value = null;
+  isPublicView.value = false;
+  loading.value = true;
+};
+
+const loadProfileRoute = async () => {
+  resetProfileState();
   const username = route.params.username || null;
   if (username) {
     isPublicView.value = true;
@@ -353,20 +374,25 @@ onMounted(async () => {
     return;
   }
 
+  // Private profile (current user)
   const loadProfile = async (uid) => {
-    // Get user role first
-    userRole.value = await getUserRole(uid);
-
-    const u = await getUserDoc(uid);
-    if (u) {
-      profile.value = { ...u, uid }; // add uid to profile
-      uploadedDocuments.value = u.uploadedDocuments || [];
-      currentUser.value = auth.currentUser;
-      profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
-    } else {
+    try {
+      userRole.value = await getUserRole(uid);
+      const u = await getUserDoc(uid);
+      if (u) {
+        profile.value = { ...u, uid };
+        uploadedDocuments.value = u.uploadedDocuments || [];
+        currentUser.value = auth.currentUser;
+        profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+      } else {
+        toast.warning("Please log in to view your profile", "Login Required");
+      }
+    } catch (err) {
+      console.error("Error loading profile:", err);
       toast.warning("Please log in to view your profile", "Login Required");
+    } finally {
+      loading.value = false;
     }
-    loading.value = false;
   };
 
   const userNow = auth.currentUser;
@@ -377,15 +403,26 @@ onMounted(async () => {
       if (user) {
         await loadProfile(user.uid);
       } else {
-        toast.warning("Please log in to view your profile", "Login Required");
         loading.value = false;
       }
       if (typeof unsub === "function") unsub();
     });
   }
+};
+
+onMounted(() => {
+  loadProfileRoute();
 });
 
-// Start a chat with this tutor (navigates to /chat?tutorId=<username>)
+watch(
+  () => route.params.username,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await loadProfileRoute();
+    }
+  }
+);
+
 const messageTutor = () => {
   if (!profile.value || !profile.value.username)
     return toast.error(

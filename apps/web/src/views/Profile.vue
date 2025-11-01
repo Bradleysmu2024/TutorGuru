@@ -8,7 +8,7 @@
           <div class="card shadow-sm">
             <div class="card-body px-10">
               <div class="profile text-center mb-3">
-                <div class="profile-avatar mb-3">
+                <div class="mb-3 mx-auto">
                   <img
                     :src="
                       profile.avatar ||
@@ -74,7 +74,7 @@
                         <span
                           v-for="(level, idx) in item.levels"
                           :key="idx"
-                          class="level-badge badge bg-success me-1 mb-1"
+                          class="badge bg-success me-1 mb-1 small fw-semibold"
                         >
                           {{ level }}
                         </span>
@@ -115,7 +115,7 @@
                     <div
                       v-for="(child, index) in profile.children"
                       :key="index"
-                      class="child-card mb-2 p-3 bg-light rounded"
+                      class="mb-2 p-3 bg-light rounded border"
                     >
                       <div
                         class="d-flex justify-content-between align-items-start"
@@ -153,20 +153,20 @@
 
         <!-- Quick Stats -->
         <div class="card shadow-sm mt-6 col-lg-4">
-          <div class="card-body">
+              <div class="card-body">
             <h6 class="fw-semibold mb-3">Quick Stats</h6>
 
             <!-- Tutor stats -->
             <div v-if="isTutorProfile">
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
                 <span class="text-muted">Applications Sent</span>
                 <span class="fw-semibold">12</span>
               </div>
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
                 <span class="text-muted">Active Students</span>
                 <span class="fw-semibold">5</span>
               </div>
-              <div class="stat-item d-flex justify-content-between">
+              <div class="stat-item d-flex justify-content-between border-bottom py-2">
                 <span class="text-muted">Rating</span>
                 <span class="fw-semibold">{{ profile.rating ?? "—" }} ⭐</span>
               </div>
@@ -174,23 +174,17 @@
 
             <!-- Parent stats -->
             <div v-if="isParentProfile">
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
                 <span class="text-muted">Assignments Posted</span>
-                <span class="fw-semibold">{{
-                  profile.assignmentsPosted || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.assignmentsPosted || 0 }}</span>
               </div>
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
                 <span class="text-muted">Active Assignments</span>
-                <span class="fw-semibold">{{
-                  profile.activeAssignments || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.activeAssignments || 0 }}</span>
               </div>
-              <div class="stat-item d-flex justify-content-between">
+              <div class="d-flex justify-content-between py-2">
                 <span class="text-muted">Children</span>
-                <span class="fw-semibold">{{
-                  profile.children?.length || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.children?.length || 0 }}</span>
               </div>
             </div>
           </div>
@@ -442,22 +436,9 @@ const handleViewTransaction = (transaction) => {
 </script>
 
 <style scoped>
-.profile-header {
-  padding: 1rem 0;
-}
-
 .card {
   border: none;
   border-radius: 0.75rem;
-}
-
-.profile-avatar {
-  margin: 0 auto;
-}
-
-.stat-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .stat-item:last-child {
@@ -470,21 +451,6 @@ const handleViewTransaction = (transaction) => {
 }
 
 .subject-item:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.level-badge {
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.35em 0.65em;
-}
-
-.child-card {
-  border: 1px solid #e9ecef;
-  transition: all 0.2s ease;
-}
-
-.child-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 

@@ -17,6 +17,7 @@ import { getCurrentUser } from '../services/firebase'
 import PaymentSuccess from '../views/PaymentSuccess.vue'
 import { getUserRole } from '../services/firebase'
 import Message from "../views/Message.vue"
+import Admin from "../views/Admin.vue"
 
 const routes = [
   {
@@ -117,6 +118,12 @@ const routes = [
     name: "Chat",
     component: Message,
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/admin",
+    name: "Admin",
+    component: Admin,
+    meta: { requiresAuth: true, allowedRoles: ['admin'] },
   },
 ]
 

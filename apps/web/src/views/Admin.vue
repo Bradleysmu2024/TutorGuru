@@ -199,13 +199,32 @@ function cancelEdit() {
 }
 
 const defaultLevels = [
-  'All Levels',
-  'Primary',
-  'Secondary',
-  'Junior College',
-  'Polytechnic',
-  'ITE',
-  'University'
+  { name: 'All Levels', grades: ['All Levels'] },
+  {
+    name: 'Primary',
+    grades: [
+      'Primary 1',
+      'Primary 2',
+      'Primary 3',
+      'Primary 4',
+      'Primary 5',
+      'Primary 6',
+    ],
+  },
+  {
+    name: 'Secondary',
+    grades: [
+      'Secondary 1',
+      'Secondary 2',
+      'Secondary 3',
+      'Secondary 4',
+      'Secondary 5',
+    ],
+  },
+  { name: 'Junior College', grades: ['Junior College 1', 'Junior College 2'] },
+  { name: 'Polytechnic', grades: ['Polytechnic Year 1', 'Polytechnic Year 2', 'Polytechnic Year 3'] },
+  { name: 'ITE', grades: ['ITE Nitec Year 1', 'ITE Nitec Year 2', 'ITE Nitec Year 3', 'ITE Higher Nitec Year 1', 'ITE Higher Nitec Year 2'] },
+  { name: 'University', grades: ['University Year 1', 'University Year 2', 'University Year 3', 'University Year 4'] },
 ]
 
 const defaultLocations = [

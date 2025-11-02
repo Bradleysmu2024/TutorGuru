@@ -12,8 +12,8 @@
 
     <section>
       <h5>Users</h5>
-      <div class="d-flex mb-3 gap-2 align-items-center">
-        <div style="min-width:160px">
+      <div class="d-flex mb-3 gap-2 align-items-center toolbar-grid">
+        <div class="toolbar-item min-w-160">
           <select class="form-select" v-model="roleFilter">
             <option value="all">All roles</option>
             <option value="tutor">tutor</option>
@@ -21,17 +21,17 @@
             <option value="parent">parent</option>
           </select>
         </div>
-        <div style="min-width:140px">
+        <div class="toolbar-item min-w-140">
           <select class="form-select" v-model="pageSize" aria-label="Users per page" title="Users per page">
             <option :value="10">10 per page</option>
             <option :value="20">20 per page</option>
             <option :value="50">50 per page</option>
           </select>
         </div>
-        <div class="flex-grow-1">
-          <input class="form-control" placeholder="Search by email, username or name" v-model="searchQuery" />
+        <div class="flex-grow-1 toolbar-item toolbar-search">
+          <input class="form-control" placeholder="Search for user" v-model="searchQuery" />
         </div>
-        <div>
+        <div class="toolbar-item toolbar-clear">
           <button class="btn btn-outline-secondary" @click="clearFilters">Clear</button>
         </div>
       </div>
@@ -345,4 +345,23 @@ onMounted(() => {
 
 <style scoped>
 .container { max-width: 900px; }
+
+/* Admin toolbar responsive: on small screens show 2 items per row */
+.toolbar-grid { flex-wrap: wrap; align-items: center; }
+.toolbar-item { box-sizing: border-box; }
+.min-w-160 { min-width: 150px; }
+.min-w-140 { min-width: 140px; }
+
+@media (max-width: 767px) {
+  .toolbar-grid { gap: 0.5rem; }
+  .toolbar-grid > .toolbar-item { flex: 0 0 50%; max-width: 46%; }
+  /* Make search take 75% and button 25% on mobile */
+  .toolbar-grid > .toolbar-item.toolbar-search { flex: 0 0 75%; max-width: 75%; }
+  .toolbar-grid > .toolbar-item.toolbar-clear { flex: 0 0 25%; max-width: 20%; }
+  .toolbar-grid > .toolbar-item.min-w-160,
+  .toolbar-grid > .toolbar-item.min-w-140 { min-width: 0; }
+  .toolbar-grid .form-control,
+  .toolbar-grid .form-select,
+  .toolbar-grid .btn { width: 100%; }
+}
 </style>

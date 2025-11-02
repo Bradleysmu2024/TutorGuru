@@ -13,6 +13,13 @@
             <option value="parent">parent</option>
           </select>
         </div>
+        <div style="min-width:140px">
+          <select class="form-select" v-model="pageSize" aria-label="Users per page" title="Users per page">
+            <option :value="10">10 per page</option>
+            <option :value="20">20 per page</option>
+            <option :value="50">50 per page</option>
+          </select>
+        </div>
         <div class="flex-grow-1">
           <input class="form-control" placeholder="Search by email, username or name" v-model="searchQuery" />
         </div>
@@ -22,9 +29,10 @@
       </div>
       <LoadingState :loading="loadingUser" message="Loading users..." color="primary" />
       <div v-if="!loadingUser">
-        <div v-if="filteredUsers.length === 0" class="text-muted">No users found.</div>
+        <div v-if="filteredAll.length === 0" class="text-muted">No users found.</div>
+        <div class="mb-2 text-muted small">Showing {{ visibleUsers.length }} of {{ filteredAll.length }}</div>
         <ul class="list-group">
-          <li v-for="t in filteredUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
+          <li v-for="t in visibleUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
             <div>
               <strong>{{ t.name || t.username || t.email }}</strong>
               <div class="text-muted small">{{ t.email }}</div>
@@ -106,8 +114,10 @@ const loadingUser = ref(false)
 const resetting = ref(false)
 const roleFilter = ref('all')
 const searchQuery = ref('')
+const pageSize = ref(10)
 
-const filteredUsers = computed(() => {
+// full filtered list (used for counts/empty-state)
+const filteredAll = computed(() => {
   const q = (searchQuery.value || '').trim().toLowerCase()
   return users.value.filter(u => {
     if (roleFilter.value && roleFilter.value !== 'all' && (u.role || 'tutor') !== roleFilter.value) return false
@@ -117,6 +127,11 @@ const filteredUsers = computed(() => {
     const username = (u.username || '').toLowerCase()
     return name.includes(q) || email.includes(q) || username.includes(q)
   })
+})
+
+// sliced list to display on-screen according to pageSize
+const visibleUsers = computed(() => {
+  return filteredAll.value.slice(0, pageSize.value)
 })
 
     async function loadUser() {

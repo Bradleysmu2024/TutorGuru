@@ -1013,6 +1013,7 @@ export const addEvent_ = async (
             end: end,
             color: color,
             timed: true,
+            reminderSent: false,
           }),
         });
         return response;

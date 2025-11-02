@@ -8,17 +8,32 @@ service firebase.storage {
     }
 
     // Tutors' files: avatars and documents stored under tutors/{uid}/...
-    match /tutors/{userId}/{allPaths=**} {
+    match /tutors/{userId}/documents/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Parents' files: avatars and documents stored under parents/{uid}/...
-    match /parents/{userId}/{allPaths=**} {
+    match /parents/{userId}/documents/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Generic user-scoped files (if you ever store under users/{uid}/...)
-    match /users/{userId}/{allPaths=**} {
+    match /users/{userId}/documents/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Tutors' files: avatars and documents stored under tutors/{uid}/...
+    match /tutors/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Parents' files: avatars and documents stored under parents/{uid}/...
+    match /parents/{userId}/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Generic user-scoped files (if you ever store under users/{uid}/...)
+    match /users/{userId}/{fileName} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 

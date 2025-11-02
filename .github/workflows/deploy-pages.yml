@@ -16,9 +16,13 @@ jobs:
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
+        # run the setup in the web app directory so cache keys and install relate to apps/web
+        working-directory: apps/web
         with:
           node-version: '18'
           cache: 'npm'
+          # ensure cache key is derived from the lockfile in apps/web
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies (apps/web)
         run: npm ci

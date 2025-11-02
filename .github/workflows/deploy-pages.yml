@@ -18,7 +18,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check VUE_APP_API_KEY exists
-        if: ${{ secrets.VUE_APP_API_KEY == '' }}
+        env: 
+          super_secret: ${{ secrets.VUE_APP_API_KEY }}
+        if: ${{ env.super_secret == '' }}
         run: |
           echo "ERROR: secret VUE_APP_API_KEY is not set."
           echo "Please add it at: Settings -> Secrets -> Actions"

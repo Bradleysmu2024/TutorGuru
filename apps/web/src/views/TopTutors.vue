@@ -46,7 +46,7 @@
             <div class="card-body d-flex flex-column">
               <div class="d-flex align-items-center mb-3">
                 <img
-                  :src="t.avatar || '/src/assets/images/profileplaceholder.JPG'"
+                  :src="t.avatar || defaultAvatar"
                   class="rounded-circle me-3"
                   width="64"
                   height="64"
@@ -81,6 +81,7 @@
 import { ref, onMounted, computed } from "vue";
 import { listAllUsers } from "../services/firebase";
 import LoadingState from "../components/LoadingState.vue";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const tutors = ref([]);
 const loading = ref(false);

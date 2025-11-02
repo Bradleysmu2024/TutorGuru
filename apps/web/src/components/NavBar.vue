@@ -66,7 +66,7 @@
                 </router-link>
               </li>
               <!-- Assignments dropdown -->
-              <li class="nav-item dropdown">
+              <li class="nav-item dropdown" v-if="currentRole !== 'parent'">
                 <a
                   class="nav-link dropdown-toggle"
                   href="#"
@@ -81,6 +81,26 @@
                   class="dropdown-menu dropdown-menu-end"
                   :class="{ show: assignmentsOpen }"
                 >
+                <li v-if="currentRole === 'admin'">
+                    <router-link
+                      to="/parent-dashboard"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-grid me-2"></i>
+                      Parent Dashboard
+                    </router-link>
+                  </li>
+                  <li v-if="currentRole === 'admin'">
+                    <router-link
+                      to="/dashboard"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-speedometer2 me-2"></i>
+                      Tutor Dashboard
+                    </router-link>
+                  </li>
                   <li
                     v-if="currentRole === 'admin' || currentRole === 'parent'"
                   >
@@ -177,7 +197,7 @@
                   @click="closeNavbar"
                 >
                   <i class="bi bi-grid me-1"></i>
-                  Dashboard
+                  Assignment
                 </router-link>
               </li>
               <li class="nav-item">
@@ -294,7 +314,7 @@
                   @click="closeNavbar"
                 >
                   <i class="bi bi-grid me-1"></i>
-                  Dashboard
+                  Assignment
                 </router-link>
               </li>
               <li class="nav-item">
@@ -309,36 +329,6 @@
                 </router-link>
               </li>
 
-              <!-- Assignments dropdown for parent (shows Post Assignment) -->
-              <li class="nav-item dropdown">
-                <a
-                  class="nav-link dropdown-toggle"
-                  href="#"
-                  @click.prevent="toggleAssignments"
-                  role="button"
-                  :aria-expanded="assignmentsOpen"
-                >
-                  <i class="bi bi-journal-bookmark me-1"></i>
-                  Assignments
-                </a>
-                <ul
-                  class="dropdown-menu dropdown-menu-end"
-                  :class="{ show: assignmentsOpen }"
-                >
-                  <li
-                    v-if="currentRole === 'admin' || currentRole === 'parent'"
-                  >
-                    <router-link
-                      to="/post-assignment"
-                      class="dropdown-item"
-                      @click="closeNavbar"
-                    >
-                      <i class="bi bi-plus-circle me-2"></i>
-                      Post Assignment
-                    </router-link>
-                  </li>
-                </ul>
-              </li>
 
               <li class="nav-item">
                 <router-link

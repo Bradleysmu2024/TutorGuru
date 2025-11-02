@@ -380,65 +380,51 @@ const processPendingPayment = async () => {
         </span>
       </h5>
       
-      <div class="row g-0 mb-3">
+      <div class="mb-3">
         <!-- Show Payment ID for both full and completed monthly payments -->
         <template v-if="!needsNextPayment">
-          <div class="col-6 col-md-3 mb-2">
-            <strong>Last Payment ID:</strong>
-          </div>
-          <div class="col-6 col-md-9 mb-2">
-            {{ paymentSummary.lastPayment?.id }}
+          <div class="mb-2">
+            <strong>Last Payment ID:</strong> {{ paymentSummary.lastPayment?.id }}
           </div>
         </template>
         
         <!-- Only show detailed breakdown for ongoing monthly payments -->
         <template v-if="paymentSummary.payments[0].paymentType === 'monthly' && needsNextPayment">
-          <div class="col-6 col-md-3 mb-2">
-            <strong>Months Paid:</strong>
-          </div>
-          <div class="col-6 col-md-3 mb-2">
-            {{ paymentSummary.monthsPaid }} / {{ paymentSummary.totalMonths }}
-          </div>
-          
-          <div v-if="remainingMonths > 0" class="col-6 col-md-3 mb-2">
-            <strong>Remaining Months:</strong>
-          </div>
-          <div v-if="remainingMonths > 0" class="col-6 col-md-3 mb-2">
-            {{ remainingMonths }}
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-2">
+                <strong>Months Paid:</strong> {{ paymentSummary.monthsPaid }} / {{ paymentSummary.totalMonths }}
+              </div>
+              
+              <div v-if="remainingMonths > 0" class="mb-2">
+                <strong>Remaining Months:</strong> {{ remainingMonths }}
+              </div>
+              
+              <div class="mb-2">
+                <strong>Last Payment:</strong> {{ paymentSummary.lastPayment?.paidAt?.toDate().toLocaleDateString() || 'N/A' }}
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div v-if="nextPaymentDue" class="mb-2">
+                <strong class="text-danger">Next Payment Due:</strong> <span class="text-danger">{{ nextPaymentDue.toLocaleDateString() }}</span>
+              </div>
+              
+              <div class="mb-2">
+                <strong>Amount Per Month:</strong> <span class="text-success">${{ calculateMonthlyAmount().toFixed(2) }}</span>
+              </div>
+              
+              <div v-if="remainingMonths > 0" class="mb-2">
+                <strong>Remaining Amount:</strong> <span class="text-warning">${{ (calculateMonthlyAmount() * remainingMonths).toFixed(2) }}</span>
+              </div>
+            </div>
           </div>
         </template>
         
-        <!-- Show for all payment types -->
-        <div class="col-6 col-md-3 mb-2">
-          <strong>Last Payment:</strong>
+        <!-- Show for all payment types (only when not monthly or not needing next payment) -->
+        <div v-if="!needsNextPayment || paymentSummary.payments[0].paymentType !== 'monthly'" class="mb-2">
+          <strong>Last Payment:</strong> {{ paymentSummary.lastPayment?.paidAt?.toDate().toLocaleDateString() || 'N/A' }}
         </div>
-        <div class="col-6 col-md-3 mb-2">
-          {{ paymentSummary.lastPayment?.paidAt?.toDate().toLocaleDateString() || 'N/A' }}
-        </div>
-        
-        <!-- Monthly payment specific fields -->
-        <template v-if="paymentSummary.payments[0].paymentType === 'monthly' && needsNextPayment">
-          <div v-if="nextPaymentDue" class="col-6 col-md-3 mb-2">
-            <strong class="text-danger">Next Payment Due:</strong>
-          </div>
-          <div v-if="nextPaymentDue" class="col-6 col-md-3 mb-2">
-            <span class="text-danger">{{ nextPaymentDue.toLocaleDateString() }}</span>
-          </div>
-          
-          <div class="col-6 col-md-3 mb-2">
-            <strong>Amount Per Month:</strong>
-          </div>
-          <div class="col-6 col-md-3 mb-2">
-            <span class="text-success">${{ calculateMonthlyAmount().toFixed(2) }}</span>
-          </div>
-          
-          <div v-if="remainingMonths > 0" class="col-6 col-md-3 mb-2">
-            <strong>Remaining Amount:</strong>
-          </div>
-          <div v-if="remainingMonths > 0" class="col-6 col-md-3 mb-2">
-            <span class="text-warning">${{ (calculateMonthlyAmount() * remainingMonths).toFixed(2) }}</span>
-          </div>
-        </template>
       </div>
 
       <button

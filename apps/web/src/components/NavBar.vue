@@ -532,8 +532,8 @@ watch(
 }
 
 .logo-image {
-  height: 32px;
-  width: auto;
+  height: 35px;
+  width: 35px;
   object-fit: contain;
 }
 

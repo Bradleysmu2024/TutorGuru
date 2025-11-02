@@ -4,7 +4,11 @@
   >
     <div class="container">
       <router-link to="/" class="navbar-brand d-flex align-items-center">
-        <i class="bi bi-book-half text-primary me-2 fs-4"></i>
+        <img
+          src="../assets/images/tutorguru.png"
+          alt="TutorGuru Logo"
+          class="logo-image me-2"
+        />
         <span class="fw-bold">TutorGuru</span>
       </router-link>
 
@@ -77,7 +81,9 @@
                   class="dropdown-menu dropdown-menu-end"
                   :class="{ show: assignmentsOpen }"
                 >
-                  <li v-if="currentRole === 'admin' || currentRole === 'parent'">
+                  <li
+                    v-if="currentRole === 'admin' || currentRole === 'parent'"
+                  >
                     <router-link
                       to="/post-assignment"
                       class="dropdown-item"
@@ -319,7 +325,9 @@
                   class="dropdown-menu dropdown-menu-end"
                   :class="{ show: assignmentsOpen }"
                 >
-                  <li v-if="currentRole === 'admin' || currentRole === 'parent'">
+                  <li
+                    v-if="currentRole === 'admin' || currentRole === 'parent'"
+                  >
                     <router-link
                       to="/post-assignment"
                       class="dropdown-item"
@@ -521,6 +529,12 @@ watch(
 
 .navbar-brand:hover {
   color: #0d6efd;
+}
+
+.logo-image {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .nav-link {

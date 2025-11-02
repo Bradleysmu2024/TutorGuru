@@ -4,6 +4,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { useRoute, useRouter } from "vue-router";
 import { useToast } from "../composables/useToast";
+import { Modal } from "bootstrap";
 import {
   getAssignmentById,
   deleteAssignment,
@@ -44,6 +45,11 @@ const feedbackRating = ref(5);
 const feedbackComment = ref("");
 const feedbackSubmitted = ref(false);
 const currentUser = ref(null);
+
+// Modals for confirmation
+let selectTutorModal = null;
+let rejectApplicationModal = null;
+const pendingAction = ref(null);
 
 const hasReviewed = computed(() => {
   try {
@@ -135,6 +141,17 @@ onMounted(async () => {
     currentUser.value = await getCurrentUser();
   } catch (err) {
     console.warn("Could not get current user for feedback permissions", err);
+  }
+
+  // Initialize confirmation modals
+  const selectElement = document.getElementById("selectTutorModal");
+  if (selectElement) {
+    selectTutorModal = new Modal(selectElement);
+  }
+
+  const rejectElement = document.getElementById("rejectApplicationModal");
+  if (rejectElement) {
+    rejectApplicationModal = new Modal(rejectElement);
   }
 });
 
@@ -267,13 +284,14 @@ const messageTutorFromModal = async () => {
 };
 
 const selectTutorForAssignment = async (application) => {
-  if (
-    !confirm(
-      `Are you sure you want to select ${application.tutorName}? This will close the assignment and reject all other applicants.`
-    )
-  ) {
-    return;
-  }
+  // Store the application data for confirmation
+  pendingAction.value = application;
+  selectTutorModal.show();
+};
+
+const confirmSelectTutor = async () => {
+  const application = pendingAction.value;
+  if (!application) return;
 
   try {
     const result = await approveApplication(
@@ -287,6 +305,9 @@ const selectTutorForAssignment = async (application) => {
         "Tutor selected successfully! The assignment has been closed",
         "Tutor Selected"
       );
+      selectTutorModal.hide();
+      pendingAction.value = null;
+      
       // Reload assignment to reflect changes
       await loadAssignment();
 
@@ -406,21 +427,26 @@ const selectTutorForAssignment = async (application) => {
         `Failed to select tutor: ${result.error}`,
         "Selection Failed"
       );
+      selectTutorModal.hide();
+      pendingAction.value = null;
     }
   } catch (error) {
     console.error("Error selecting tutor:", error);
     toast.error("Failed to select tutor. Please try again", "Error");
+    selectTutorModal.hide();
+    pendingAction.value = null;
   }
 };
 
 const rejectTutorApplication = async (application) => {
-  if (
-    !confirm(
-      `Are you sure you want to reject ${application.tutorName}'s application?`
-    )
-  ) {
-    return;
-  }
+  // Store the application data for confirmation
+  pendingAction.value = application;
+  rejectApplicationModal.show();
+};
+
+const confirmRejectApplication = async () => {
+  const application = pendingAction.value;
+  if (!application) return;
 
   try {
     const result = await rejectApplication(assignment.value.id, application.id);
@@ -430,16 +456,22 @@ const rejectTutorApplication = async (application) => {
         "Application rejected successfully",
         "Application Rejected"
       );
+      rejectApplicationModal.hide();
+      pendingAction.value = null;
       await loadAssignment();
     } else {
       toast.error(
         `Failed to reject application: ${result.error}`,
         "Rejection Failed"
       );
+      rejectApplicationModal.hide();
+      pendingAction.value = null;
     }
   } catch (error) {
     console.error("Error rejecting application:", error);
     toast.error("Failed to reject application. Please try again", "Error");
+    rejectApplicationModal.hide();
+    pendingAction.value = null;
   }
 };
 
@@ -1299,6 +1331,60 @@ onMounted(async () => {
   </div>
 
   <!-- feedback card replaced modal; UI now appended below Assignment Info -->
+
+  <!-- Confirmation Modal for Selecting Tutor -->
+  <div class="modal fade" id="selectTutorModal" tabindex="-1" aria-labelledby="selectTutorModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="selectTutorModalLabel">
+            <i class="bi bi-check-circle me-2"></i>
+            Confirm Tutor Selection
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to select <strong>{{ pendingAction?.tutorName }}</strong>? This will close the assignment and reject all other applicants.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary text-white" @click="confirmSelectTutor">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal for Rejecting Application -->
+  <div class="modal fade" id="rejectApplicationModal" tabindex="-1" aria-labelledby="rejectApplicationModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="rejectApplicationModalLabel">
+            <i class="bi bi-x-circle me-2"></i>
+            Confirm Rejection
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to reject <strong>{{ pendingAction?.tutorName }}</strong>'s application?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary text-white" @click="confirmRejectApplication">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>

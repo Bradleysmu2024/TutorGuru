@@ -1,4 +1,96 @@
 <template>
+  <!-- Add Event Confirmation Modal -->
+  <div v-if="showAddConfirmModal" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Confirm Add Event</h5>
+          <button type="button" class="btn-close" @click="showAddConfirmModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to add this event?</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" @click="showAddConfirmModal = false">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" @click="confirmAddEvent">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Event Confirmation Modal -->
+  <div v-if="showUpdateConfirmModal" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Confirm Update Event</h5>
+          <button type="button" class="btn-close" @click="showUpdateConfirmModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to update this event?</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" @click="showUpdateConfirmModal = false">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" @click="confirmUpdateEvent">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Event Confirmation Modal -->
+  <div v-if="showDeleteConfirmModal" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Confirm Delete Event</h5>
+          <button type="button" class="btn-close" @click="showDeleteConfirmModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to delete this event?</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" @click="showDeleteConfirmModal = false">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" @click="confirmDeleteEvent">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google Sync Confirmation Modal -->
+  <div v-if="showSyncConfirmModal" class="modal d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0">
+          <h5 class="modal-title fw-bold">Google Login Required</h5>
+          <button type="button" class="btn-close" @click="showSyncConfirmModal = false"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Are you sure you want to login to Google to sync calendar?</p>
+        </div>
+        <div class="modal-footer border-0">
+          <button type="button" class="btn btn-secondary" @click="showSyncConfirmModal = false">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-primary" @click="confirmGoogleSync">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <v-row class="fill-height">
     <v-col>
       <v-sheet height="64">
@@ -236,6 +328,13 @@ const start = ref(null);
 const end = ref(null);
 const color = ref("#14B8A6");
 
+// Confirmation modals
+const showAddConfirmModal = ref(false);
+const showUpdateConfirmModal = ref(false);
+const showDeleteConfirmModal = ref(false);
+const showSyncConfirmModal = ref(false);
+const pendingEventData = ref(null);
+
 onMounted(() => {
   calendar.value.checkChange();
 });
@@ -271,12 +370,11 @@ async function getEvents(type) {
 }
 
 async function addEvent() {
-  const result = confirm(
-        "Are you sure you want to add this event?"
-      );
-  if(!result){
-    return
-  }
+  showAddConfirmModal.value = true;
+}
+
+async function confirmAddEvent() {
+  showAddConfirmModal.value = false;
   try {
     const user = JSON.parse(localStorage.getItem("user"));
     if (name.value && start.value && end.value) {
@@ -307,38 +405,40 @@ async function addEvent() {
 }
 
 async function updateEvent(ev) {
-  const result = confirm(
-        "Are you sure you want to update this event?"
-      );
-  if(!result){
-    selectedOpen.value = false;
-  }
+  pendingEventData.value = ev;
+  showUpdateConfirmModal.value = true;
+}
+
+async function confirmUpdateEvent() {
+  showUpdateConfirmModal.value = false;
   try {
     const user = JSON.parse(localStorage.getItem("user"));
     const response = await updateEvent_(
-      this.currentlyEditing,
-      ev.details,
+      currentlyEditing.value,
+      pendingEventData.value.details,
       user.uid
     );
     selectedOpen.value = false;
     currentlyEditing.value = null;
+    pendingEventData.value = null;
   } catch (error) {
     console.error("Error updating event:", error);
   }
 }
 
 async function deleteEvent(ev) {
-  const result = confirm(
-        "Are you sure you want to delete this event?"
-      );
-  if(!result){
-    selectedOpen.value = false;
-  }
+  pendingEventData.value = ev;
+  showDeleteConfirmModal.value = true;
+}
+
+async function confirmDeleteEvent() {
+  showDeleteConfirmModal.value = false;
   try {
     const user = JSON.parse(localStorage.getItem("user"));
-    const response = await deleteEvent_(ev, user.uid);
+    const response = await deleteEvent_(pendingEventData.value, user.uid);
     selectedOpen.value = false;
     await updateRange("", "");
+    pendingEventData.value = null;
   } catch (error) {
     console.error("Error deleting event:", error);
   }
@@ -426,55 +526,78 @@ async function sync_from_google() {
       now >= new Date(user_.expiry) - 5 * 60 * 1000
     ) {
       toast.info("Invalid/Expired Google Token");
-      const result = confirm(
-        "Google Login Required! Are you sure you want to login to Google to sync calendar?"
-      );
-      if (result) {
-        // Confirm to Google Login
-        const response_ = await signInWithGoogle();
-        // console.log(response_)
-        const expiryTime = Date.now() + 3600 * 1000; // 1 hour
-        user_.token = response_.token;
-        user_.expiry = new Date(expiryTime);
-        localStorage.setItem("user", JSON.stringify(user_));
-        await sync_from_google();
-        toast.success("Google Login successful! Calendar has been synced.");
-      }
+      showSyncConfirmModal.value = true;
     } else {
-      // console.log(user_.token, user_.expiry)
-      const response = await firebaseGetEvents(user_.token, "primary", "month");
-      // console.log(response)
-      response.calendar.forEach((event) => {
-        events.push({
-          name: event.summary ?? "(No title)",
-          details: event.description ?? "(No Description)",
-          start: event.start.dateTime,
-          end: event.end.dateTime,
-          colorId: colors_obj[event.colorId] ?? colors_obj.default,
-        });
-        // console.log(event.summary ?? "(No title)", event.description ?? "(No Description)", event.start.dateTime, event.end.dateTime, colors_obj[event.colorId] ?? colors_obj.default)
-      });
-      await clearEvents_("google", user_.uid);
-      // console.log(events)
-      for (let ev of events) {
-        await addEvent_(
-          "google",
-          ev.name,
-          ev.details,
-          ev.start,
-          ev.end,
-          ev.colorId,
-          user_.uid
-        );
-      }
-      await updateRange("", "");
-      toast.success(
-        "Successfully synced from Google Calendar",
-        "Sync Complete"
-      );
+      await performGoogleSync(user_, colors_obj);
     }
   } catch (error) {
     console.error("Error getting event", error);
   }
 }
+
+async function confirmGoogleSync() {
+  showSyncConfirmModal.value = false;
+  try {
+    const colors_obj = {
+      default: "#039be5",
+      1: "#7986cb",
+      2: "#33b679",
+      3: "#8e24aa",
+      4: "#e67c73",
+      5: "#f6bf26",
+      6: "#f4511e",
+      8: "#616161",
+      9: "#3f51b5",
+      10: "#0b8043",
+      11: "#d50000",
+    };
+    const user_ = JSON.parse(localStorage.getItem("user"));
+    const response_ = await signInWithGoogle();
+    const expiryTime = Date.now() + 3600 * 1000; // 1 hour
+    user_.token = response_.token;
+    user_.expiry = new Date(expiryTime);
+    localStorage.setItem("user", JSON.stringify(user_));
+    await performGoogleSync(user_, colors_obj);
+    toast.success("Google Login successful! Calendar has been synced.");
+  } catch (error) {
+    console.error("Error during Google sync:", error);
+  }
+}
+
+async function performGoogleSync(user_, colors_obj) {
+  let events = [];
+  const response = await firebaseGetEvents(user_.token, "primary", "month");
+  response.calendar.forEach((event) => {
+    events.push({
+      name: event.summary ?? "(No title)",
+      details: event.description ?? "(No Description)",
+      start: event.start.dateTime,
+      end: event.end.dateTime,
+      colorId: colors_obj[event.colorId] ?? colors_obj.default,
+    });
+  });
+  await clearEvents_("google", user_.uid);
+  for (let ev of events) {
+    await addEvent_(
+      "google",
+      ev.name,
+      ev.details,
+      ev.start,
+      ev.end,
+      ev.colorId,
+      user_.uid
+    );
+  }
+  await updateRange("", "");
+  toast.success(
+    "Successfully synced from Google Calendar",
+    "Sync Complete"
+  );
+}
 </script>
+
+<style scoped>
+.modal.d-block {
+  display: block !important;
+}
+</style>

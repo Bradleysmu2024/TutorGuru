@@ -55,19 +55,19 @@ const firebaseConfig = {
 console.log(firebaseConfig);
 
 // Initialize Firebase
-// const useEmulators = false;
+const useEmulators = false;
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// // Connect to Firebase Emulators
-// if (useEmulators) {
-//   connectFirestoreEmulator(db, "dodieboy.codes", 8081);
-//   connectAuthEmulator(auth, "http://dodieboy.codes:9091");
-//   connectStorageEmulator(storage, "dodieboy.codes", 9191);
-// }
+// Connect to Firebase Emulators
+if (useEmulators) {
+  connectFirestoreEmulator(db, "dodieboy.codes", 8081);
+  connectAuthEmulator(auth, "http://dodieboy.codes:9091");
+  connectStorageEmulator(storage, "dodieboy.codes", 9191);
+}
 
 // Request permission to access Calendar
 provider.addScope("https://www.googleapis.com/auth/calendar");

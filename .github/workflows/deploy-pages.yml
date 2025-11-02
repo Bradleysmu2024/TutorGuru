@@ -9,6 +9,9 @@ jobs:
   build-and-deploy:
     name: Build and deploy apps/web to GitHub Pages
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
 
     steps:
       - name: Checkout repository
@@ -16,8 +19,6 @@ jobs:
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
-        # run the setup in the web app directory so cache keys and install relate to apps/web
-        working-directory: apps/web
         with:
           node-version: '18'
           cache: 'npm'
@@ -26,11 +27,9 @@ jobs:
 
       - name: Install dependencies (apps/web)
         run: npm ci
-        working-directory: apps/web
 
       - name: Build (apps/web)
         run: npm run build --if-present
-        working-directory: apps/web
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v3

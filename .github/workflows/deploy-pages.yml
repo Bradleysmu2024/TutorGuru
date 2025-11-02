@@ -2,13 +2,14 @@ name: Deploy Web (GitHub Pages)
 
 on:
   push:
-    branches: [ deploy ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     name: Build and deploy apps/web to GitHub Pages
     runs-on: ubuntu-latest
+    environment: GithubPages
     defaults:
       run:
         working-directory: apps/web

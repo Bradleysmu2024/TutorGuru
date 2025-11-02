@@ -98,20 +98,23 @@ exports.api = functions.https.onRequest((req, res) => {
 // Scheduled function to send session reminders
 // Runs every 2 hours to check for sessions happening in 24 hours
 exports.sendSessionReminders = functions.pubsub
-  .schedule('0 */2 * * *')
-  .timeZone('Asia/Singapore')
+  .schedule("0 */2 * * *")
+  .timeZone("Asia/Singapore")
   .onRun(async (context) => {
     try {
       const now = new Date();
-      const twentyFourHoursFromNow = new Date(
-        now.getTime() + 24 * 60 * 60 * 1000
+      // Check for sessions 22-26 hours from now (4-hour window)
+      // This ensures we catch all sessions even with timing precision issues
+      // reminderSent field prevents duplicate emails
+      const twentySixHoursFromNow = new Date(
+        now.getTime() + 26 * 60 * 60 * 1000
       );
-      const twentyThreeHoursFromNow = new Date(
-        now.getTime() + 23 * 60 * 60 * 1000
+      const twentyTwoHoursFromNow = new Date(
+        now.getTime() + 22 * 60 * 60 * 1000
       );
 
       console.log(
-        `Checking for sessions between ${twentyThreeHoursFromNow.toISOString()} and ${twentyFourHoursFromNow.toISOString()}`
+        `Checking for sessions between ${twentyTwoHoursFromNow.toISOString()} and ${twentySixHoursFromNow.toISOString()}`
       );
 
       // Get all users
@@ -135,10 +138,10 @@ exports.sendSessionReminders = functions.pubsub
           // Parse the session start time (ISO string format like "2025-10-27T12:00:00+08:00")
           const sessionTime = new Date(session.start);
 
-          // Check if session is between 23-24 hours from now
+          // Check if session is between 22-26 hours from now
           if (
-            sessionTime >= twentyThreeHoursFromNow &&
-            sessionTime <= twentyFourHoursFromNow
+            sessionTime >= twentyTwoHoursFromNow &&
+            sessionTime <= twentySixHoursFromNow
           ) {
             sessionsFound++;
             console.log(

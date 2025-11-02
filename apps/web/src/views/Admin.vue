@@ -3,6 +3,14 @@
     <h2 class="mb-3">Admin Console</h2>
 
     <section class="mb-4">
+      <h5>Reset Database</h5>
+      <p class="text-muted">Reset the Subjects database to default lists.</p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger" :disabled="resetting" @click="resetSubjects">Reset Subjects</button>
+      </div>
+    </section>
+
+    <section>
       <h5>Users</h5>
       <div class="d-flex mb-3 gap-2 align-items-center">
         <div style="min-width:160px">
@@ -87,14 +95,6 @@
         </div>
       </div>
     </div>
-
-    <section>
-      <h5>Subjects Database</h5>
-      <p class="text-muted">Reset the Subjects database to default lists.</p>
-      <div class="d-flex gap-2">
-        <button class="btn btn-danger" :disabled="resetting" @click="resetSubjects">Reset Subjects Collection</button>
-      </div>
-    </section>
   </div>
 </template>
 

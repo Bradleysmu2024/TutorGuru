@@ -9,10 +9,6 @@ jobs:
   build-and-deploy:
     name: Build and deploy apps/web to GitHub Pages
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
 
     steps:
       - name: Checkout repository
@@ -32,11 +28,8 @@ jobs:
         run: npm run build --if-present
         working-directory: apps/web
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v3
-
-      - name: Upload artifact (dist)
-        uses: actions/upload-pages-artifact@v1
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
         with:
           path: apps/web/dist
 

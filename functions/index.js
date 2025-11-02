@@ -96,10 +96,10 @@ exports.api = functions.https.onRequest((req, res) => {
 });
 
 // Scheduled function to send session reminders
-// Runs daily at 6:00 AM SGT to check for sessions happening in 24 hours
+// Runs every 2 hours to check for sessions happening in 24 hours
 exports.sendSessionReminders = functions.pubsub
-  .schedule("0 6 * * *")
-  .timeZone("Asia/Singapore")
+  .schedule('0 */2 * * *')
+  .timeZone('Asia/Singapore')
   .onRun(async (context) => {
     try {
       const now = new Date();

@@ -152,7 +152,6 @@ router.beforeEach(async (to, from, next) => {
     const allowedRoles = to.meta && to.meta.allowedRoles ? to.meta.allowedRoles : null
     if (allowedRoles && allowedRoles.length > 0) {
       const role = await getUserRole(user.uid)
-      console.log('Route requires role in', allowedRoles, 'user role=', role)
       if (role === 'admin') {
         return next()
       }

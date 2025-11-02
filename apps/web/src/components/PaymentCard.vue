@@ -347,11 +347,11 @@ const processPendingPayment = async () => {
             </div>
           </div>
           <div class="modal-footer border-0">
-            <button type="button" class="btn btn-secondary" @click="cancelPayment">
+            <button type="button" class="btn btn-secondary text-white" @click="cancelPayment">
               Cancel
             </button>
-            <button type="button" class="btn btn-primary" @click="confirmPayment">
-              OK
+            <button type="button" class="btn btn-primary text-white" @click="confirmPayment">
+              Confirm
             </button>
           </div>
         </div>

@@ -16,4 +16,8 @@
     "rules": "apps/web/firestore.rules",
     "indexes": "apps/web/firestore.indexes.json"
   }
+  ,
+  "storage": {
+    "rules": "apps/web/storage.rules"
+  }
 }

@@ -101,6 +101,60 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmationModalLabel">
+              <i class="bi bi-check-circle me-2"></i>
+              Confirm Submission
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">Confirm submission? The parent will see your application.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary text-white" @click="confirmSubmission"> 
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdraw Confirmation Modal -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="withdrawModalLabel">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              Confirm Withdrawal
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">Confirm application withdrawal? The parent will no longer see your application.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary text-white" @click="confirmWithdraw">
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -173,11 +227,20 @@ const application = ref({
 });
 
 let applicationModal = null;
+let confirmationModal = null;
+let withdrawModal = null;
+const pendingWithdrawJobId = ref(null);
 
 onMounted(async () => {
   // Initialize Bootstrap modal
   const modalElement = document.getElementById("applicationModal");
   applicationModal = new Modal(modalElement);
+
+  const confirmElement = document.getElementById("confirmationModal");
+  confirmationModal = new Modal(confirmElement);
+
+  const withdrawElement = document.getElementById("withdrawModal");
+  withdrawModal = new Modal(withdrawElement);
 
   // Load job postings
   await loadJobs();
@@ -530,14 +593,31 @@ const handleSubmitApplication = async () => {
       } else {
         // console.log("No conflicts, safe to accept.");
         toast.info("No conflicts found, safe to accept this assignment.")
+        // Show confirmation modal 
+        applicationModal.hide();
         setTimeout(() => {
-          const cfm_apply = confirm("Confirm submission? The parent will see your application.")
-          if (!cfm_apply) {
-            applicationModal.hide();
-            return;
-          }
-        }, 100);
+          confirmationModal.show();
+        }, 300);
+        return;
       }
+    }
+  } catch (error) {
+    console.error("Error submitting application:", error);
+    toast.error("Failed to submit application. Please try again", "Error");
+  }
+};
+
+const confirmSubmission = async () => {
+  try {
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user || !user.uid) {
+      toast.error(
+        "You must be logged in to apply for assignments",
+        "Authentication Required"
+      );
+      confirmationModal.hide();
+      return;
     }
 
     // Submit application to Firebase
@@ -552,7 +632,7 @@ const handleSubmitApplication = async () => {
         "Your application has been submitted successfully!",
         "Application Submitted"
       );
-      applicationModal.hide();
+      confirmationModal.hide();
 
       // Mark this job as applied for the current user immediately (optimistic update)
       if (selectedJob.value && selectedJob.value.id) {
@@ -568,40 +648,46 @@ const handleSubmitApplication = async () => {
         `Failed to submit application: ${result.error}`,
         "Submission Failed"
       );
+      confirmationModal.hide();
     }
   } catch (error) {
     console.error("Error submitting application:", error);
     toast.error("Failed to submit application. Please try again", "Error");
+    confirmationModal.hide();
   }
 };
 
 // handle Withdraw
 async function handleWithdraw(jobId) {
-  const cfm_withdraw = confirm("Confirm application withdrawl? The parent will no longer see your application.")
-  if (!cfm_withdraw) {
-    return
-  }
+  pendingWithdrawJobId.value = jobId;
+  withdrawModal.show();
+}
+
+async function confirmWithdraw() {
+  const jobId = pendingWithdrawJobId.value;
+  if (!jobId) return;
+
   try {
-  const user = await getCurrentUser();
-  const existingQuery = query(
-    collection(db, "assignments", jobId, "applications"),
-    where("tutorId", "==", user.uid)
-  );
-  const existingSnap = await getDocs(existingQuery);
+    const user = await getCurrentUser();
+    const existingQuery = query(
+      collection(db, "assignments", jobId, "applications"),
+      where("tutorId", "==", user.uid)
+    );
+    const existingSnap = await getDocs(existingQuery);
 
-  await Promise.all(
-    existingSnap.docs.map(docSnap =>
-      deleteDoc(doc(db, "assignments", jobId, "applications", docSnap.id))
-    )
-  );
+    await Promise.all(
+      existingSnap.docs.map(docSnap =>
+        deleteDoc(doc(db, "assignments", jobId, "applications", docSnap.id))
+      )
+    );
 
-  await loadJobs();
+    await loadJobs();
 
-  const updated = { ...userApplications.value }
-  if (updated[jobId]) {
-    delete updated[jobId]
-    userApplications.value = updated
-  }
+    const updated = { ...userApplications.value }
+    if (updated[jobId]) {
+      delete updated[jobId]
+      userApplications.value = updated
+    }
 
   // Mark this job as open for the current user immediately (optimistic update)
   // userApplications.value = {
@@ -612,10 +698,15 @@ async function handleWithdraw(jobId) {
   // Reload jobs to reflect updated status
   
   
-
+    withdrawModal.hide();
+    pendingWithdrawJobId.value = null;
+    toast.success("Application withdrawn successfully", "Withdrawn");
+    
   } catch (error) {
     console.error("Error withdrawal of application:", error);
     toast.error("Failed to withdraw from application. Please try again", "Error");
+    withdrawModal.hide();
+    pendingWithdrawJobId.value = null;
   }
 }
 </script>

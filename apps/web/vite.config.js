@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => {
       vue()
     ],
     define: {
-      'process.env': env // This makes process.env available in your app
+      'process.env': env
+    },
+    preview: {
+      allowedHosts: ['dodieboy.codes']
     },
   }
 })

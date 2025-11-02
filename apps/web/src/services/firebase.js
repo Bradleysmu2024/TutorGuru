@@ -52,8 +52,6 @@ const firebaseConfig = {
   measurementId: process.env.VUE_APP_MEASUREMENT_ID,
 };
 
-console.log(firebaseConfig);
-
 // Initialize Firebase
 const useEmulators = false;
 const app = initializeApp(firebaseConfig);
@@ -129,7 +127,6 @@ export const createAssignment = async (parentId, assignmentData) => {
     const user = auth.currentUser;
     if (!user) throw new Error("User not authenticated");
 
-    // Normalize data with new fields
     const normalizedData = {
       ...assignmentData,
       parentId: parentId || user.uid,
@@ -149,7 +146,6 @@ export const createAssignment = async (parentId, assignmentData) => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Remove any undefined/null values
     Object.keys(normalizedData).forEach((key) => {
       if (normalizedData[key] === undefined || normalizedData[key] === null) {
         delete normalizedData[key];
@@ -167,7 +163,6 @@ export const createAssignment = async (parentId, assignmentData) => {
 
 export const updateAssignment = async (assignmentId, updates) => {
   try {
-    // Normalize numeric fields if present
     const normalizedUpdates = { ...updates };
 
     if ("rate" in updates) normalizedUpdates.rate = Number(updates.rate) || 0;
@@ -187,7 +182,6 @@ export const updateAssignment = async (assignmentId, updates) => {
 
     normalizedUpdates.updatedAt = new Date().toISOString();
 
-    // Remove any undefined/null values
     Object.keys(normalizedUpdates).forEach((key) => {
       if (
         normalizedUpdates[key] === undefined ||
@@ -218,21 +212,12 @@ export const deleteAssignment = async (assignmentId) => {
 };
 
 // ============= APPLICATION FUNCTIONS =============
-
-/**
- * Submit an application for a tutoring assignment
- * @param {string} assignmentId - The ID of the assignment
- * @param {string} tutorId - The ID of the tutor applying
- * @param {Object} applicationData - Application details (coverLetter, startDate)
- * @returns {Promise<Object>} Result with success status
- */
 export const submitApplication = async (
   assignmentId,
   tutorId,
   applicationData
 ) => {
   try {
-    // Prevent duplicate applications from the same tutor
     const existingQuery = query(
       collection(db, "assignments", assignmentId, "applications"),
       where("tutorId", "==", tutorId)
@@ -244,14 +229,12 @@ export const submitApplication = async (
         error: "Tutor has already applied to this assignment",
       };
     }
-    // Get tutor details for the application
     const tutorDoc = await getDoc(doc(db, "users", tutorId));
     if (!tutorDoc.exists()) {
       throw new Error("Tutor profile not found");
     }
     const tutorData = tutorDoc.data();
 
-    // Create the application document
     const application = {
       assignmentId,
       tutorId,
@@ -264,17 +247,15 @@ export const submitApplication = async (
       tutorDocuments: tutorData.uploadedDocuments || [],
       coverLetter: applicationData.coverLetter,
       startDate: applicationData.startDate,
-      status: "pending", // pending, approved, rejected
+      status: "pending",
       appliedAt: new Date().toISOString(),
     };
 
-    // Add to applications subcollection
     const appRef = await addDoc(
       collection(db, "assignments", assignmentId, "applications"),
       application
     );
 
-    // Update assignment status to "pending" if it's currently "open"
     const assignmentDoc = await getDoc(doc(db, "assignments", assignmentId));
     if (assignmentDoc.exists() && assignmentDoc.data().status === "open") {
       await updateDoc(doc(db, "assignments", assignmentId), {
@@ -290,11 +271,6 @@ export const submitApplication = async (
   }
 };
 
-/**
- * Get all applications for a specific assignment
- * @param {string} assignmentId - The ID of the assignment
- * @returns {Promise<Array>} List of applications
- */
 export const getAssignmentApplications = async (assignmentId) => {
   try {
     const q = query(
@@ -309,20 +285,12 @@ export const getAssignmentApplications = async (assignmentId) => {
   }
 };
 
-/**
- * Approve a tutor application and close the assignment
- * @param {string} assignmentId - The ID of the assignment
- * @param {string} applicationId - The ID of the approved application
- * @param {string} tutorId - The ID of the approved tutor
- * @returns {Promise<Object>} Result with success status
- */
 export const approveApplication = async (
   assignmentId,
   applicationId,
   tutorId
 ) => {
   try {
-    // Update the approved application status
     await updateDoc(
       doc(db, "assignments", assignmentId, "applications", applicationId),
       {
@@ -331,7 +299,6 @@ export const approveApplication = async (
       }
     );
 
-    // Update assignment status to "closed" and add selectedTutorId
     await updateDoc(doc(db, "assignments", assignmentId), {
       status: "closed",
       selectedTutorId: tutorId,
@@ -339,7 +306,6 @@ export const approveApplication = async (
       updatedAt: new Date().toISOString(),
     });
 
-    // Get all other applications and reject them
     const applications = await getAssignmentApplications(assignmentId);
     const rejectPromises = applications
       .filter((app) => app.id !== applicationId)
@@ -362,12 +328,6 @@ export const approveApplication = async (
   }
 };
 
-/**
- * Reject a tutor application
- * @param {string} assignmentId - The ID of the assignment
- * @param {string} applicationId - The ID of the application to reject
- * @returns {Promise<Object>} Result with success status
- */
 export const rejectApplication = async (assignmentId, applicationId) => {
   try {
     await updateDoc(
@@ -386,7 +346,6 @@ export const rejectApplication = async (assignmentId, applicationId) => {
 
 export const getParentAssignments = async (parentId) => {
   try {
-    // Fetch assignments for parentId without server-side ordering to avoid composite index requirements.
     const q = query(
       collection(db, "assignments"),
       where("parentId", "==", parentId)
@@ -422,7 +381,6 @@ export const getAssignmentById = async (id) => {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      // IMPORTANT: Make sure ID is included
       return {
         id: docSnap.id,
         ...docSnap.data(),
@@ -435,13 +393,6 @@ export const getAssignmentById = async (id) => {
   }
 };
 
-/**
- * Calculate a tutor's average rating from all closed assignments where they were selected.
- * Scans assignments with selectedTutorId == tutorId and status == 'closed',
- * collects numeric ratings from each assignment.review (array) and returns the average.
- * @param {string} tutorId
- * @returns {Promise<{success: boolean, average?: number, count?: number, sum?: number, error?: string}>}
- */
 export const calculateTutorRating = async (tutorId) => {
   try {
     if (!tutorId) return { success: false, error: "Missing tutorId" };
@@ -583,11 +534,7 @@ export const signInWithGoogle = async () => {
     const credential = GoogleAuthProvider.credentialFromResult(userCredential);
     const token = credential.accessToken;
 
-    // The signed-in user info. firebase user info
     const user = userCredential.user;
-
-    // IdP data available using getAdditionalUserInfo(result)
-    const additionalUserInfo = getAdditionalUserInfo(userCredential);
 
     const expiryTime = Date.now() + 3600 * 1000; // 1 hour
 
@@ -691,9 +638,8 @@ export const getEvents = async (token, calendarId = "primary", type) => {
       case "week":
         const firstDayOfWeek = new Date(now);
         const lastDayOfWeek = new Date(now);
-        // assuming week starts on Monday
         const dayOfWeek = now.getDay(); // Sunday = 0, Monday = 1, ...
-        const diffToMonday = (dayOfWeek + 6) % 7; // Monday offset
+        const diffToMonday = (dayOfWeek + 6) % 7;
         firstDayOfWeek.setDate(now.getDate() - diffToMonday);
         firstDayOfWeek.setHours(0, 0, 0, 0);
         lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
@@ -727,7 +673,6 @@ export const getEvents = async (token, calendarId = "primary", type) => {
         );
         break;
     }
-    // console.log(calStart, calEnd)
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?singleEvents=true&orderBy=startTime&timeMin=${calStart}&timeMax=${calEnd}`,
       {
@@ -739,7 +684,6 @@ export const getEvents = async (token, calendarId = "primary", type) => {
       }
     );
     const data = await response.json();
-    // console.log(data)
     data.items.forEach((element) => {
       console.log(
         element.start.dateTime,
@@ -907,8 +851,6 @@ export const patchEvent = async (
   event
 ) => {
   try {
-    // no fixed requirement on fields in event, able to patch one field without overwriting the whole event
-
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`,
       {
@@ -972,7 +914,6 @@ export const getEvent_ = async (type, userId) => {
     const userRef = doc(db, "users", userId);
     const response = await getDoc(userRef);
     const data = response.data();
-    // console.log(data.calendar)
     switch (type) {
       case "calendar": {
         return data.calendar;
@@ -1000,13 +941,43 @@ export const addEvent_ = async (
   color,
   userId
 ) => {
+  function generateUUID() {
+  // Modern browsers and Node 19+
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  // Browser fallback using getRandomValues
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+  }
+
+  // Node.js fallback using require('crypto')
+  try {
+    const { randomBytes } = require('crypto');
+    const bytes = randomBytes(16);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.substr(0,8)}-${hex.substr(8,4)}-${hex.substr(12,4)}-${hex.substr(16,4)}-${hex.substr(20,12)}`;
+  } catch (err) {
+    // Last resort (non-crypto random)
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+}
   try {
     const userRef = doc(db, "users", userId);
     switch (type) {
       case "calendar": {
         const response = await updateDoc(userRef, {
           calendar: arrayUnion({
-            id: "calendar_" + crypto.randomUUID(),
+            id: "calendar_" + generateUUID(),
             name: name,
             details: details,
             start: start,
@@ -1021,7 +992,7 @@ export const addEvent_ = async (
       case "google": {
         const response = await updateDoc(userRef, {
           googleCal: arrayUnion({
-            id: "google_" + crypto.randomUUID(),
+            id: "google_" + generateUUID(),
             name: name,
             details: details,
             start: start,
@@ -1084,7 +1055,6 @@ export const updateEvent_ = async (currentlyEditing, details, userId) => {
 // delete event
 export const deleteEvent_ = async (ev, userId) => {
   try {
-    // console.log(ev)
     const userRef = doc(db, "users", userId);
     const snap = await getDoc(userRef);
     const type = ev.split("_")[0];
@@ -1144,7 +1114,7 @@ export const clearEvents_ = async (type, userId) => {
 
 export const getSubjects = async () => {
   try {
-    const docRef = doc(db, "Subjects", "subject"); // Note: capital 'S' in Subjects
+    const docRef = doc(db, "Subjects", "subject");
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
@@ -1166,14 +1136,9 @@ export const getLevels = async () => {
 
     if (docSnap.exists()) {
       const data = docSnap.data().list || [];
-
-      // Check if data is in new nested format (array of objects with 'name' field)
       if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
-        // Extract just the level names for backward compatibility
         return data.map((level) => level.name);
       }
-
-      // If still in old format (array of strings), return as-is
       return data;
     } else {
       console.log("No levels found!");
@@ -1251,7 +1216,6 @@ export const getCurrentUser = async () => {
       const removeListener = onAuthStateChanged(
         auth,
         (user) => {
-          // unsubscribe immediately after receiving the value
           if (typeof removeListener === "function") removeListener();
           resolve(user);
         },
@@ -1306,12 +1270,6 @@ export const getUsernameById = async (uid) => {
   }
 };
 
-/**
- * Upload user avatar to Storage, update users/{uid}.avatar and delete previous avatar file if present.
- * @param {string} uid
- * @param {File} file
- * @param {string} folder - storage folder (e.g., 'tutors' or 'parents')
- */
 export const uploadUserAvatar = async (uid, file, folder = "users") => {
   try {
     if (!uid) throw new Error("Missing uid");
@@ -1327,10 +1285,8 @@ export const uploadUserAvatar = async (uid, file, folder = "users") => {
     const snapshot = await uploadBytes(storageRef, file);
     const url = await getDownloadURL(snapshot.ref);
 
-    // update user doc
     await setUserDoc(uid, { avatar: url }, { merge: true });
 
-    // attempt to delete old avatar if it looks like a firebase storage URL
     if (oldUrl && oldUrl.includes("firebasestorage.googleapis.com")) {
       try {
         const parts = oldUrl.split("/o/");
@@ -1412,7 +1368,7 @@ export const createPaymentRecord = async (assignmentId, paymentData) => {
       status: "pending",
       paymentType: paymentData.paymentType || "full",
       totalMonths: paymentData.totalMonths || 1,
-      monthNumber: paymentData.monthNumber || 1, // Which month this payment is for
+      monthNumber: paymentData.monthNumber || 1,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -1505,10 +1461,6 @@ export const getPaymentSummary = async (assignmentId) => {
   }
 };
 
-/**
- * Submit feedback/review for a completed assignment
- * Stores a review document in top-level `reviews` collection.
- */
 export const submitFeedback = async (assignmentId, rating, comment) => {
   try {
     if (!assignmentId) return { success: false, error: "Missing assignmentId" };

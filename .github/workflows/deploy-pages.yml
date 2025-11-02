@@ -22,7 +22,7 @@ jobs:
           super_secret: ${{ secrets.VUE_APP_API_KEY }}
         if: ${{ env.super_secret == '' }}
         run: |
-          echo "ERROR: secret VUE_APP_API_KEY is not set."
+          echo "ERROR: secret VUE_APP_API_KEY is not set"
           echo "Please add it at: Settings -> Secrets -> Actions"
           exit 1
 

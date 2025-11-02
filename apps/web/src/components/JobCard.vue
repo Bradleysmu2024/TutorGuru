@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-import { defineProps, computed } from "vue";
+import { computed } from "vue";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import StatusBadge from "./StatusBadge.vue";

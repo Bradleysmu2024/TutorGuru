@@ -12,5 +12,6 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': env // This makes process.env available in your app
     },
+    base: '/TutorGuru/'
   }
 })

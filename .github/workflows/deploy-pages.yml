@@ -17,11 +17,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: "check is VUE_APP_API_KEY exists"
-        env: 
-            super_secret: ${{ secrets.VUE_APP_API_KEY }}
-        if: ${{ env.super_secret == '' }}
-        run: 'echo "echo the secret \"VUE_APP_API_KEY\" has not been made; echo please go to \"settings \> secrets \> actions\" to create it"
+      - name: Check VUE_APP_API_KEY exists
+        if: ${{ secrets.VUE_APP_API_KEY == '' }}
+        run: |
+          echo "ERROR: secret VUE_APP_API_KEY is not set."
+          echo "Please add it at: Settings -> Secrets -> Actions"
+          exit 1
 
       - name: Create .env from secret
         run: |

@@ -1,6 +1,9 @@
 name: Deploy Web (GitHub Pages)
 
-on: [push]
+on:
+  push:
+    branches: [ deploy ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -11,12 +14,24 @@ jobs:
         working-directory: apps/web
 
     steps:
-      - uses: actions/checkout@v2
-      - id: Build-Vue
-        uses: xRealNeon/VuePagesAction@1.0.1
-        run:
-          working-directory: apps/web
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          username: 'dodieboy'
-          reponame: 'TutorGuru'
-          token: ${{ secrets.GITHUB_TOKEN }} # Leave this line unchanged
+          node-version: '18'
+
+      - name: Install dependencies (apps/web)
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Build (apps/web)
+        run: npm run build --if-present
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./apps/web/dist
+          publish_branch: gh-pages

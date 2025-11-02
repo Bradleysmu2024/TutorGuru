@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, defineExpose, nextTick } from "vue";
+import { onMounted, ref } from "vue";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
 const props = defineProps({

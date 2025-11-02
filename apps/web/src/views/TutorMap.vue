@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineExpose, nextTick } from "vue";
+import { ref, onMounted } from "vue";
 import { db } from "../services/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
@@ -112,7 +112,6 @@ async function searchTutorLocation(postalCode) {
     if (status === "OK" && results[0]) {
       const location = results[0].geometry.location;
 
-      // If marker already exists → move it
       if (tutorMarker.value) {
         tutorMarker.value.setPosition(location);
       } else {
@@ -127,7 +126,6 @@ async function searchTutorLocation(postalCode) {
       map.value.setCenter(location);
       map.value.setZoom(15);
 
-      // Save locally
       localStorage.setItem(
         "tutorLocation",
         JSON.stringify({

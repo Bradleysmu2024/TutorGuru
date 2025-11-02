@@ -54,9 +54,9 @@ jobs:
         run: |
           npm ci
 
-      - name: Build (apps/web)
-        # pass Vite base option so assets are built for GitHub Pages repo path
-        run: npm run build --if-present -- --base /TutorGuru/
+      # - name: Build (apps/web)
+      #   # pass Vite base option so assets are built for GitHub Pages repo path
+      #   run: npm run build --if-present -- --base /TutorGuru/
 
       - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v3

@@ -42,9 +42,9 @@
         <ul class="list-group">
           <li v-for="t in visibleUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
             <div>
-              <strong>{{ t.name || t.username || t.email }}</strong>
+              <strong>{{ t.name }}</strong>
               <div class="text-muted small">{{ t.email }}</div>
-              <div class="text-muted small">Role: <strong>{{ t.role || 'tutor' }}</strong></div>
+              <div class="text-muted small">Role: <strong>{{ t.role }}</strong></div>
               <div class="text-muted small">Verified: <strong>{{ t.verified ? 'Yes' : 'No' }}</strong></div>
             </div>
             <div class="d-flex gap-2">
@@ -363,5 +363,27 @@ onMounted(() => {
   .toolbar-grid .form-control,
   .toolbar-grid .form-select,
   .toolbar-grid .btn { width: 100%; }
+  .list-group-item.d-flex {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  .list-group-item.d-flex > div:first-child {
+    flex: 0 0 60%;
+    max-width: 60%;
+  }
+
+  .list-group-item.d-flex > div:last-child {
+    flex: 0 0 35%;
+    max-width: 35%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .list-group-item.d-flex > div:last-child .btn {
+    flex: 0 0 auto;
+  }
 }
 </style>

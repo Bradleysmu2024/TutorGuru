@@ -50,6 +50,7 @@
                   class="rounded-circle me-3"
                   width="64"
                   height="64"
+                  style=" object-fit: cover"
                 />
                 <div>
                   <h5 class="mb-0">{{ t.name }}</h5>

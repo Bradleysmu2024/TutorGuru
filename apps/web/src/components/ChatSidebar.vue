@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="text-center mb-3">
-      <img :src="currentProfile.avatar || defaultAvatar" class="rounded-circle mb-2" width="100" height="100"/>
+      <img :src="currentProfile.avatar || defaultAvatar" class="rounded-circle mb-2" width="100" height="100" style=" object-fit: cover"/>
       <h5>{{ currentProfile.name || 'You' }}</h5>
     </div>
 

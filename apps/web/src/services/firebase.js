@@ -55,7 +55,7 @@ const firebaseConfig = {
 console.log(firebaseConfig);
 
 // Initialize Firebase
-const useEmulators = true;
+const useEmulators = false;
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);

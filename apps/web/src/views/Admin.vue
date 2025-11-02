@@ -103,11 +103,9 @@ import { ref, onMounted, computed } from 'vue'
 import { db, setUserDoc } from '../services/firebase'
 import { collection, query, where, getDocs, setDoc, doc, deleteDoc } from 'firebase/firestore'
 import { useToast } from '../composables/useToast'
-import { useRouter } from 'vue-router'
 import LoadingState from '../components/LoadingState.vue'
 
 const toast = useToast()
-const router = useRouter()
 
 const users = ref([])
 const loadingUser = ref(false)
@@ -116,7 +114,6 @@ const roleFilter = ref('all')
 const searchQuery = ref('')
 const pageSize = ref(10)
 
-// full filtered list (used for counts/empty-state)
 const filteredAll = computed(() => {
   const q = (searchQuery.value || '').trim().toLowerCase()
   return users.value.filter(u => {
@@ -129,7 +126,6 @@ const filteredAll = computed(() => {
   })
 })
 
-// sliced list to display on-screen according to pageSize
 const visibleUsers = computed(() => {
   return filteredAll.value.slice(0, pageSize.value)
 })
@@ -138,7 +134,6 @@ const visibleUsers = computed(() => {
   loadingUser.value = true
   users.value = []
   try {
-    // load all users; client-side filtering will handle role/search
       const q = query(collection(db, 'users'))
       const snap = await getDocs(q)
       users.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))

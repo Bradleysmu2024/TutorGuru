@@ -23,6 +23,7 @@ import "leaflet/dist/leaflet.css";
 import PaymentCard from "../components/PaymentCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import LoadingState from "../components/LoadingState.vue";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const toast = useToast();
 const route = useRoute();
@@ -892,7 +893,7 @@ onMounted(async () => {
                       <img
                         :src="
                           application.tutorAvatar ||
-                          '/src/assets/images/profileplaceholder.JPG'
+                          defaultAvatar
                         "
                         alt="Tutor"
                         class="rounded-circle img-fluid mb-2"
@@ -1135,7 +1136,7 @@ onMounted(async () => {
               <img
                 :src="
                   selectedApplicant.tutorAvatar ||
-                  '/src/assets/images/profileplaceholder.JPG'
+                  defaultAvatar
                 "
                 alt="Tutor"
                 class="rounded-circle mb-3"

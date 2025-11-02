@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="text-center mb-3">
-      <img :src="currentProfile.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle mb-2" width="100" height="100"/>
+      <img :src="currentProfile.avatar || defaultAvatar" class="rounded-circle mb-2" width="100" height="100"/>
       <h5>{{ currentProfile.name || 'You' }}</h5>
     </div>
 
@@ -11,7 +11,7 @@
       <li v-for="user in filteredUsers" :key="user.id"
           @click="$emit('selectChat', user)"
           :class="['list-group-item d-flex align-items-center list-group-item-action', user.id === props.selectedId ? 'selected-chat' : '']">
-            <img :src="user.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="40" height="40"/>
+            <img :src="user.avatar || defaultAvatar" class="rounded-circle me-2" width="40" height="40"/>
         <div>
           <strong>{{ user.name }}</strong>
           <div class="small text-muted">{{ user.bio || 'No bio available' }}</div>
@@ -36,10 +36,12 @@ const initialized = ref(false)
 const currentProfile = ref({ name: '', avatar: '', username: '' })
 let authUnsubscribe = null
 
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
+
 const enrichItems = async (items) => {
   return Promise.all(items.map(async (item) => {
     if (!item || !item.id) return item
-    const needsEnrich = item.name === 'Unknown' || !item.bio || item.avatar === '/src/assets/images/profileplaceholder.JPG'
+    const needsEnrich = item.name === 'Unknown' || !item.bio || item.avatar === defaultAvatar
     if (!needsEnrich) return item
     try {
       const u = await getUserDoc(item.id)
@@ -89,7 +91,7 @@ const loadChats = async () => {
             id: otherUid,
             name: participant.name || 'Unknown User',
             username: participant.username || '',
-            avatar: participant.avatar || '/src/assets/images/profileplaceholder.JPG',
+            avatar: participant.avatar || defaultAvatar,
             lastMessage: data.lastMessage || '',
             bio: participant.bio || ''
           }

@@ -19,7 +19,7 @@
                 <img
                   :src="
                     profile.avatar ||
-                    '/src/assets/images/profileplaceholder.JPG'
+                    defaultAvatar
                   "
                   alt="Profile"
                   class="rounded-circle img-fluid"
@@ -384,6 +384,7 @@ import { uploadUserAvatar } from "../services/firebase";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 import { useToast } from "../composables/useToast";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const toast = useToast();
 const fileUploadRef = ref(null);

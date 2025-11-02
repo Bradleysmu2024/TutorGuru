@@ -15,6 +15,7 @@ import { getParentAssignments } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 import { useToast } from "../composables/useToast";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const toast = useToast();
 const profile = ref({
@@ -181,7 +182,7 @@ onMounted(async () => {
               <div class="profile-avatar mb-3">
                 <img
                   :src="
-                    profile.avatar || '../assets/images/profileplaceholder.JPG'
+                    profile.avatar || defaultAvatar
                   "
                   alt="Profile"
                   class="rounded-circle img-fluid"

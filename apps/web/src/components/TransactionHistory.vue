@@ -12,7 +12,7 @@ const props = defineProps({
   userType: {
     type: String,
     required: true,
-    validator: (value) => ["parent", "tutor"].includes(value),
+    validator: (value) => ["parent", "tutor", "admin"].includes(value),
   },
 });
 

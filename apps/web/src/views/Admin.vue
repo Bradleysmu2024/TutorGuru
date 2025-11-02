@@ -3,6 +3,14 @@
     <h2 class="mb-3">Admin Console</h2>
 
     <section class="mb-4">
+      <h5>Reset Database</h5>
+      <p class="text-muted">Reset the Subjects database to default lists.</p>
+      <div class="d-flex gap-2">
+        <button class="btn btn-danger" :disabled="resetting" @click="resetSubjects">Reset Subjects</button>
+      </div>
+    </section>
+
+    <section>
       <h5>Users</h5>
       <div class="d-flex mb-3 gap-2 align-items-center">
         <div style="min-width:160px">
@@ -11,6 +19,13 @@
             <option value="tutor">tutor</option>
             <option value="admin">admin</option>
             <option value="parent">parent</option>
+          </select>
+        </div>
+        <div style="min-width:140px">
+          <select class="form-select" v-model="pageSize" aria-label="Users per page" title="Users per page">
+            <option :value="10">10 per page</option>
+            <option :value="20">20 per page</option>
+            <option :value="50">50 per page</option>
           </select>
         </div>
         <div class="flex-grow-1">
@@ -22,9 +37,10 @@
       </div>
       <LoadingState :loading="loadingUser" message="Loading users..." color="primary" />
       <div v-if="!loadingUser">
-        <div v-if="filteredUsers.length === 0" class="text-muted">No users found.</div>
+        <div v-if="filteredAll.length === 0" class="text-muted">No users found.</div>
+        <div class="mb-2 text-muted small">Showing {{ visibleUsers.length }} of {{ filteredAll.length }}</div>
         <ul class="list-group">
-          <li v-for="t in filteredUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
+          <li v-for="t in visibleUsers" :key="t.id" class="list-group-item d-flex justify-content-between align-items-center">
             <div>
               <strong>{{ t.name || t.username || t.email }}</strong>
               <div class="text-muted small">{{ t.email }}</div>
@@ -79,14 +95,6 @@
         </div>
       </div>
     </div>
-
-    <section>
-      <h5>Subjects Database</h5>
-      <p class="text-muted">Reset the Subjects database to default lists.</p>
-      <div class="d-flex gap-2">
-        <button class="btn btn-danger" :disabled="resetting" @click="resetSubjects">Reset Subjects Collection</button>
-      </div>
-    </section>
   </div>
 </template>
 
@@ -95,19 +103,18 @@ import { ref, onMounted, computed } from 'vue'
 import { db, setUserDoc } from '../services/firebase'
 import { collection, query, where, getDocs, setDoc, doc, deleteDoc } from 'firebase/firestore'
 import { useToast } from '../composables/useToast'
-import { useRouter } from 'vue-router'
 import LoadingState from '../components/LoadingState.vue'
 
 const toast = useToast()
-const router = useRouter()
 
 const users = ref([])
 const loadingUser = ref(false)
 const resetting = ref(false)
 const roleFilter = ref('all')
 const searchQuery = ref('')
+const pageSize = ref(10)
 
-const filteredUsers = computed(() => {
+const filteredAll = computed(() => {
   const q = (searchQuery.value || '').trim().toLowerCase()
   return users.value.filter(u => {
     if (roleFilter.value && roleFilter.value !== 'all' && (u.role || 'tutor') !== roleFilter.value) return false
@@ -119,11 +126,14 @@ const filteredUsers = computed(() => {
   })
 })
 
+const visibleUsers = computed(() => {
+  return filteredAll.value.slice(0, pageSize.value)
+})
+
     async function loadUser() {
   loadingUser.value = true
   users.value = []
   try {
-    // load all users; client-side filtering will handle role/search
       const q = query(collection(db, 'users'))
       const snap = await getDocs(q)
       users.value = snap.docs.map(d => ({ id: d.id, ...d.data() }))

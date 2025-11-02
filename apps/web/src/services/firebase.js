@@ -1192,12 +1192,9 @@ export const getLevelsWithGrades = async () => {
     if (docSnap.exists()) {
       const data = docSnap.data().list || [];
 
-      // Check if data is in new nested format (array of objects)
       if (data.length > 0 && typeof data[0] === "object" && data[0].name) {
-        return data; // Return full nested structure
+        return data;
       }
-
-      // If still in old format, return empty array
       console.warn(
         "Levels data is in old format. Please update Firestore structure."
       );

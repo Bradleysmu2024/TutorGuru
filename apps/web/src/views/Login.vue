@@ -52,7 +52,6 @@ const handleLogin = async () => {
 
     // route based on role
     const role = await getUserRole(user.uid);
-    console.log("Login successful:", user, "role=", role);
     toast.success("Login successful!", "Welcome Back");
     if (role === "parent") {
       router.push("/parent-dashboard");

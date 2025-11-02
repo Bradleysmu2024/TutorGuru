@@ -22,8 +22,6 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          # ensure cache key is derived from the lockfile in apps/web
-          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies (apps/web)
         run: npm ci

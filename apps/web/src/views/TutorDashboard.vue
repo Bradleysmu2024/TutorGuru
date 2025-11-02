@@ -21,11 +21,43 @@
       </div>
 
       <div v-else class="row g-4">
-        <div v-for="job in filteredJobs" :key="job.id" class="col-md-6 col-lg-4">
+        <div
+          v-for="job in paginatedJobs"
+          :key="job.id"
+          class="col-md-6 col-lg-4"
+        >
           <!-- pass the current user's application status for this job (if any) -->
           <JobCard :job="job" :appliedStatus="userApplications[job.id]" @apply="handleApply"
             @withdraw="handleWithdraw" />
         </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div
+        v-if="filteredJobs.length > 0"
+        class="d-flex justify-content-center align-items-center mt-4 gap-2"
+      >
+        <button
+          class="btn btn-outline-primary btn-sm"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          <i class="bi bi-chevron-left"></i>
+          Previous
+        </button>
+
+        <span class="text-muted mx-3">
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+
+        <button
+          class="btn btn-outline-primary btn-sm"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          Next
+          <i class="bi bi-chevron-right"></i>
+        </button>
       </div>
     </div>
 
@@ -75,6 +107,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { Modal } from "bootstrap";
+import { useRoute } from "vue-router";
 import SearchFilter from "../components/SearchFilter.vue";
 import JobCard from "../components/JobCard.vue";
 import LoadingState from "../components/LoadingState.vue";
@@ -99,6 +132,7 @@ import {
 import { db, auth } from "../services/firebase";
 import { getCurrentUser } from "../services/firebase";
 
+const route = useRoute();
 const toast = useToast();
 const subjects = ref([]);
 const levels = ref([]);
@@ -108,6 +142,11 @@ onMounted(async () => {
   subjects.value = await getSubjects();
   levels.value = ["All Levels", ...(await getLevels())];
   locations.value = await getLocations();
+  
+  // Apply search query from route if present
+  if (route.query.search) {
+    filters.value.search = route.query.search;
+  }
 });
 
 const loading = ref(false);
@@ -119,6 +158,10 @@ const filters = ref({
   status: "",
   search: "",
 });
+
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = ref(9); // 9 cards (3x3 grid)
 
 // Map assignmentId -> application status for current user
 const userApplications = ref({});
@@ -257,8 +300,20 @@ const filteredJobs = computed(() => {
   });
 });
 
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredJobs.value.length / itemsPerPage.value);
+});
+
+const paginatedJobs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredJobs.value.slice(start, end);
+});
+
 const updateFilters = (newFilters) => {
   filters.value = { ...newFilters };
+  currentPage.value = 1; // Reset to first page when filters change
 };
 
 const handleApply = (jobId) => {
@@ -328,7 +383,7 @@ const handleSubmitApplication = async () => {
         })
       }
 
-      return assignments
+      return assignments;
     }
 
     function getWeekdayDatesInRange(startDate, endDate, weekdays) {
@@ -362,13 +417,13 @@ const handleSubmitApplication = async () => {
         Saturday: 6,
       };
 
-      const weekdays = assignment.selectedDays.map(day => days_obj[day]);
+      const weekdays = assignment.selectedDays.map((day) => days_obj[day]);
       const dates = getWeekdayDatesInRange(start, end, weekdays);
 
       const [startHour, startMin] = assignment.sessionStartTime.split(':').map(Number);
       const durationMin = assignment.sessionDuration * 60;
 
-      return dates.map(date => {
+      return dates.map((date) => {
         const startTime = new Date(date);
         startTime.setHours(startHour, startMin, 0, 0);
         const endTime = new Date(startTime.getTime() + durationMin * 60 * 1000);
@@ -383,7 +438,7 @@ const handleSubmitApplication = async () => {
     // ...
     // ]
     function expandCalendarEvents(calendarEvents) {
-      return calendarEvents.map(ev => ({
+      return calendarEvents.map((ev) => ({
         startTime: new Date(ev.start),
         endTime: new Date(ev.end)
       }));
@@ -406,7 +461,7 @@ const handleSubmitApplication = async () => {
 
       // Check if any new session overlaps
       for (const newSession of newSessions) {
-        if (allExistingSessions.some(old => isOverlapping(old, newSession))) {
+        if (allExistingSessions.some((old) => isOverlapping(old, newSession))) {
           return true;
         }
       }
@@ -471,8 +526,7 @@ const handleSubmitApplication = async () => {
       if (conflict) {
         toast.warning("Schedule conflict detected! Unable to apply for this assignment.");
         applicationModal.hide();
-        return
-
+        return;
       } else {
         // console.log("No conflicts, safe to accept.");
         toast.info("No conflicts found, safe to accept this assignment.")
@@ -480,9 +534,9 @@ const handleSubmitApplication = async () => {
           const cfm_apply = confirm("Confirm submission? The parent will see your application.")
           if (!cfm_apply) {
             applicationModal.hide();
-            return
+            return;
           }
-        }, 100)
+        }, 100);
       }
     }
 
@@ -565,3 +619,30 @@ async function handleWithdraw(jobId) {
   }
 }
 </script>
+
+<style scoped>
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.btn-outline-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pagination styling */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 576px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+</style>

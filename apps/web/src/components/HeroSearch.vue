@@ -68,7 +68,7 @@ onUnmounted(() => {
 
 <style scoped>
 .hero-search-section {
-  background-image: url("/src/assets/images/background.jpg");
+  background-image: url("../assets/images/background.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

@@ -12,7 +12,7 @@
                   <img
                     :src="
                       profile.avatar ||
-                      '/src/assets/images/profileplaceholder.JPG'
+                      defaultAvatar
                     "
                     alt="Profile"
                     class="rounded-circle img-fluid"
@@ -274,6 +274,7 @@ import { useRoute } from "vue-router";
 import router from "../router/routes";
 import { useToast } from "../composables/useToast";
 import TransactionHistory from "../components/TransactionHistory.vue";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const toast = useToast();
 

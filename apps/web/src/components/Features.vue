@@ -64,7 +64,7 @@
 
 <style scoped>
 .features-section {
-  background-image: url("/src/assets/images/bg-feature.jpg");
+  background-image: url("../assets/images/bg-feature.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

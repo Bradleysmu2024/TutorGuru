@@ -291,6 +291,17 @@
                   Dashboard
                 </router-link>
               </li>
+              <li class="nav-item">
+                <router-link
+                  to="/top-tutors"
+                  class="nav-link"
+                  active-class="active"
+                  @click="closeNavbar"
+                >
+                  <i class="bi bi-trophy me-1"></i>
+                  Top Tutors
+                </router-link>
+              </li>
 
               <!-- Assignments dropdown for parent (shows Post Assignment) -->
               <li class="nav-item dropdown">

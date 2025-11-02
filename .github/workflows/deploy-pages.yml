@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: "check is VUE_APP_API_KEY exists"
         env: 
             super_secret: ${{ secrets.VUE_APP_API_KEY }}

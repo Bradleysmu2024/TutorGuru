@@ -318,10 +318,18 @@
                       </div>
                     </div>
                     <div>
-                      <button class="btn btn-sm btn-outline-primary me-2">
+                      <button 
+                        class="btn btn-sm btn-outline-primary me-2"
+                        @click="previewDocument(docItem.url)"
+                        title="View document"
+                      >
                         <i class="bi bi-eye"></i>
                       </button>
-                      <button class="btn btn-sm btn-outline-danger">
+                      <button 
+                        class="btn btn-sm btn-outline-danger"
+                        @click="deleteDocument(index)"
+                        title="Delete document"
+                      >
                         <i class="bi bi-trash"></i>
                       </button>
                     </div>
@@ -592,6 +600,42 @@ const openEmailChangeModal = () => {
 const handleEmailChanged = (newEmail) => {
   // Update local profile email state
   profile.value.email = newEmail;
+};
+
+const previewDocument = (url) => {
+  if (url && url !== "#") {
+    window.open(url, "_blank");
+  } else {
+    toast.warning("Document URL not available", "Preview Error");
+  }
+};
+
+const deleteDocument = async (index) => {
+  const user = auth.currentUser;
+  if (!user) {
+    return toast.error(
+      "You must be logged in to delete documents",
+      "Authentication Required"
+    );
+  }
+
+  if (!confirm("Are you sure you want to delete this document?")) {
+    return;
+  }
+
+  try {
+    // Remove from local array
+    uploadedDocuments.value.splice(index, 1);
+    
+    // Update Firestore
+    const tutorRef = doc(db, "users", user.uid);
+    await updateDoc(tutorRef, { uploadedDocuments: uploadedDocuments.value });
+    
+    toast.success("Document deleted successfully!", "Document Deleted");
+  } catch (err) {
+    console.error("Delete error:", err);
+    toast.error("Failed to delete document. Please try again", "Delete Error");
+  }
 };
 </script>
 

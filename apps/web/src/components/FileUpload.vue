@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from "vue";
+import { ref } from "vue";
 import { useToast } from "../composables/useToast";
 
 const toast = useToast();
@@ -208,7 +208,6 @@ defineExpose({
 
 .upload-area:hover {
   border-color: #0d6efd;
-  background-color: #f8f9fa;
 }
 
 .upload-area.drag-over {

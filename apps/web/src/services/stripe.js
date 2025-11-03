@@ -1,4 +1,6 @@
 import { loadStripe } from '@stripe/stripe-js'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from './firebase'
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
 
@@ -61,9 +63,14 @@ export const createPaymentSession = async (assignmentData) => {
     const data = await response.json()
     console.log('Session data:', data)
 
-    if (!data.url) {
+    if (!data.url || !data.sessionId) {
       throw new Error('No checkout URL from server')
     }
+
+    // Store the session ID in the payment record
+    await updateDoc(doc(db, 'payments', paymentId), {
+      stripeSessionId: data.sessionId
+    })
 
     window.location.href = data.url
     

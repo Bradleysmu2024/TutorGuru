@@ -21,11 +21,43 @@
       </div>
 
       <div v-else class="row g-4">
-        <div v-for="job in filteredJobs" :key="job.id" class="col-md-6 col-lg-4">
+        <div
+          v-for="job in paginatedJobs"
+          :key="job.id"
+          class="col-md-6 col-lg-4"
+        >
           <!-- pass the current user's application status for this job (if any) -->
           <JobCard :job="job" :appliedStatus="userApplications[job.id]" @apply="handleApply"
             @withdraw="handleWithdraw" />
         </div>
+      </div>
+
+      <!-- Pagination Controls -->
+      <div
+        v-if="filteredJobs.length > 0"
+        class="d-flex justify-content-center align-items-center mt-4 gap-2"
+      >
+        <button
+          class="btn btn-outline-primary btn-sm"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        >
+          <i class="bi bi-chevron-left"></i>
+          Previous
+        </button>
+
+        <span class="text-muted mx-3">
+          Page {{ currentPage }} of {{ totalPages }}
+        </span>
+
+        <button
+          class="btn btn-outline-primary btn-sm"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        >
+          Next
+          <i class="bi bi-chevron-right"></i>
+        </button>
       </div>
     </div>
 
@@ -69,12 +101,67 @@
         </div>
       </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="confirmationModalLabel">
+              <i class="bi bi-check-circle me-2"></i>
+              Confirm Submission
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">Confirm submission? The parent will see your application.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary text-white" @click="confirmSubmission"> 
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Withdraw Confirmation Modal -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel"
+      aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="withdrawModalLabel">
+              <i class="bi bi-exclamation-triangle me-2"></i>
+              Confirm Withdrawal
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">Confirm application withdrawal? The parent will no longer see your application.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary text-white" data-bs-dismiss="modal">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary text-white" @click="confirmWithdraw">
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { Modal } from "bootstrap";
+import { useRoute } from "vue-router";
 import SearchFilter from "../components/SearchFilter.vue";
 import JobCard from "../components/JobCard.vue";
 import LoadingState from "../components/LoadingState.vue";
@@ -99,6 +186,7 @@ import {
 import { db, auth } from "../services/firebase";
 import { getCurrentUser } from "../services/firebase";
 
+const route = useRoute();
 const toast = useToast();
 const subjects = ref([]);
 const levels = ref([]);
@@ -108,6 +196,11 @@ onMounted(async () => {
   subjects.value = await getSubjects();
   levels.value = ["All Levels", ...(await getLevels())];
   locations.value = await getLocations();
+  
+  // Apply search query from route if present
+  if (route.query.search) {
+    filters.value.search = route.query.search;
+  }
 });
 
 const loading = ref(false);
@@ -120,6 +213,10 @@ const filters = ref({
   search: "",
 });
 
+// Pagination
+const currentPage = ref(1);
+const itemsPerPage = ref(9); // 9 cards (3x3 grid)
+
 // Map assignmentId -> application status for current user
 const userApplications = ref({});
 
@@ -130,11 +227,20 @@ const application = ref({
 });
 
 let applicationModal = null;
+let confirmationModal = null;
+let withdrawModal = null;
+const pendingWithdrawJobId = ref(null);
 
 onMounted(async () => {
   // Initialize Bootstrap modal
   const modalElement = document.getElementById("applicationModal");
   applicationModal = new Modal(modalElement);
+
+  const confirmElement = document.getElementById("confirmationModal");
+  confirmationModal = new Modal(confirmElement);
+
+  const withdrawElement = document.getElementById("withdrawModal");
+  withdrawModal = new Modal(withdrawElement);
 
   // Load job postings
   await loadJobs();
@@ -257,8 +363,20 @@ const filteredJobs = computed(() => {
   });
 });
 
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredJobs.value.length / itemsPerPage.value);
+});
+
+const paginatedJobs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredJobs.value.slice(start, end);
+});
+
 const updateFilters = (newFilters) => {
   filters.value = { ...newFilters };
+  currentPage.value = 1; // Reset to first page when filters change
 };
 
 const handleApply = (jobId) => {
@@ -328,7 +446,7 @@ const handleSubmitApplication = async () => {
         })
       }
 
-      return assignments
+      return assignments;
     }
 
     function getWeekdayDatesInRange(startDate, endDate, weekdays) {
@@ -362,13 +480,13 @@ const handleSubmitApplication = async () => {
         Saturday: 6,
       };
 
-      const weekdays = assignment.selectedDays.map(day => days_obj[day]);
+      const weekdays = assignment.selectedDays.map((day) => days_obj[day]);
       const dates = getWeekdayDatesInRange(start, end, weekdays);
 
       const [startHour, startMin] = assignment.sessionStartTime.split(':').map(Number);
       const durationMin = assignment.sessionDuration * 60;
 
-      return dates.map(date => {
+      return dates.map((date) => {
         const startTime = new Date(date);
         startTime.setHours(startHour, startMin, 0, 0);
         const endTime = new Date(startTime.getTime() + durationMin * 60 * 1000);
@@ -383,7 +501,7 @@ const handleSubmitApplication = async () => {
     // ...
     // ]
     function expandCalendarEvents(calendarEvents) {
-      return calendarEvents.map(ev => ({
+      return calendarEvents.map((ev) => ({
         startTime: new Date(ev.start),
         endTime: new Date(ev.end)
       }));
@@ -406,7 +524,7 @@ const handleSubmitApplication = async () => {
 
       // Check if any new session overlaps
       for (const newSession of newSessions) {
-        if (allExistingSessions.some(old => isOverlapping(old, newSession))) {
+        if (allExistingSessions.some((old) => isOverlapping(old, newSession))) {
           return true;
         }
       }
@@ -471,19 +589,35 @@ const handleSubmitApplication = async () => {
       if (conflict) {
         toast.warning("Schedule conflict detected! Unable to apply for this assignment.");
         applicationModal.hide();
-        return
-
+        return;
       } else {
         // console.log("No conflicts, safe to accept.");
         toast.info("No conflicts found, safe to accept this assignment.")
+        // Show confirmation modal 
+        applicationModal.hide();
         setTimeout(() => {
-          const cfm_apply = confirm("Confirm submission? The parent will see your application.")
-          if (!cfm_apply) {
-            applicationModal.hide();
-            return
-          }
-        }, 100)
+          confirmationModal.show();
+        }, 300);
+        return;
       }
+    }
+  } catch (error) {
+    console.error("Error submitting application:", error);
+    toast.error("Failed to submit application. Please try again", "Error");
+  }
+};
+
+const confirmSubmission = async () => {
+  try {
+    // Get current user
+    const user = await getCurrentUser();
+    if (!user || !user.uid) {
+      toast.error(
+        "You must be logged in to apply for assignments",
+        "Authentication Required"
+      );
+      confirmationModal.hide();
+      return;
     }
 
     // Submit application to Firebase
@@ -498,7 +632,7 @@ const handleSubmitApplication = async () => {
         "Your application has been submitted successfully!",
         "Application Submitted"
       );
-      applicationModal.hide();
+      confirmationModal.hide();
 
       // Mark this job as applied for the current user immediately (optimistic update)
       if (selectedJob.value && selectedJob.value.id) {
@@ -514,32 +648,46 @@ const handleSubmitApplication = async () => {
         `Failed to submit application: ${result.error}`,
         "Submission Failed"
       );
+      confirmationModal.hide();
     }
   } catch (error) {
     console.error("Error submitting application:", error);
     toast.error("Failed to submit application. Please try again", "Error");
+    confirmationModal.hide();
   }
 };
 
 // handle Withdraw
 async function handleWithdraw(jobId) {
-  const cfm_withdraw = confirm("Confirm application withdrawl? The parent will no longer see your application.")
-  if (!cfm_withdraw) {
-    return
-  }
-  try {
-  const user = await getCurrentUser();
-  const existingQuery = query(
-    collection(db, "assignments", jobId, "applications"),
-    where("tutorId", "==", user.uid)
-  );
-  const existingSnap = await getDocs(existingQuery);
+  pendingWithdrawJobId.value = jobId;
+  withdrawModal.show();
+}
 
-  await Promise.all(
-    existingSnap.docs.map(docSnap =>
-      deleteDoc(doc(db, "assignments", jobId, "applications", docSnap.id))
-    )
-  );
+async function confirmWithdraw() {
+  const jobId = pendingWithdrawJobId.value;
+  if (!jobId) return;
+
+  try {
+    const user = await getCurrentUser();
+    const existingQuery = query(
+      collection(db, "assignments", jobId, "applications"),
+      where("tutorId", "==", user.uid)
+    );
+    const existingSnap = await getDocs(existingQuery);
+
+    await Promise.all(
+      existingSnap.docs.map(docSnap =>
+        deleteDoc(doc(db, "assignments", jobId, "applications", docSnap.id))
+      )
+    );
+
+    await loadJobs();
+
+    const updated = { ...userApplications.value }
+    if (updated[jobId]) {
+      delete updated[jobId]
+      userApplications.value = updated
+    }
 
   // Mark this job as open for the current user immediately (optimistic update)
   // userApplications.value = {
@@ -549,11 +697,43 @@ async function handleWithdraw(jobId) {
 
   // Reload jobs to reflect updated status
   
-  await loadJobs();
-
+  
+    withdrawModal.hide();
+    pendingWithdrawJobId.value = null;
+    toast.success("Application withdrawn successfully", "Withdrawn");
+    
   } catch (error) {
     console.error("Error withdrawal of application:", error);
     toast.error("Failed to withdraw from application. Please try again", "Error");
+    withdrawModal.hide();
+    pendingWithdrawJobId.value = null;
   }
 }
 </script>
+
+<style scoped>
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.btn-outline-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pagination styling */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 576px) {
+  .pagination-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+</style>

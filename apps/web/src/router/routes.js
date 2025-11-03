@@ -17,6 +17,7 @@ import { getCurrentUser } from '../services/firebase'
 import PaymentSuccess from '../views/PaymentSuccess.vue'
 import { getUserRole } from '../services/firebase'
 import Message from "../views/Message.vue"
+import Admin from "../views/Admin.vue"
 
 const routes = [
   {
@@ -118,6 +119,12 @@ const routes = [
     component: Message,
     meta: { requiresAuth: true },
   },
+  {
+    path: "/admin",
+    name: "Admin",
+    component: Admin,
+    meta: { requiresAuth: true, allowedRoles: ['admin'] },
+  },
 ]
 
 const router = createRouter({
@@ -132,10 +139,6 @@ const router = createRouter({
   },
 })
 
-// loginStatus and auth listener are provided by services/firebase
-
-// getCurrentUser is now provided by services/firebase
-
 
 router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
@@ -149,9 +152,10 @@ router.beforeEach(async (to, from, next) => {
     const allowedRoles = to.meta && to.meta.allowedRoles ? to.meta.allowedRoles : null
     if (allowedRoles && allowedRoles.length > 0) {
       const role = await getUserRole(user.uid)
-      console.log('Route requires role in', allowedRoles, 'user role=', role)
+      if (role === 'admin') {
+        return next()
+      }
       if (!role || !allowedRoles.includes(role)) {
-        // Unauthorized — redirect to home or show not-authorized page
         return next({ path: '/' })
       }
     }

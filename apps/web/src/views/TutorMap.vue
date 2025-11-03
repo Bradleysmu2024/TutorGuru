@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, defineExpose, nextTick } from "vue";
+import { ref, onMounted } from "vue";
 import { db } from "../services/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
@@ -49,10 +49,9 @@ const mapConfig = {
 
 
 onMounted(async () => {
-  // Wait until GoogleMapLoader actually creates the map
   let tries = 0
   while (!mapComponent.value?.map && tries < 20) {
-    await new Promise(r => setTimeout(r, 250)) // wait 0.25s
+    await new Promise(r => setTimeout(r, 250))
     tries++
   }
 
@@ -64,28 +63,41 @@ onMounted(async () => {
     return
   }
 
-  console.log(" Map initialized:", map.value)
-
 
   // existing load
-  try {
-    const q = query(collection(db, "assignments"), where("status", "==", "open"));
-    const snapshot = await getDocs(q);
-    assignments.value = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      position: {
-        lat: doc.data().lat,
-        lng: doc.data().lng,
-      },
-    }));
-    filteredAssignments.value = assignments.value; // keep a working copy
-    console.log("Loaded open assignments:", assignments.value.length);
-  } catch (error) {
-    console.error("Error fetching assignments:", error);
-  }
+    try {
+      const q = query(collection(db, "assignments"), where("status", "==", "open"));
+      const snapshot = await getDocs(q);
+
+      // Coerce lat/lng to numbers and skip invalid entries to avoid Google Maps errors
+      const items = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          const rawLat = data.lat ?? data.position?.lat;
+          const rawLng = data.lng ?? data.position?.lng;
+          const lat = parseFloat(rawLat);
+          const lng = parseFloat(rawLng);
+
+          if (!isFinite(lat) || !isFinite(lng)) {
+            console.warn(`Skipping assignment ${doc.id} due to invalid lat/lng:`, rawLat, rawLng);
+            return null;
+          }
+
+          return {
+            id: doc.id,
+            ...data,
+            position: { lat, lng },
+          };
+        })
+        .filter(Boolean);
+
+      assignments.value = items;
+      filteredAssignments.value = items;
+      console.log("Loaded open assignments:", assignments.value.length);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+    }
 });
-console.log(assignments.value)
 
 //  When user searches postal code 
 async function searchTutorLocation(postalCode) {
@@ -100,7 +112,6 @@ async function searchTutorLocation(postalCode) {
     if (status === "OK" && results[0]) {
       const location = results[0].geometry.location;
 
-      // If marker already exists → move it
       if (tutorMarker.value) {
         tutorMarker.value.setPosition(location);
       } else {
@@ -115,7 +126,6 @@ async function searchTutorLocation(postalCode) {
       map.value.setCenter(location);
       map.value.setZoom(15);
 
-      // Save locally
       localStorage.setItem(
         "tutorLocation",
         JSON.stringify({
@@ -133,18 +143,25 @@ async function searchTutorLocation(postalCode) {
 
 // When user applys filters
 function applyFilter({ subjects, levels }) {
+  // Normalize "All" selections: if user selected an 'All' option, treat it as no filter
+  const isAllSelected = arr =>
+    !arr || arr.length === 0 || arr.some(v => typeof v === 'string' && (/^all(\s+subjects?)?$/i.test(v) || /^all(\s+levels?)?$/i.test(v) || /^all$/i.test(v)));
+
+  const subjectFilterActive = !isAllSelected(subjects);
+  const levelFilterActive = !isAllSelected(levels);
+
   let filtered = assignments.value;
 
-  if (subjects.length > 0) {
+  if (subjectFilterActive) {
     filtered = filtered.filter(a => subjects.includes(a.subject));
   }
 
-  if (levels.length > 0) {
+  if (levelFilterActive) {
     filtered = filtered.filter(a => levels.includes(a.level));
   }
 
   filteredAssignments.value = filtered;
-  console.log("Filtered assignments:", filtered.length);
+  console.log("Filtered assignments:", filtered.length, "ids:", filtered.map(f => f.id), "subjectFilterActive:", subjectFilterActive, "levelFilterActive:", levelFilterActive);
 }
 
 </script>

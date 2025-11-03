@@ -13,6 +13,12 @@ import {
 } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
 
+// Import background image
+const registerBg = new URL(
+  "../assets/images/login/loginbg.jpg",
+  import.meta.url
+).href;
+
 const toast = useToast();
 const router = useRouter();
 
@@ -272,7 +278,7 @@ const handleGoogleRegister = async () => {
 </script>
 
 <template>
-  <div class="register-page">
+  <div class="register-page" :style="{ backgroundImage: `url(${registerBg})` }">
     <div class="container">
       <div
         class="row justify-content-center align-items-center min-vh-100 py-5"
@@ -450,9 +456,31 @@ const handleGoogleRegister = async () => {
 </template>
 
 <style scoped>
+.card {
+  background-color: rgba(240, 248, 255, 0.534);
+}
 .register-page {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   min-height: 100vh;
+}
+
+.register-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.186);
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
 }
 
 .card {

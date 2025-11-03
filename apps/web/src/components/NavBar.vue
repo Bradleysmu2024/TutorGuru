@@ -4,7 +4,11 @@
   >
     <div class="container">
       <router-link to="/" class="navbar-brand d-flex align-items-center">
-        <i class="bi bi-book-half text-primary me-2 fs-4"></i>
+        <img
+          src="../assets/images/tutorguru.png"
+          alt="TutorGuru Logo"
+          class="logo-image me-2"
+        />
         <span class="fw-bold">TutorGuru</span>
       </router-link>
 
@@ -35,18 +39,19 @@
             </router-link>
           </li>
 
-          <!-- Tutor/Parent Navigation (show only when authenticated) -->
+          <!-- Role-based Navigation (show only when authenticated) -->
           <template v-if="loginStatus">
-            <template v-if="currentRole === 'tutor'">
+            <!-- Admin Navigation -->
+            <template v-if="currentRole === 'admin'">
               <li class="nav-item">
                 <router-link
-                  to="/dashboard"
+                  to="/admin"
                   class="nav-link"
                   active-class="active"
                   @click="closeNavbar"
                 >
-                  <i class="bi bi-grid me-1"></i>
-                  Dashboard
+                  <i class="bi bi-shield-lock me-1"></i>
+                  Admin
                 </router-link>
               </li>
               <li class="nav-item">
@@ -57,8 +62,68 @@
                   @click="closeNavbar"
                 >
                   <i class="bi bi-trophy me-1"></i>
-                  Leaderboard
+                  Top Tutors
                 </router-link>
+              </li>
+              <!-- Assignments dropdown -->
+              <li class="nav-item dropdown" v-if="currentRole !== 'parent'">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  @click.prevent="toggleAssignments"
+                  role="button"
+                  :aria-expanded="assignmentsOpen"
+                >
+                  <i class="bi bi-journal-bookmark me-1"></i>
+                  Assignments
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  :class="{ show: assignmentsOpen }"
+                >
+                <li v-if="currentRole === 'admin'">
+                    <router-link
+                      to="/parent-dashboard"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-grid me-2"></i>
+                      Parent Dashboard
+                    </router-link>
+                  </li>
+                  <li v-if="currentRole === 'admin'">
+                    <router-link
+                      to="/dashboard"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-speedometer2 me-2"></i>
+                      Tutor Dashboard
+                    </router-link>
+                  </li>
+                  <li
+                    v-if="currentRole === 'admin' || currentRole === 'parent'"
+                  >
+                    <router-link
+                      to="/post-assignment"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-plus-circle me-2"></i>
+                      Post Assignment
+                    </router-link>
+                  </li>
+                  <li v-if="currentRole === 'admin' || currentRole === 'tutor'">
+                    <router-link
+                      to="/tutor-maps"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-geo-alt me-2"></i>
+                      Assignment Map
+                    </router-link>
+                  </li>
+                </ul>
               </li>
               <li class="nav-item">
                 <router-link
@@ -100,6 +165,71 @@
                   </li>
                   <li>
                     <router-link
+                      to="/calendar"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-calendar3 me-2"></i>
+                      Calendar
+                    </router-link>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <router-link
+                      to="/logout"
+                      class="dropdown-item text-danger"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-box-arrow-right me-2"></i>
+                      Logout
+                    </router-link>
+                  </li>
+                </ul>
+              </li>
+            </template>
+            <!-- tutor Navigation -->
+            <template v-else-if="currentRole === 'tutor'">
+              <li class="nav-item">
+                <router-link
+                  to="/dashboard"
+                  class="nav-link"
+                  active-class="active"
+                  @click="closeNavbar"
+                >
+                  <i class="bi bi-grid me-1"></i>
+                  Assignment
+                </router-link>
+              </li>
+              <li class="nav-item">
+                <router-link
+                  to="/top-tutors"
+                  class="nav-link"
+                  active-class="active"
+                  @click="closeNavbar"
+                >
+                  <i class="bi bi-trophy me-1"></i>
+                  Leaderboard
+                </router-link>
+              </li>
+
+              <!-- Assignments dropdown for tutor (shows Assignment Map) -->
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  @click.prevent="toggleAssignments"
+                  role="button"
+                  :aria-expanded="assignmentsOpen"
+                >
+                  <i class="bi bi-journal-bookmark me-1"></i>
+                  Assignments
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  :class="{ show: assignmentsOpen }"
+                >
+                  <li v-if="currentRole === 'admin' || currentRole === 'tutor'">
+                    <router-link
                       to="/tutor-maps"
                       class="dropdown-item"
                       @click="closeNavbar"
@@ -108,6 +238,48 @@
                       Assignment Map
                     </router-link>
                   </li>
+                </ul>
+              </li>
+
+              <li class="nav-item">
+                <router-link
+                  to="/chat"
+                  class="nav-link"
+                  active-class="active"
+                  @click="closeNavbar"
+                >
+                  <i class="bi bi-chat-left-text me-1"></i>
+                  Messages
+                </router-link>
+              </li>
+
+              <!-- Account Dropdown -->
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  @click.prevent="toggleDropdown"
+                  role="button"
+                  :aria-expanded="dropdownOpen"
+                >
+                  <i class="bi bi-person-circle me-1"></i>
+                  Account
+                </a>
+                <ul
+                  class="dropdown-menu dropdown-menu-end"
+                  :class="{ show: dropdownOpen }"
+                >
+                  <li>
+                    <router-link
+                      to="/profile"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-person me-2"></i>
+                      My Profile
+                    </router-link>
+                  </li>
+                  <!-- removed duplicate tutor-maps (now available via Assignments dropdown) -->
                   <li>
                     <router-link
                       to="/calendar"
@@ -142,20 +314,22 @@
                   @click="closeNavbar"
                 >
                   <i class="bi bi-grid me-1"></i>
-                  Dashboard
+                  Assignment
                 </router-link>
               </li>
-              <!-- <li class="nav-item">
+              <li class="nav-item">
                 <router-link
-                  to="/post-assignment"
+                  to="/top-tutors"
                   class="nav-link"
                   active-class="active"
                   @click="closeNavbar"
                 >
-                  <i class="bi bi-plus-circle me-1"></i>
-                  Post Assignment
+                  <i class="bi bi-trophy me-1"></i>
+                  Top Tutors
                 </router-link>
-              </li> -->
+              </li>
+
+
               <li class="nav-item">
                 <router-link
                   to="/chat"
@@ -251,26 +425,36 @@ import ThemeToggle from "./ThemeToggle.vue";
 const route = useRoute();
 const isOpen = ref(false);
 const dropdownOpen = ref(false);
-const currentRole = ref("parent"); // 'tutor' or 'parent'
+const assignmentsOpen = ref(false);
+const currentRole = ref("parent"); // 'tutor' or 'parent' or 'admin'
 
 const toggleNavbar = () => {
   isOpen.value = !isOpen.value;
   dropdownOpen.value = false;
+  assignmentsOpen.value = false;
 };
 
 const closeNavbar = () => {
   isOpen.value = false;
   dropdownOpen.value = false;
+  assignmentsOpen.value = false;
 };
 
 const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value;
 };
 
+const toggleAssignments = () => {
+  assignmentsOpen.value = !assignmentsOpen.value;
+  // close other dropdowns
+  dropdownOpen.value = false;
+};
+
 // Local switch (keeps behavior for unauthenticated demo/testing)
 const switchRole = (role) => {
   currentRole.value = role;
   dropdownOpen.value = false;
+  assignmentsOpen.value = false;
   closeNavbar();
 };
 
@@ -282,8 +466,8 @@ const fetchUserRole = async () => {
       const userSnap = await getDoc(fsDoc(db, "users", user.uid));
       if (userSnap.exists()) {
         const data = userSnap.data() || {};
-        // Expect role to be 'tutor' or 'parent'
-        currentRole.value = data.role === "tutor" ? "tutor" : "parent";
+        // Preserve stored role (tutor, parent, admin, etc.) so admin can be detected
+        currentRole.value = data.role || "parent";
         return;
       }
     }
@@ -335,6 +519,12 @@ watch(
 
 .navbar-brand:hover {
   color: #0d6efd;
+}
+
+.logo-image {
+  height: 35px;
+  width: 35px;
+  object-fit: contain;
 }
 
 .nav-link {

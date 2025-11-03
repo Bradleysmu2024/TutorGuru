@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow public reads for assets you intentionally make public
+    match /public/{allPaths=**} {
+      allow read;
+    }
+
+    // Tutors' files: avatars and documents stored under tutors/{uid}/...
+    match /tutors/{userId}/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Parents' files: avatars and documents stored under parents/{uid}/...
+    match /parents/{userId}/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Generic user-scoped files (if you ever store under users/{uid}/...)
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if true;
+    }
+
+    // Deny everything else by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -2,7 +2,7 @@
   <div class="d-flex flex-column flex-grow-1" style="min-height: 0;">
     <!-- Header -->
     <div class="p-3 border-bottom d-flex align-items-center" v-if="activeUser">
-      <img :src="activeUser.avatar || '/src/assets/images/profileplaceholder.JPG'" class="rounded-circle me-2" width="50" height="50"/>
+      <img :src="activeUser.avatar || defaultAvatar" class="rounded-circle me-2" width="50" height="50"  style=" object-fit: cover"/>
       <div class="chat-user-info">
         <a href="#" class="text-decoration-none text-dark" @click.prevent="openProfile">
           <strong class="d-block mb-0">{{ activeUser.name }}</strong>
@@ -38,6 +38,7 @@ import { collection, query, orderBy, onSnapshot } from "firebase/firestore"
 import { db, auth } from '../services/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import MessageInput from './MessageInput.vue'
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const props = defineProps({ activeUser: Object })
 const router = useRouter()

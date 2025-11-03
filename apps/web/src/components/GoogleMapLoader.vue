@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref, defineExpose, nextTick } from "vue";
+import { onMounted, ref } from "vue";
 import { setOptions, importLibrary } from "@googlemaps/js-api-loader";
 
 const props = defineProps({
@@ -28,7 +28,6 @@ onMounted(async () => {
     const { Map } = await importLibrary("maps");
     await importLibrary("places");
 
-    // create and save the actual map
     map.value = new Map(googleMap.value, props.mapConfig);
   } catch (err) {
     console.error("Failed to load Google Maps API:", err);

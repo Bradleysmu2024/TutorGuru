@@ -8,11 +8,11 @@
           <div class="card shadow-sm">
             <div class="card-body px-10">
               <div class="profile text-center mb-3">
-                <div class="profile-avatar mb-3">
+                <div class="mb-3 mx-auto">
                   <img
                     :src="
                       profile.avatar ||
-                      '/src/assets/images/profileplaceholder.JPG'
+                      defaultAvatar
                     "
                     alt="Profile"
                     class="rounded-circle img-fluid"
@@ -74,7 +74,7 @@
                         <span
                           v-for="(level, idx) in item.levels"
                           :key="idx"
-                          class="level-badge badge bg-success me-1 mb-1"
+                          class="badge bg-success me-1 mb-1 small fw-semibold"
                         >
                           {{ level }}
                         </span>
@@ -115,7 +115,7 @@
                     <div
                       v-for="(child, index) in profile.children"
                       :key="index"
-                      class="child-card mb-2 p-3 bg-light rounded"
+                      class="mb-2 p-3 bg-light rounded border"
                     >
                       <div
                         class="d-flex justify-content-between align-items-start"
@@ -153,20 +153,20 @@
 
         <!-- Quick Stats -->
         <div class="card shadow-sm mt-6 col-lg-4">
-          <div class="card-body">
+              <div class="card-body">
             <h6 class="fw-semibold mb-3">Quick Stats</h6>
 
             <!-- Tutor stats -->
             <div v-if="isTutorProfile">
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
                 <span class="text-muted">Applications Sent</span>
                 <span class="fw-semibold">12</span>
               </div>
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
                 <span class="text-muted">Active Students</span>
                 <span class="fw-semibold">5</span>
               </div>
-              <div class="stat-item d-flex justify-content-between">
+              <div class="stat-item d-flex justify-content-between border-bottom py-2">
                 <span class="text-muted">Rating</span>
                 <span class="fw-semibold">{{ profile.rating ?? "—" }} ⭐</span>
               </div>
@@ -174,23 +174,17 @@
 
             <!-- Parent stats -->
             <div v-if="isParentProfile">
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
                 <span class="text-muted">Assignments Posted</span>
-                <span class="fw-semibold">{{
-                  profile.assignmentsPosted || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.assignmentsPosted || 0 }}</span>
               </div>
-              <div class="stat-item d-flex justify-content-between mb-2">
+              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
                 <span class="text-muted">Active Assignments</span>
-                <span class="fw-semibold">{{
-                  profile.activeAssignments || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.activeAssignments || 0 }}</span>
               </div>
-              <div class="stat-item d-flex justify-content-between">
+              <div class="d-flex justify-content-between py-2">
                 <span class="text-muted">Children</span>
-                <span class="fw-semibold">{{
-                  profile.children?.length || 0
-                }}</span>
+                <span class="fw-semibold">{{ profile.children?.length || 0 }}</span>
               </div>
             </div>
           </div>
@@ -266,7 +260,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import {
   auth,
   db,
@@ -280,6 +274,7 @@ import { useRoute } from "vue-router";
 import router from "../router/routes";
 import { useToast } from "../composables/useToast";
 import TransactionHistory from "../components/TransactionHistory.vue";
+import defaultAvatar from '../assets/images/profileplaceholder.jpg'
 
 const toast = useToast();
 
@@ -295,14 +290,13 @@ const profile = ref({
   experience: 0,
   avatar: "",
   verified: false,
-  // Parent-specific fields
   children: [],
   postalCode: "",
   formattedAddress: "",
   uid: "",
 });
 
-const userRole = ref(null); // 'tutor' or 'parent'
+const userRole = ref(null);
 const uploadedDocuments = ref([]);
 const loading = ref(true);
 const currentUser = ref(null);
@@ -327,12 +321,34 @@ const showMessageButton = computed(() => {
   );
 });
 
-// Check if viewing profile is a tutor (for conditional rendering)
 const isTutorProfile = computed(() => userRole.value === "tutor");
 const isParentProfile = computed(() => userRole.value === "parent");
 
-// Load profile when logged in
-onMounted(async () => {
+const resetProfileState = () => {
+  profile.value = {
+    name: "",
+    username: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    teaching: [{ subject: "", levels: [] }],
+    experience: 0,
+    avatar: "",
+    verified: false,
+    children: [],
+    postalCode: "",
+    formattedAddress: "",
+    uid: "",
+  };
+  uploadedDocuments.value = [];
+  userRole.value = null;
+  isPublicView.value = false;
+  loading.value = true;
+};
+
+const loadProfileRoute = async () => {
+  resetProfileState();
   const username = route.params.username || null;
   if (username) {
     isPublicView.value = true;
@@ -353,20 +369,25 @@ onMounted(async () => {
     return;
   }
 
+  // Private profile (current user)
   const loadProfile = async (uid) => {
-    // Get user role first
-    userRole.value = await getUserRole(uid);
-
-    const u = await getUserDoc(uid);
-    if (u) {
-      profile.value = { ...u, uid }; // add uid to profile
-      uploadedDocuments.value = u.uploadedDocuments || [];
-      currentUser.value = auth.currentUser;
-      profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
-    } else {
+    try {
+      userRole.value = await getUserRole(uid);
+      const u = await getUserDoc(uid);
+      if (u) {
+        profile.value = { ...u, uid };
+        uploadedDocuments.value = u.uploadedDocuments || [];
+        currentUser.value = auth.currentUser;
+        profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+      } else {
+        toast.warning("Please log in to view your profile", "Login Required");
+      }
+    } catch (err) {
+      console.error("Error loading profile:", err);
       toast.warning("Please log in to view your profile", "Login Required");
+    } finally {
+      loading.value = false;
     }
-    loading.value = false;
   };
 
   const userNow = auth.currentUser;
@@ -377,15 +398,26 @@ onMounted(async () => {
       if (user) {
         await loadProfile(user.uid);
       } else {
-        toast.warning("Please log in to view your profile", "Login Required");
         loading.value = false;
       }
       if (typeof unsub === "function") unsub();
     });
   }
+};
+
+onMounted(() => {
+  loadProfileRoute();
 });
 
-// Start a chat with this tutor (navigates to /chat?tutorId=<username>)
+watch(
+  () => route.params.username,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await loadProfileRoute();
+    }
+  }
+);
+
 const messageTutor = () => {
   if (!profile.value || !profile.value.username)
     return toast.error(
@@ -399,29 +431,15 @@ const editProfile = () => {
   router.push("/editprofile");
 };
 
-// ADD THIS FUNCTION
 const handleViewTransaction = (transaction) => {
   console.log("View transaction:", transaction);
 };
 </script>
 
 <style scoped>
-.profile-header {
-  padding: 1rem 0;
-}
-
 .card {
   border: none;
   border-radius: 0.75rem;
-}
-
-.profile-avatar {
-  margin: 0 auto;
-}
-
-.stat-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .stat-item:last-child {
@@ -434,21 +452,6 @@ const handleViewTransaction = (transaction) => {
 }
 
 .subject-item:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.level-badge {
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 0.35em 0.65em;
-}
-
-.child-card {
-  border: 1px solid #e9ecef;
-  transition: all 0.2s ease;
-}
-
-.child-card:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 

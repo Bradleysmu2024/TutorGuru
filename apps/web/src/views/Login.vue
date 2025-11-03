@@ -11,6 +11,10 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
 import PasswordResetModal from "../components/PasswordResetModal.vue";
 
+// Import background image
+const loginBg = new URL("../assets/images/login/loginbg.jpg", import.meta.url)
+  .href;
+
 const toast = useToast();
 const router = useRouter();
 
@@ -52,7 +56,6 @@ const handleLogin = async () => {
 
     // route based on role
     const role = await getUserRole(user.uid);
-    console.log("Login successful:", user, "role=", role);
     toast.success("Login successful!", "Welcome Back");
     if (role === "parent") {
       router.push("/parent-dashboard");
@@ -136,7 +139,7 @@ const openPasswordResetModal = () => {
 </script>
 
 <template>
-  <div class="login-page">
+  <div class="login-page" :style="{ backgroundImage: `url(${loginBg})` }">
     <div class="container">
       <div
         class="row justify-content-center align-items-center min-vh-100 py-5"
@@ -267,9 +270,32 @@ const openPasswordResetModal = () => {
 </template>
 
 <style scoped>
+.card {
+  background-color: rgba(240, 248, 255, 0.534);
+}
+
 .login-page {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   min-height: 100vh;
+  position: relative;
+}
+
+.login-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.186); /* white overlay */
+  z-index: 0;
+}
+
+.login-page .container {
+  position: relative;
+  z-index: 1;
 }
 
 .card {

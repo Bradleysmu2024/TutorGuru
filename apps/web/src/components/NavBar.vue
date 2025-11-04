@@ -189,30 +189,8 @@
             </template>
             <!-- tutor Navigation -->
             <template v-else-if="currentRole === 'tutor'">
-              <li class="nav-item">
-                <router-link
-                  to="/dashboard"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-grid me-1"></i>
-                  Assignment
-                </router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/top-tutors"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-trophy me-1"></i>
-                  Leaderboard
-                </router-link>
-              </li>
-
-              <!-- Assignments dropdown for tutor (shows Assignment Map) -->
+            
+              <!-- Assignments dropdown for tutor -->
               <li class="nav-item dropdown">
                 <a
                   class="nav-link dropdown-toggle"
@@ -228,6 +206,16 @@
                   class="dropdown-menu dropdown-menu-end"
                   :class="{ show: assignmentsOpen }"
                 >
+                  <li>
+                    <router-link
+                      to="/dashboard"
+                      class="dropdown-item"
+                      @click="closeNavbar"
+                    >
+                      <i class="bi bi-grid me-2"></i>
+                      Dashboard
+                    </router-link>
+                  </li>
                   <li v-if="currentRole === 'admin' || currentRole === 'tutor'">
                     <router-link
                       to="/tutor-maps"
@@ -239,6 +227,18 @@
                     </router-link>
                   </li>
                 </ul>
+              </li>
+
+              <li class="nav-item">
+                <router-link
+                  to="/top-tutors"
+                  class="nav-link"
+                  active-class="active"
+                  @click="closeNavbar"
+                >
+                  <i class="bi bi-trophy me-1"></i>
+                  Leaderboard
+                </router-link>
               </li>
 
               <li class="nav-item">

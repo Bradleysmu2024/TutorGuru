@@ -15,7 +15,13 @@ const props = defineProps({
   map: Object,
   assignment: Object,
   tutorMarker: Object,
+  hasApplied: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['apply']);
 
 function showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
   const directionsService = new props.google.maps.DirectionsService();
@@ -117,9 +123,109 @@ function createMarker() {
   const driveBtn = makeBtn("Drive", "btn btn-sm btn-outline-primary", "🚗");
   const walkBtn = makeBtn("Walk", "btn btn-sm btn-outline-success", "🚶");
   const transitBtn = makeBtn("Transit", "btn btn-sm btn-outline-info", "🚇");
-  const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
 
-  btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
+  // Only create apply button if user hasn't applied yet
+  if (!props.hasApplied) {
+    const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
+    btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
+    
+    // Add the apply button click listener
+    marker.value.addListener("click", () => {
+      infoWindow.open(map, marker.value);
+
+      const handleRoute = (mode) => {
+        if (!props.tutorMarker) {
+          toast.warning("Set your tutor location first", "Location Required");
+          return;
+        }
+
+        const origin = props.tutorMarker.getPosition();
+        const destination = a.position;
+
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+        }
+
+        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+          directionsRenderer = renderer;
+        });
+      };
+
+      driveBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.DRIVING)
+      );
+      walkBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.WALKING)
+      );
+      transitBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.TRANSIT)
+      );
+
+      applyBtn.addEventListener("click", () => {
+        emit('apply', a.id);
+        infoWindow.close();
+      });
+
+      infoWindow.addListener("closeclick", () => {
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+          directionsRenderer = null;
+          travelInfoEl.textContent = "";
+        }
+      });
+    });
+  } else {
+    // If already applied, show status badge instead of apply button
+    const appliedBadge = document.createElement("span");
+    appliedBadge.className = "badge bg-success";
+    appliedBadge.textContent = "✓ Applied";
+    appliedBadge.style.marginLeft = "6px";
+    appliedBadge.style.padding = "4px 8px";
+    
+    btnGroup.append(driveBtn, walkBtn, transitBtn, appliedBadge);
+    
+    // Add the marker click listener without apply button
+    marker.value.addListener("click", () => {
+      infoWindow.open(map, marker.value);
+
+      const handleRoute = (mode) => {
+        if (!props.tutorMarker) {
+          toast.warning("Set your tutor location first", "Location Required");
+          return;
+        }
+
+        const origin = props.tutorMarker.getPosition();
+        const destination = a.position;
+
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+        }
+
+        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+          directionsRenderer = renderer;
+        });
+      };
+
+      driveBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.DRIVING)
+      );
+      walkBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.WALKING)
+      );
+      transitBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.TRANSIT)
+      );
+
+      infoWindow.addListener("closeclick", () => {
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+          directionsRenderer = null;
+          travelInfoEl.textContent = "";
+        }
+      });
+    });
+  }
+
   contentDiv.appendChild(btnGroup);
 
   const travelInfoEl = document.createElement("div");
@@ -173,7 +279,10 @@ function createMarker() {
       handleRoute(google.maps.TravelMode.TRANSIT)
     );
 
-    applyBtn.addEventListener("click", () => router.push("/dashboard"));
+    applyBtn.addEventListener("click", () => {
+      emit('apply', a.id);
+      infoWindow.close();
+    });
 
     infoWindow.addListener("closeclick", () => {
       if (directionsRenderer) {
@@ -215,6 +324,14 @@ watch(() => props.assignment, (newA, oldA) => {
   }
   // if assignment changed, recreate marker
   if (!oldA || newA.id !== oldA.id) {
+    removeMarker();
+    createMarker();
+  }
+});
+
+// Watch for changes in hasApplied status to update the marker
+watch(() => props.hasApplied, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
     removeMarker();
     createMarker();
   }

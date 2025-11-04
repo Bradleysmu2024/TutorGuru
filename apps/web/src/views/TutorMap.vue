@@ -20,6 +20,16 @@
       :map="map"
       :assignment="a"
       :tutorMarker="tutorMarker"
+      :hasApplied="!!userApplications[a.id]"
+      @apply="handleApply"
+    />
+
+    <!-- Application Modal Component -->
+    <ApplicationModal
+      ref="applicationModalRef"
+      :job="selectedJob"
+      modal-id="mapApplicationModal"
+      @application-submitted="handleApplicationSubmitted"
     />
   </div>
 </template>
@@ -27,11 +37,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { db } from "../services/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
+import { getCurrentUser } from "../services/firebase";
 import SearchBar from "../components/SearchBar.vue";
 import GoogleMapLoader from "../components/GoogleMapLoader.vue";
 import MapMarker from "../components/MapMarker.vue";
+import ApplicationModal from "../components/ApplicationModal.vue";
 
 
 const toast = useToast();
@@ -42,6 +54,9 @@ const tutorMarker = ref(null);
 const assignments = ref([]);   
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const filteredAssignments = ref([]);
+const selectedJob = ref(null);
+const applicationModalRef = ref(null);
+const userApplications = ref({}); // Map assignmentId -> application status
 const mapConfig = {
   center: { lat: 1.3521, lng: 103.8198 },
   zoom: 12,
@@ -63,23 +78,34 @@ onMounted(async () => {
     return
   }
 
+  // Load current user's applications map
+  await loadUserApplications();
 
   // existing load
     try {
       const q = query(collection(db, "assignments"), where("status", "==", "open"));
       const snapshot = await getDocs(q);
 
+      console.log("Total assignments fetched from Firestore:", snapshot.docs.length);
+
       // Coerce lat/lng to numbers and skip invalid entries to avoid Google Maps errors
       const items = snapshot.docs
         .map(doc => {
           const data = doc.data();
+          
+          // Skip online assignments (they don't have physical location)
+          if (data.location === "Online" || !data.lat || !data.lng) {
+            console.log(`Skipping assignment ${doc.id} - ${data.location === "Online" ? "Online assignment" : "Missing coordinates"}`);
+            return null;
+          }
+
           const rawLat = data.lat ?? data.position?.lat;
           const rawLng = data.lng ?? data.position?.lng;
           const lat = parseFloat(rawLat);
           const lng = parseFloat(rawLng);
 
           if (!isFinite(lat) || !isFinite(lng)) {
-            console.warn(`Skipping assignment ${doc.id} due to invalid lat/lng:`, rawLat, rawLng);
+            console.warn(`Skipping assignment ${doc.id} due to invalid lat/lng:`, rawLat, rawLng, "Full data:", data);
             return null;
           }
 
@@ -93,7 +119,8 @@ onMounted(async () => {
 
       assignments.value = items;
       filteredAssignments.value = items;
-      console.log("Loaded open assignments:", assignments.value.length);
+      console.log("Loaded open assignments with valid coordinates:", assignments.value.length);
+      console.log("Assignment IDs:", assignments.value.map(a => a.id));
     } catch (error) {
       console.error("Error fetching assignments:", error);
     }
@@ -162,6 +189,50 @@ function applyFilter({ subjects, levels }) {
 
   filteredAssignments.value = filtered;
   console.log("Filtered assignments:", filtered.length, "ids:", filtered.map(f => f.id), "subjectFilterActive:", subjectFilterActive, "levelFilterActive:", levelFilterActive);
+}
+
+// Handle apply button click from MapMarker
+function handleApply(assignmentId) {
+  selectedJob.value = assignments.value.find((a) => a.id === assignmentId);
+  if (applicationModalRef.value) {
+    applicationModalRef.value.show();
+  }
+}
+
+// Handle successful application submission
+async function handleApplicationSubmitted(jobId) {
+  toast.success("Application submitted successfully!", "Success");
+  // Update the userApplications map
+  userApplications.value = {
+    ...userApplications.value,
+    [jobId]: "pending",
+  };
+  console.log("Application submitted for assignment:", jobId);
+}
+
+// Load current user's applications
+async function loadUserApplications() {
+  try {
+    const user = await getCurrentUser();
+    if (user && user.uid) {
+      const q = query(
+        collectionGroup(db, "applications"),
+        where("tutorId", "==", user.uid)
+      );
+      const snap = await getDocs(q);
+      const map = {};
+      snap.docs.forEach((d) => {
+        const data = d.data();
+        if (data && data.assignmentId) {
+          map[data.assignmentId] = data.status || "pending";
+        }
+      });
+      userApplications.value = map;
+      console.log("Loaded user applications:", Object.keys(map).length);
+    }
+  } catch (e) {
+    console.warn("Failed to load user applications map", e);
+  }
 }
 
 </script>

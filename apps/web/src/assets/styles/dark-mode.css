@@ -349,10 +349,20 @@ body.dark-mode .table thead {
 body.dark-mode .modal-content {
   background-color: #1e1e1e;
   border-color: #333;
+  color: #e0e0e0;
 }
 
 body.dark-mode .modal-header {
   border-color: #333;
+  color: #e0e0e0;
+}
+
+body.dark-mode .modal-body {
+  color: #e0e0e0;
+}
+
+body.dark-mode .modal-body p {
+  color: #e0e0e0;
 }
 
 body.dark-mode .modal-footer {

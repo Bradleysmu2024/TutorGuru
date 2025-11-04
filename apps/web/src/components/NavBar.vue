@@ -314,7 +314,7 @@
                   @click="closeNavbar"
                 >
                   <i class="bi bi-grid me-1"></i>
-                  Assignment
+                  Dashboard
                 </router-link>
               </li>
               <li class="nav-item">

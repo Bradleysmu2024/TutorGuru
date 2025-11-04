@@ -15,7 +15,13 @@ const props = defineProps({
   map: Object,
   assignment: Object,
   tutorMarker: Object,
+  hasApplied: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['apply']);
 
 function showRoute(origin, destination, travelInfoEl, mode, setRenderer) {
   const directionsService = new props.google.maps.DirectionsService();
@@ -71,23 +77,36 @@ function createMarker() {
 
   //Build InfoWindow content safely
   const contentDiv = document.createElement("div");
+  contentDiv.className = "map-info-window";
   contentDiv.style.fontSize = "14px";
+  contentDiv.style.padding = "8px";
+  contentDiv.style.minWidth = "250px";
 
   const subjectEl = document.createElement("div");
+  subjectEl.className = "info-subject";
   subjectEl.textContent = `Subject: ${a.subject || ""}`;
+  subjectEl.style.marginBottom = "4px";
+  subjectEl.style.fontWeight = "500";
   contentDiv.appendChild(subjectEl);
 
   const levelEl = document.createElement("div");
+  levelEl.className = "info-level";
   levelEl.textContent = `Level: ${a.level || ""}`;
+  levelEl.style.marginBottom = "4px";
   contentDiv.appendChild(levelEl);
 
   const titleEl = document.createElement("div");
+  titleEl.className = "info-title";
   titleEl.textContent = `Title: ${a.title || ""}`;
+  titleEl.style.marginBottom = "4px";
+  titleEl.style.fontWeight = "600";
   contentDiv.appendChild(titleEl);
 
   const addressEl = document.createElement("div");
+  addressEl.className = "info-address";
   addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
-  addressEl.style.marginBottom = "8px";
+  addressEl.style.marginBottom = "12px";
+  addressEl.style.fontSize = "13px";
   contentDiv.appendChild(addressEl);
 
   const btnGroup = document.createElement("div");
@@ -104,12 +123,116 @@ function createMarker() {
   const driveBtn = makeBtn("Drive", "btn btn-sm btn-outline-primary", "🚗");
   const walkBtn = makeBtn("Walk", "btn btn-sm btn-outline-success", "🚶");
   const transitBtn = makeBtn("Transit", "btn btn-sm btn-outline-info", "🚇");
-  const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
 
-  btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
+  // Only create apply button if user hasn't applied yet
+  if (!props.hasApplied) {
+    const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
+    btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
+    
+    // Add the apply button click listener
+    marker.value.addListener("click", () => {
+      infoWindow.open(map, marker.value);
+
+      const handleRoute = (mode) => {
+        if (!props.tutorMarker) {
+          toast.warning("Set your tutor location first", "Location Required");
+          return;
+        }
+
+        const origin = props.tutorMarker.getPosition();
+        const destination = a.position;
+
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+        }
+
+        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+          directionsRenderer = renderer;
+        });
+      };
+
+      driveBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.DRIVING)
+      );
+      walkBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.WALKING)
+      );
+      transitBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.TRANSIT)
+      );
+
+      applyBtn.addEventListener("click", () => {
+        emit('apply', a.id);
+        infoWindow.close();
+      });
+
+      infoWindow.addListener("closeclick", () => {
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+          directionsRenderer = null;
+          travelInfoEl.textContent = "";
+        }
+      });
+    });
+  } else {
+    // If already applied, show status badge instead of apply button
+    const appliedBadge = document.createElement("span");
+    appliedBadge.className = "badge bg-success";
+    appliedBadge.textContent = "✓ Applied";
+    appliedBadge.style.marginLeft = "6px";
+    appliedBadge.style.padding = "4px 8px";
+    
+    btnGroup.append(driveBtn, walkBtn, transitBtn, appliedBadge);
+    
+    // Add the marker click listener without apply button
+    marker.value.addListener("click", () => {
+      infoWindow.open(map, marker.value);
+
+      const handleRoute = (mode) => {
+        if (!props.tutorMarker) {
+          toast.warning("Set your tutor location first", "Location Required");
+          return;
+        }
+
+        const origin = props.tutorMarker.getPosition();
+        const destination = a.position;
+
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+        }
+
+        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+          directionsRenderer = renderer;
+        });
+      };
+
+      driveBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.DRIVING)
+      );
+      walkBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.WALKING)
+      );
+      transitBtn.addEventListener("click", () =>
+        handleRoute(google.maps.TravelMode.TRANSIT)
+      );
+
+      infoWindow.addListener("closeclick", () => {
+        if (directionsRenderer) {
+          directionsRenderer.setMap(null);
+          directionsRenderer = null;
+          travelInfoEl.textContent = "";
+        }
+      });
+    });
+  }
+
   contentDiv.appendChild(btnGroup);
 
   const travelInfoEl = document.createElement("div");
+  travelInfoEl.className = "info-travel";
+  travelInfoEl.style.marginTop = "8px";
+  travelInfoEl.style.fontSize = "13px";
+  travelInfoEl.style.fontWeight = "500";
   contentDiv.appendChild(travelInfoEl);
 
   const infoWindow = new google.maps.InfoWindow({
@@ -156,7 +279,10 @@ function createMarker() {
       handleRoute(google.maps.TravelMode.TRANSIT)
     );
 
-    applyBtn.addEventListener("click", () => router.push("/dashboard"));
+    applyBtn.addEventListener("click", () => {
+      emit('apply', a.id);
+      infoWindow.close();
+    });
 
     infoWindow.addListener("closeclick", () => {
       if (directionsRenderer) {
@@ -203,6 +329,14 @@ watch(() => props.assignment, (newA, oldA) => {
   }
 });
 
+// Watch for changes in hasApplied status to update the marker
+watch(() => props.hasApplied, (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    removeMarker();
+    createMarker();
+  }
+});
+
 // If the map instance changes, attach marker to the new map
 watch(() => props.map, (newMap, oldMap) => {
   if (!newMap) return;
@@ -215,3 +349,52 @@ onBeforeUnmount(() => {
 });
 
 </script>
+
+<style>
+/* Google Maps InfoWindow styling for light and dark mode */
+.map-info-window {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+.info-address {
+  color: #6c757d;
+}
+
+.info-travel {
+  color: #0d6efd;
+}
+
+/* Dark mode styles */
+body.dark-mode .map-info-window {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .info-subject,
+body.dark-mode .info-level,
+body.dark-mode .info-title {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .info-address {
+  color: #999 !important;
+}
+
+body.dark-mode .info-travel {
+  color: #2196f3 !important;
+}
+
+/* Override Google Maps default InfoWindow styles */
+body.dark-mode .gm-style .gm-style-iw-c {
+  background-color: #1e1e1e !important;
+}
+
+body.dark-mode .gm-style .gm-style-iw-d {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .gm-style .gm-style-iw-t::after {
+  background: linear-gradient(45deg, #1e1e1e 50%, rgba(0,0,0,0) 51%, rgba(0,0,0,0) 100%) !important;
+}
+</style>

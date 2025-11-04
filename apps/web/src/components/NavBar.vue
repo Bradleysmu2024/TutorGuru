@@ -226,6 +226,16 @@
                       Assignment Map
                     </router-link>
                   </li>
+                  <li v-if="currentRole === 'tutor' || currentRole === 'admin'">
+                  <router-link
+                    to="/dashboard"
+                    class="dropdown-item"
+                    @click="closeNavbar"
+                  >
+                    <i class="bi bi-grid me-2"></i>
+                    My Assignments
+                  </router-link>
+                  </li>
                 </ul>
               </li>
 

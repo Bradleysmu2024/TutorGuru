@@ -64,8 +64,11 @@ function createMarker() {
   const router = useRouter();
   const toast = useToast();
 
+  console.log(`Creating marker for assignment ${a?.id}, hasApplied: ${props.hasApplied}`);
+
   // Validate assignment position before creating a marker
   if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
+    console.warn(`Cannot create marker for assignment ${a?.id}: invalid position`);
     return;
   }
 
@@ -74,6 +77,9 @@ function createMarker() {
     map,
     icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
   });
+
+  console.log(`Marker created successfully for assignment ${a.id}`);
+
 
   //Build InfoWindow content safely
   const contentDiv = document.createElement("div");
@@ -105,9 +111,34 @@ function createMarker() {
   const addressEl = document.createElement("div");
   addressEl.className = "info-address";
   addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
-  addressEl.style.marginBottom = "12px";
+  addressEl.style.marginBottom = "8px";
   addressEl.style.fontSize = "13px";
   contentDiv.appendChild(addressEl);
+
+  // Session timing information
+  const timingEl = document.createElement("div");
+  timingEl.className = "info-timing";
+  timingEl.style.marginBottom = "8px";
+  timingEl.style.fontSize = "13px";
+  timingEl.style.color = "#666";
+  
+  // Build timing display
+  const days = a.selectedDays?.join(", ") || "N/A";
+  const startTime = a.sessionStartTime || "N/A";
+  const duration = a.sessionDuration ? `${a.sessionDuration}h` : "N/A";
+  
+  timingEl.innerHTML = `
+    <div style="margin-bottom: 2px;"><strong>Days:</strong> ${days}</div>
+    <div style="margin-bottom: 2px;"><strong>Time:</strong> ${startTime}</div>
+    <div><strong>Duration:</strong> ${duration}</div>
+  `;
+  contentDiv.appendChild(timingEl);
+
+  const travelInfoEl = document.createElement("div");
+  travelInfoEl.className = "info-travel";
+  travelInfoEl.style.marginTop = "8px";
+  travelInfoEl.style.fontSize = "13px";
+  travelInfoEl.style.fontWeight = "500";
 
   const btnGroup = document.createElement("div");
   btnGroup.style.marginBottom = "8px";
@@ -124,55 +155,46 @@ function createMarker() {
   const walkBtn = makeBtn("Walk", "btn btn-sm btn-outline-success", "🚶");
   const transitBtn = makeBtn("Transit", "btn btn-sm btn-outline-info", "🚇");
 
+  let directionsRenderer = null;
+
+  // Define route handler once
+  const handleRoute = (mode) => {
+    if (!props.tutorMarker) {
+      toast.warning("Set your tutor location first", "Location Required");
+      return;
+    }
+
+    const origin = props.tutorMarker.getPosition();
+    const destination = a.position;
+
+    if (directionsRenderer) {
+      directionsRenderer.setMap(null);
+    }
+
+    showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
+      directionsRenderer = renderer;
+    });
+  };
+
+  // Add event listeners to direction buttons ONCE
+  driveBtn.addEventListener("click", () =>
+    handleRoute(google.maps.TravelMode.DRIVING)
+  );
+  walkBtn.addEventListener("click", () =>
+    handleRoute(google.maps.TravelMode.WALKING)
+  );
+  transitBtn.addEventListener("click", () =>
+    handleRoute(google.maps.TravelMode.TRANSIT)
+  );
+
   // Only create apply button if user hasn't applied yet
   if (!props.hasApplied) {
     const applyBtn = makeBtn("Apply", "btn btn-sm btn-outline-warning", "📋");
     btnGroup.append(driveBtn, walkBtn, transitBtn, applyBtn);
     
-    // Add the apply button click listener
-    marker.value.addListener("click", () => {
-      infoWindow.open(map, marker.value);
-
-      const handleRoute = (mode) => {
-        if (!props.tutorMarker) {
-          toast.warning("Set your tutor location first", "Location Required");
-          return;
-        }
-
-        const origin = props.tutorMarker.getPosition();
-        const destination = a.position;
-
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-        }
-
-        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
-          directionsRenderer = renderer;
-        });
-      };
-
-      driveBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.DRIVING)
-      );
-      walkBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.WALKING)
-      );
-      transitBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.TRANSIT)
-      );
-
-      applyBtn.addEventListener("click", () => {
-        emit('apply', a.id);
-        infoWindow.close();
-      });
-
-      infoWindow.addListener("closeclick", () => {
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-          directionsRenderer = null;
-          travelInfoEl.textContent = "";
-        }
-      });
+    applyBtn.addEventListener("click", () => {
+      emit('apply', a.id);
+      if (infoWindow) infoWindow.close();
     });
   } else {
     // If already applied, show status badge instead of apply button
@@ -183,56 +205,9 @@ function createMarker() {
     appliedBadge.style.padding = "4px 8px";
     
     btnGroup.append(driveBtn, walkBtn, transitBtn, appliedBadge);
-    
-    // Add the marker click listener without apply button
-    marker.value.addListener("click", () => {
-      infoWindow.open(map, marker.value);
-
-      const handleRoute = (mode) => {
-        if (!props.tutorMarker) {
-          toast.warning("Set your tutor location first", "Location Required");
-          return;
-        }
-
-        const origin = props.tutorMarker.getPosition();
-        const destination = a.position;
-
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-        }
-
-        showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
-          directionsRenderer = renderer;
-        });
-      };
-
-      driveBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.DRIVING)
-      );
-      walkBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.WALKING)
-      );
-      transitBtn.addEventListener("click", () =>
-        handleRoute(google.maps.TravelMode.TRANSIT)
-      );
-
-      infoWindow.addListener("closeclick", () => {
-        if (directionsRenderer) {
-          directionsRenderer.setMap(null);
-          directionsRenderer = null;
-          travelInfoEl.textContent = "";
-        }
-      });
-    });
   }
 
   contentDiv.appendChild(btnGroup);
-
-  const travelInfoEl = document.createElement("div");
-  travelInfoEl.className = "info-travel";
-  travelInfoEl.style.marginTop = "8px";
-  travelInfoEl.style.fontSize = "13px";
-  travelInfoEl.style.fontWeight = "500";
   contentDiv.appendChild(travelInfoEl);
 
   const infoWindow = new google.maps.InfoWindow({
@@ -246,56 +221,23 @@ function createMarker() {
     // ignore
   }
 
-  let directionsRenderer = null;
-
+  // Add the marker click listener
   marker.value.addListener("click", () => {
     infoWindow.open(map, marker.value);
+  });
 
-    const handleRoute = (mode) => {
-      if (!props.tutorMarker) {
-        toast.warning("Set your tutor location first", "Location Required");
-        return;
-      }
-
-      const origin = props.tutorMarker.getPosition();
-      const destination = a.position;
-
-      if (directionsRenderer) {
-        directionsRenderer.setMap(null);
-      }
-
-      showRoute(origin, destination, travelInfoEl, mode, (renderer) => {
-        directionsRenderer = renderer;
-      });
-    };
-
-    driveBtn.addEventListener("click", () =>
-      handleRoute(google.maps.TravelMode.DRIVING)
-    );
-    walkBtn.addEventListener("click", () =>
-      handleRoute(google.maps.TravelMode.WALKING)
-    );
-    transitBtn.addEventListener("click", () =>
-      handleRoute(google.maps.TravelMode.TRANSIT)
-    );
-
-    applyBtn.addEventListener("click", () => {
-      emit('apply', a.id);
-      infoWindow.close();
-    });
-
-    infoWindow.addListener("closeclick", () => {
-      if (directionsRenderer) {
-        directionsRenderer.setMap(null);
-        directionsRenderer = null;
-        travelInfoEl.textContent = "";
-      }
-    });
+  infoWindow.addListener("closeclick", () => {
+    if (directionsRenderer) {
+      directionsRenderer.setMap(null);
+      directionsRenderer = null;
+      travelInfoEl.textContent = "";
+    }
   });
 }
 
 function removeMarker() {
   if (marker.value) {
+    console.log(`Removing marker for assignment ${props.assignment?.id}`);
     const google = props.google;
     if (google && google.maps && google.maps.event && marker.value) {
       google.maps.event.clearInstanceListeners(marker.value);
@@ -309,6 +251,7 @@ function removeMarker() {
       console.warn("MapMarker: error setting marker.map = null", e);
     }
     marker.value = null;
+    console.log(`Marker removed for assignment ${props.assignment?.id}`);
   }
 }
 
@@ -332,6 +275,7 @@ watch(() => props.assignment, (newA, oldA) => {
 // Watch for changes in hasApplied status to update the marker
 watch(() => props.hasApplied, (newVal, oldVal) => {
   if (newVal !== oldVal) {
+    console.log(`MapMarker ${props.assignment?.id}: hasApplied changed from ${oldVal} to ${newVal} - recreating marker`);
     removeMarker();
     createMarker();
   }
@@ -379,6 +323,10 @@ body.dark-mode .info-title {
 
 body.dark-mode .info-address {
   color: #999 !important;
+}
+
+body.dark-mode .info-timing {
+  color: #b0b0b0 !important;
 }
 
 body.dark-mode .info-travel {

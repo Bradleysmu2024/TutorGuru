@@ -95,7 +95,7 @@ function applyFilter() {
 </script>
 
 <style scoped>
-/* -------------------- Overlay Container -------------------- */
+
 .tutor-search-bar {
   position: absolute;
   top: 80px;
@@ -111,7 +111,7 @@ function applyFilter() {
   backdrop-filter: blur(5px);
 }
 
-/* -------------------- Header Row -------------------- */
+
 .bar-header {
   display: flex;
   justify-content: space-between;
@@ -119,7 +119,7 @@ function applyFilter() {
   margin-bottom: 6px;
 }
 
-/* -------------------- Close Button -------------------- */
+
 .close-btn {
   background: transparent;
   border: none;
@@ -134,7 +134,7 @@ function applyFilter() {
   color: #000;
 }
 
-/* -------------------- Filters -------------------- */
+
 .filter-group {
   display: flex;
   flex-wrap: wrap;
@@ -159,7 +159,7 @@ function applyFilter() {
   padding: 4px 10px;
 }
 
-/* -------------------- Floating Reopen Button -------------------- */
+
 .open-search-btn {
   position: absolute;
   top: 80px;

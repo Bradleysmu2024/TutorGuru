@@ -432,6 +432,43 @@ export const calculateTutorRating = async (tutorId) => {
   }
 };
 
+// Get completed assignments for a tutor
+export const getTutorCompletedAssignments = async (tutorId) => {
+  try {
+    if (!tutorId) return [];
+    
+    const q = query(
+      collection(db, "assignments"),
+      where("selectedTutorId", "==", tutorId),
+      where("status", "==", "closed")
+    );
+    
+    const snap = await getDocs(q);
+    const assignments = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    
+    // Sort by completion date (most recent first)
+    assignments.sort((a, b) => {
+      const dateA = a.closedAt || a.updatedAt || a.createdAt;
+      const dateB = b.closedAt || b.updatedAt || b.createdAt;
+      
+      const timeA = typeof dateA === 'string' ? Date.parse(dateA) : 
+                    dateA && dateA.seconds ? dateA.seconds * 1000 : 0;
+      const timeB = typeof dateB === 'string' ? Date.parse(dateB) : 
+                    dateB && dateB.seconds ? dateB.seconds * 1000 : 0;
+      
+      return timeB - timeA;
+    });
+    
+    return assignments;
+  } catch (err) {
+    console.error("Error fetching tutor completed assignments:", err);
+    return [];
+  }
+};
+
 // Storage functions
 export const uploadFile = async (file, path) => {
   try {

@@ -208,31 +208,31 @@ const downloadCSV = () => {
     <div class="card shadow-sm">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <div class="d-flex align-items-center">
-            <h5 class="fw-bold mb-0">
-              <i class="bi bi-clock-history me-2"></i>
-              Transaction History
-            </h5>
-            <!-- COLLAPSE BUTTON -->
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-clock-history me-2"></i>
+            Transaction History
+          </h5>
+          <div class="d-flex gap-2">
             <button
-              class="btn btn-sm btn-outline-secondary collapse-btn ms-3"
+              class="btn btn-sm btn-outline-primary"
+              @click="downloadCSV"
+              :disabled="filteredTransactions.length === 0"
+            >
+              <i class="bi bi-download me-2"></i>
+              Export CSV
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary"
               @click="isExpanded = !isExpanded"
               :aria-expanded="isExpanded"
             >
               <i
                 :class="isExpanded ? 'bi bi-chevron-up' : 'bi bi-chevron-down'"
+                class="me-1"
               ></i>
               {{ isExpanded ? "Hide" : "Show" }}
             </button>
           </div>
-          <button
-            class="btn btn-sm btn-outline-primary"
-            @click="downloadCSV"
-            :disabled="filteredTransactions.length === 0"
-          >
-            <i class="bi bi-download me-2"></i>
-            Export CSV
-          </button>
         </div>
 
         <!-- WRAP CONTENT IN COLLAPSIBLE DIV -->

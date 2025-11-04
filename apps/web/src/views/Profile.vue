@@ -234,6 +234,85 @@
             </div>
           </div>
         </div>
+
+      </div>
+
+      <!-- Past Completed Assignments - Show for public view and own profile -->
+      <div
+        class="row g-4 mt-4"
+        v-if="isTutorProfile && completedAssignments.length > 0"
+      >
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="card-title mb-0">
+                  <i class="bi bi-check-circle me-2"></i> Past Completed Assignments
+                </h5>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  @click="isAssignmentsExpanded = !isAssignmentsExpanded"
+                >
+                  <i :class="isAssignmentsExpanded ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" class="me-1"></i>
+                  {{ isAssignmentsExpanded ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+
+              <div v-show="isAssignmentsExpanded">
+                <p class="text-muted small mb-3">
+                  {{ completedAssignments.length }} assignment{{ completedAssignments.length !== 1 ? 's' : '' }} completed
+                </p>
+
+                <div class="list-group">
+                <div
+                  v-for="(assignment, idx) in completedAssignments"
+                  :key="idx"
+                  class="list-group-item border rounded mb-3 p-3"
+                >
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold mb-0">{{ assignment.title }}</h6>
+                    <span class="badge bg-success">Completed</span>
+                  </div>
+                  
+                  <div class="mb-2">
+                    <span class="badge bg-primary me-2">
+                      <i class="bi bi-book me-1"></i>{{ assignment.subject }}
+                    </span>
+                    <span class="badge bg-info me-2">
+                      <i class="bi bi-mortarboard me-1"></i>{{ assignment.level }}
+                    </span>
+                    <span class="badge bg-secondary">
+                      <i class="bi bi-geo-alt me-1"></i>{{ assignment.location }}
+                    </span>
+                  </div>
+
+                  <p class="text-muted small mb-2">{{ assignment.description }}</p>
+
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="bi bi-calendar-check me-1"></i>
+                      Completed: {{ formatDate(assignment.closedAt || assignment.updatedAt) }}
+                    </small>
+                    
+                    <div v-if="assignment.review && assignment.review.length > 0">
+                      <span class="text-warning">
+                        <i class="bi bi-star-fill"></i>
+                        {{ assignment.review[0].rating }}/5
+                      </span>
+                    </div>
+                  </div>
+
+                  <div v-if="assignment.review && assignment.review.length > 0 && assignment.review[0].comment" class="mt-2 p-2 bg-light rounded">
+                    <small class="text-muted fst-italic">
+                      <i class="bi bi-quote me-1"></i>{{ assignment.review[0].comment }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Transaction History - Only show for own profile -->
@@ -268,6 +347,7 @@ import {
   findUserByUsername,
   getUserDoc,
   calculateTutorRating,
+  getTutorCompletedAssignments,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRoute } from "vue-router";
@@ -300,6 +380,8 @@ const userRole = ref(null);
 const uploadedDocuments = ref([]);
 const loading = ref(true);
 const currentUser = ref(null);
+const completedAssignments = ref([]);
+const isAssignmentsExpanded = ref(true);
 
 const route = useRoute();
 const isPublicView = ref(false);
@@ -342,6 +424,7 @@ const resetProfileState = () => {
     uid: "",
   };
   uploadedDocuments.value = [];
+  completedAssignments.value = [];
   userRole.value = null;
   isPublicView.value = false;
   loading.value = true;
@@ -359,6 +442,11 @@ const loadProfileRoute = async () => {
         uploadedDocuments.value = u.uploadedDocuments || [];
         userRole.value = u.role || "tutor";
         profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        
+        // Load completed assignments for tutors
+        if (u.role === "tutor" && u.id) {
+          completedAssignments.value = await getTutorCompletedAssignments(u.id);
+        }
       } else {
         console.warn("User not found for username:", username);
       }
@@ -379,6 +467,11 @@ const loadProfileRoute = async () => {
         uploadedDocuments.value = u.uploadedDocuments || [];
         currentUser.value = auth.currentUser;
         profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        
+        // Load completed assignments for tutors
+        if (userRole.value === "tutor" && uid) {
+          completedAssignments.value = await getTutorCompletedAssignments(uid);
+        }
       } else {
         toast.warning("Please log in to view your profile", "Login Required");
       }
@@ -433,6 +526,28 @@ const editProfile = () => {
 
 const handleViewTransaction = (transaction) => {
   console.log("View transaction:", transaction);
+};
+
+const formatDate = (date) => {
+  if (!date) return "Unknown date";
+  try {
+    let d = date;
+    if (typeof d.toDate === "function") {
+      d = d.toDate();
+    } else if (d && typeof d.seconds === "number") {
+      d = new Date(d.seconds * 1000);
+    } else {
+      d = new Date(d);
+    }
+    if (isNaN(d.getTime())) return "Unknown date";
+    return d.toLocaleDateString("en-SG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (e) {
+    return "Unknown date";
+  }
 };
 </script>
 

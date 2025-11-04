@@ -574,3 +574,46 @@ body.dark-mode .spinner-border,
 body.dark-mode .spinner-grow {
   color: #2196f3;
 }
+
+/* Map */
+body.dark-mode .gm-style .gm-control-active {
+  background-color: #252525;
+  color: #e0e0e0;
+}
+
+body.dark-mode .gm-style .gm-control-button {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+}
+
+body.dark-mode .gm-style .gm-control-button:hover {
+  background-color: #333;
+  color: #2196f3;
+}
+
+body.dark-mode .gm-style .gm-marker {
+  background-color: #2196f3;
+  border: 1px solid #333;
+}
+
+body.dark-mode .gm-style .gm-info-window {
+  background-color: #252525;
+  color: #e0e0e0;
+}
+
+body.dark-mode .gm-style .gm-style-iw-c,
+body.dark-mode .gm-style .gm-title,
+body.dark-mode .gm-style .poi-info-window div {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode .gm-style .poi-info-window a{
+  background-color: #1e1e1e;
+}
+
+body.dark-mode .tutor-search-bar {
+  background-color: #252525 !important;
+  border-color: #444 !important;
+  color: #e0e0e0;
+}

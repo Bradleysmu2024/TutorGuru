@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onActivated } from "vue";
 import { db } from "../services/firebase";
 import { collection, getDocs, query, where, collectionGroup } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
@@ -83,7 +83,11 @@ onMounted(async () => {
 
   // existing load
     try {
-      const q = query(collection(db, "assignments"), where("status", "==", "open"));
+      // Fetch both open and pending assignments (pending = has applications but not yet closed)
+      const q = query(
+        collection(db, "assignments"), 
+        where("status", "in", ["open", "pending"])
+      );
       const snapshot = await getDocs(q);
 
       console.log("Total assignments fetched from Firestore:", snapshot.docs.length);
@@ -92,6 +96,13 @@ onMounted(async () => {
       const items = snapshot.docs
         .map(doc => {
           const data = doc.data();
+          
+          console.log(`Assignment ${doc.id} data:`, {
+            location: data.location,
+            lat: data.lat,
+            lng: data.lng,
+            formattedAddress: data.formattedAddress
+          });
           
           // Skip online assignments (they don't have physical location)
           if (data.location === "Online" || !data.lat || !data.lng) {
@@ -124,6 +135,12 @@ onMounted(async () => {
     } catch (error) {
       console.error("Error fetching assignments:", error);
     }
+});
+
+// Refresh user applications when component is activated (navigated back to)
+onActivated(async () => {
+  console.log("TutorMap activated - refreshing user applications");
+  await loadUserApplications();
 });
 
 //  When user searches postal code 
@@ -201,13 +218,9 @@ function handleApply(assignmentId) {
 
 // Handle successful application submission
 async function handleApplicationSubmitted(jobId) {
-  toast.success("Application submitted successfully!", "Success");
-  // Update the userApplications map
-  userApplications.value = {
-    ...userApplications.value,
-    [jobId]: "pending",
-  };
   console.log("Application submitted for assignment:", jobId);
+  // Reload the page to refresh all data and clear any stuck states
+  window.location.reload();
 }
 
 // Load current user's applications

@@ -271,7 +271,7 @@ const openPasswordResetModal = () => {
 
 <style scoped>
 .card {
-  background-color: rgba(240, 248, 255, 0.68);
+  background-color: rgba(240, 248, 255, 0.70);
 }
 
 .login-page {

@@ -57,7 +57,9 @@
                   <small class="text-muted">{{ t.location || "" }}</small>
                 </div>
                 <div class="ms-auto text-end">
-                  <div class="fw-semibold">{{ t.rating ?? "—" }} ⭐</div>
+                  <div class="fw-semibold">
+                    {{ Number(t.rating) > 0 ? `${t.rating}` : '-' }} ⭐
+                  </div>
                 </div>
               </div>
               <p class="text-muted flex-grow-1">

@@ -211,7 +211,8 @@ const openPasswordResetModal = () => {
                   </label>
                   <a
                     @click="openPasswordResetModal"
-                    class="text-decoration-none float-end"
+                    class="text-decoration-none float-end pe-auto"
+                    href="#"
                     >Forgot password?</a
                   >
                 </div>
@@ -271,7 +272,7 @@ const openPasswordResetModal = () => {
 
 <style scoped>
 .card {
-  background-color: rgba(240, 248, 255, 0.534);
+  background-color: rgba(240, 248, 255, 0.70);
 }
 
 .login-page {

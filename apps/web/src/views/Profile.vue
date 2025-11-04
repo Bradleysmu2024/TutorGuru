@@ -159,12 +159,12 @@
             <!-- Tutor stats -->
             <div v-if="isTutorProfile">
               <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
-                <span class="text-muted">Applications Sent</span>
-                <span class="fw-semibold">12</span>
+                <span class="text-muted">Completed assignments</span>
+                <span class="fw-semibold">{{ completedAssignmentsCount == null ? '—' : completedAssignmentsCount }}</span>
               </div>
               <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
-                <span class="text-muted">Active Students</span>
-                <span class="fw-semibold">5</span>
+                <span class="text-muted">Active Assignment</span>
+                <span class="fw-semibold">{{ activeStudentsCount }}</span>
               </div>
               <div class="stat-item d-flex justify-content-between border-bottom py-2">
                 <span class="text-muted">Rating</span>
@@ -268,6 +268,8 @@ import {
   findUserByUsername,
   getUserDoc,
   calculateTutorRating,
+  getSelectedAssignmentsCount,
+  getCompletedAssignmentsCount,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRoute } from "vue-router";
@@ -300,6 +302,8 @@ const userRole = ref(null);
 const uploadedDocuments = ref([]);
 const loading = ref(true);
 const currentUser = ref(null);
+const activeStudentsCount = ref(0);
+const completedAssignmentsCount = ref(0);
 
 const route = useRoute();
 const isPublicView = ref(false);
@@ -359,6 +363,19 @@ const loadProfileRoute = async () => {
         uploadedDocuments.value = u.uploadedDocuments || [];
         userRole.value = u.role || "tutor";
         profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        // load number of selected assignments for this tutor
+        try {
+          const tid = u.uid || u.id || null;
+          activeStudentsCount.value = tid
+            ? await getSelectedAssignmentsCount(tid)
+            : 0;
+            completedAssignmentsCount.value = tid
+              ? await getCompletedAssignmentsCount(tid)
+              : 0;
+        } catch (e) {
+          console.warn("Failed to load active students count", e);
+          activeStudentsCount.value = 0;
+        }
       } else {
         console.warn("User not found for username:", username);
       }
@@ -379,6 +396,19 @@ const loadProfileRoute = async () => {
         uploadedDocuments.value = u.uploadedDocuments || [];
         currentUser.value = auth.currentUser;
         profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        // load number of selected assignments for this tutor (private profile)
+        try {
+          const tid = uid || profile.value.uid || profile.value.id || null;
+          activeStudentsCount.value = tid
+            ? await getSelectedAssignmentsCount(tid)
+            : 0;
+            completedAssignmentsCount.value = tid
+              ? await getCompletedAssignmentsCount(tid)
+              : 0;
+        } catch (e) {
+          console.warn("Failed to load active students count", e);
+          activeStudentsCount.value = 0;
+        }
       } else {
         toast.warning("Please log in to view your profile", "Login Required");
       }

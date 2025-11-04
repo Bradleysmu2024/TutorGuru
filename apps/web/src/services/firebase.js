@@ -432,6 +432,89 @@ export const calculateTutorRating = async (tutorId) => {
   }
 };
 
+// Return count of assignments where this tutor was selected
+export const getSelectedAssignmentsCount = async (tutorId) => {
+  try {
+    if (!tutorId) return 0;
+    const q = query(
+      collection(db, "assignments"),
+      where("selectedTutorId", "==", tutorId)
+    );
+    const snap = await getDocs(q);
+    return snap.size || snap.docs.length || 0;
+  } catch (err) {
+    console.error("Error getting selected assignments count:", err);
+    return 0;
+  }
+};
+
+// Count assignments where tutor was selected AND the assignment period has ended
+export const getCompletedAssignmentsCount = async (tutorId) => {
+  try {
+    if (!tutorId) return 0;
+    const now = new Date();
+    const assignmentsQ = query(
+      collection(db, "assignments"),
+      where("selectedTutorId", "==", tutorId)
+    );
+    const snap = await getDocs(assignmentsQ);
+    if (snap.empty) return 0;
+
+    let count = 0;
+
+    // For each assignment, look for the approved application by this tutor to read startDate
+    const promises = snap.docs.map(async (adoc) => {
+      try {
+        const assignment = { id: adoc.id, ...adoc.data() };
+        // Query the applications subcollection for approved application by this tutor
+        const appsQ = query(
+          collection(db, "assignments", assignment.id, "applications"),
+          where("tutorId", "==", tutorId),
+          where("status", "==", "approved")
+        );
+        const appsSnap = await getDocs(appsQ);
+        if (appsSnap.empty) return 0;
+
+        // There should be at most one approved app for this tutor/assignment
+        const appDoc = appsSnap.docs[0];
+        const appData = appDoc.data() || {};
+        const startRaw = appData.startDate || appData.approvedAt || assignment.startedAt || null;
+        if (!startRaw) return 0;
+
+        let startDate = new Date(startRaw);
+        if (startDate.toString() === "Invalid Date") {
+          // try Firestore timestamp
+          if (startRaw && typeof startRaw.toDate === "function") {
+            startDate = startRaw.toDate();
+          } else if (startRaw && typeof startRaw.seconds === "number") {
+            startDate = new Date(startRaw.seconds * 1000);
+          } else {
+            return 0;
+          }
+        }
+
+        const durationMonths = Number(assignment.contractDuration || 1);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 30 * durationMonths);
+
+        if (endDate <= now) return 1;
+        return 0;
+      } catch (err) {
+        console.warn("Error checking assignment completion for doc", adoc.id, err);
+        return 0;
+      }
+    });
+
+    const results = await Promise.all(promises);
+    results.forEach((r) => (count += r || 0));
+
+    return count;
+  } catch (err) {
+    console.error("Error getting completed assignments count:", err);
+    return 0;
+  }
+};
+
 // Storage functions
 export const uploadFile = async (file, path) => {
   try {
@@ -1338,7 +1421,7 @@ export const listAllUsers = async (role = null) => {
         const u = { id: s.id, ...s.data() };
         const res = await calculateTutorRating(u.id);
         if (res && res.success) {
-          return { ...u, rating: res.average || "-" };
+          return { ...u, rating: res.average ?? 0 };
         }
         return { ...u };
       })

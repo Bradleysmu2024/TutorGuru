@@ -237,7 +237,7 @@
 
       </div>
 
-      <!-- Past Completed Assignments - Show for public view and own profile -->
+      <!-- Past Assignments Taken - Show for public view and own profile -->
       <div
         class="row g-4 mt-4"
         v-if="isTutorProfile && completedAssignments.length > 0"
@@ -247,7 +247,7 @@
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="card-title mb-0">
-                  <i class="bi bi-check-circle me-2"></i> Past Completed Assignments
+                  <i class="bi bi-check-circle me-2"></i> Past Assignments Taken
                 </h5>
                 <button
                   class="btn btn-sm btn-outline-secondary"

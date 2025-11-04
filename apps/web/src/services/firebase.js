@@ -523,7 +523,7 @@ export const getTutorCompletedAssignments = async (tutorId) => {
     const q = query(
       collection(db, "assignments"),
       where("selectedTutorId", "==", tutorId),
-      where("status", "==", "closed")
+      where("status", "==", "closed") // get all "closed" assignment
     );
     
     const snap = await getDocs(q);

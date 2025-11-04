@@ -170,6 +170,6 @@ function applyFilter({ subjects, levels }) {
 #tutor-map-container {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: calc(100vh - 78px);
 }
 </style>

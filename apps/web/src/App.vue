@@ -53,6 +53,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding-top: 76px;
+  padding-top: 78px;
 }
 </style>

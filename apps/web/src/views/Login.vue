@@ -211,7 +211,8 @@ const openPasswordResetModal = () => {
                   </label>
                   <a
                     @click="openPasswordResetModal"
-                    class="text-decoration-none float-end"
+                    class="text-decoration-none float-end pe-auto"
+                    href="#"
                     >Forgot password?</a
                   >
                 </div>

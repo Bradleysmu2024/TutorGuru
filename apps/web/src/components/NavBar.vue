@@ -189,17 +189,7 @@
             </template>
             <!-- tutor Navigation -->
             <template v-else-if="currentRole === 'tutor'">
-              <li class="nav-item">
-                <router-link
-                  to="/dashboard"
-                  class="nav-link"
-                  active-class="active"
-                  @click="closeNavbar"
-                >
-                  <i class="bi bi-grid me-1"></i>
-                  Assignment
-                </router-link>
-              </li>
+              
               <li class="nav-item">
                 <router-link
                   to="/top-tutors"
@@ -237,6 +227,16 @@
                       <i class="bi bi-geo-alt me-2"></i>
                       Assignment Map
                     </router-link>
+                  </li>
+                  <li v-if="currentRole === 'tutor' || currentRole === 'admin'">
+                  <router-link
+                    to="/dashboard"
+                    class="dropdown-item"
+                    @click="closeNavbar"
+                  >
+                    <i class="bi bi-grid me-2"></i>
+                    My Assignments
+                  </router-link>
                   </li>
                 </ul>
               </li>

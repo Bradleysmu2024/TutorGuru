@@ -38,14 +38,12 @@
 
         <div class="col-md-4">
           <h6 class="mb-3">Contact Us</h6>
-          <p class="mb-2">
-            <i class="bi bi-envelope me-2"></i>
-            support@tutorguru.com
-          </p>
-          <p>
-            <i class="bi bi-telephone me-2"></i>
-            +65 1234 5678
-          </p>
+          <a class="mb-2 text-white" href="mailto:support@tutorguru.com">
+            <i class="bi bi-envelope me-2"></i>support@tutorguru.com
+          </a><br />
+          <a class="mb-2 text-white" href="tel:+6512345678">
+            <i class="bi bi-telephone me-2"></i>+65 1234 5678
+          </a>
         </div>
       </div>
 

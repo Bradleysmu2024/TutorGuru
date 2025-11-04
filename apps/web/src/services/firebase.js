@@ -1421,7 +1421,7 @@ export const listAllUsers = async (role = null) => {
         const u = { id: s.id, ...s.data() };
         const res = await calculateTutorRating(u.id);
         if (res && res.success) {
-          return { ...u, rating: res.average || "-" };
+          return { ...u, rating: res.average ?? 0 };
         }
         return { ...u };
       })

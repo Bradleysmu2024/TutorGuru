@@ -71,23 +71,36 @@ function createMarker() {
 
   //Build InfoWindow content safely
   const contentDiv = document.createElement("div");
+  contentDiv.className = "map-info-window";
   contentDiv.style.fontSize = "14px";
+  contentDiv.style.padding = "8px";
+  contentDiv.style.minWidth = "250px";
 
   const subjectEl = document.createElement("div");
+  subjectEl.className = "info-subject";
   subjectEl.textContent = `Subject: ${a.subject || ""}`;
+  subjectEl.style.marginBottom = "4px";
+  subjectEl.style.fontWeight = "500";
   contentDiv.appendChild(subjectEl);
 
   const levelEl = document.createElement("div");
+  levelEl.className = "info-level";
   levelEl.textContent = `Level: ${a.level || ""}`;
+  levelEl.style.marginBottom = "4px";
   contentDiv.appendChild(levelEl);
 
   const titleEl = document.createElement("div");
+  titleEl.className = "info-title";
   titleEl.textContent = `Title: ${a.title || ""}`;
+  titleEl.style.marginBottom = "4px";
+  titleEl.style.fontWeight = "600";
   contentDiv.appendChild(titleEl);
 
   const addressEl = document.createElement("div");
+  addressEl.className = "info-address";
   addressEl.textContent = `Address: ${a.formattedAddress || ""}`;
-  addressEl.style.marginBottom = "8px";
+  addressEl.style.marginBottom = "12px";
+  addressEl.style.fontSize = "13px";
   contentDiv.appendChild(addressEl);
 
   const btnGroup = document.createElement("div");
@@ -110,6 +123,10 @@ function createMarker() {
   contentDiv.appendChild(btnGroup);
 
   const travelInfoEl = document.createElement("div");
+  travelInfoEl.className = "info-travel";
+  travelInfoEl.style.marginTop = "8px";
+  travelInfoEl.style.fontSize = "13px";
+  travelInfoEl.style.fontWeight = "500";
   contentDiv.appendChild(travelInfoEl);
 
   const infoWindow = new google.maps.InfoWindow({
@@ -215,3 +232,52 @@ onBeforeUnmount(() => {
 });
 
 </script>
+
+<style>
+/* Google Maps InfoWindow styling for light and dark mode */
+.map-info-window {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+.info-address {
+  color: #6c757d;
+}
+
+.info-travel {
+  color: #0d6efd;
+}
+
+/* Dark mode styles */
+body.dark-mode .map-info-window {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .info-subject,
+body.dark-mode .info-level,
+body.dark-mode .info-title {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .info-address {
+  color: #999 !important;
+}
+
+body.dark-mode .info-travel {
+  color: #2196f3 !important;
+}
+
+/* Override Google Maps default InfoWindow styles */
+body.dark-mode .gm-style .gm-style-iw-c {
+  background-color: #1e1e1e !important;
+}
+
+body.dark-mode .gm-style .gm-style-iw-d {
+  color: #e0e0e0 !important;
+}
+
+body.dark-mode .gm-style .gm-style-iw-t::after {
+  background: linear-gradient(45deg, #1e1e1e 50%, rgba(0,0,0,0) 51%, rgba(0,0,0,0) 100%) !important;
+}
+</style>

@@ -1,17 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { getDoc, doc, setDoc, updateDoc } from "firebase/firestore";
-import { db, updateUserEmail, getLevelsWithGrades } from "../services/firebase";
-import {
-  getStorage,
-  ref as storageRef,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
-import { uploadUserAvatar } from "../services/firebase";
-import { getCurrentUser } from "../services/firebase";
-import { getParentAssignments } from "../services/firebase";
+import { getDoc, doc, setDoc} from "firebase/firestore";
+import { db, uploadUserAvatar,getCurrentUser,getParentAssignments,getLevelsWithGrades } from "../services/firebase";
 import { usePostalCodeGeocoding } from "../composables/usePostalCodeGeocoding";
 import { useToast } from "../composables/useToast";
 import EmailChangeModal from "../components/EmailChangeModal.vue";
@@ -120,7 +110,7 @@ const removeChild = (index) => {
 // Auto-validate and geocode postal code
 const validateAndGeocodePostal = async () => {
   const result = await validateAndGeocode(profile.value.postalCode, {
-    includeCoordinates: false, // Profile doesn't need lat/lng
+    includeCoordinates: false, 
   });
 
   if (result.success) {
@@ -439,15 +429,15 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-  </div>
-
   <!-- Email Change Modal Component -->
   <EmailChangeModal
-    v-model:show="showEmailModal"
+    :show="showEmailModal"
     :current-email="profile.email"
     user-collection="users"
     @email-changed="handleEmailChanged"
+    @update:show="val => showEmailModal = val"
   />
+  </div>
 </template>
 
 <style scoped>

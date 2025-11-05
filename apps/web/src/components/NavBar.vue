@@ -594,6 +594,10 @@ watch(
     margin-top: 1rem;
   }
 
+  .fixed-top {
+    z-index: 9999;
+  }
+
   /* Mobile dropdown styling */
   .dropdown-menu {
     position: static !important;

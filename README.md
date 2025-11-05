@@ -256,6 +256,11 @@ This project is part of a team assignment. Team members:
 - **Gyaltsen** - Firebase auth, Login pages, Google Maps, Assignment Search
 - **Leonard** - Calendar Scheduling, Tutor Profile Management, Firebase Setup, Reset Password via email
 
+## AI/LLM Usage
+
+This project utilized AI/LLM tools (ChatGPT) for the following purposes:
+- **Explaining coding errors and debugging hints** - AI was used to help understand error messages and suggest debugging approaches
+
 ## License
 
 This project is for educational purposes.

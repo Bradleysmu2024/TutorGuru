@@ -21,10 +21,10 @@ Before you begin, ensure you have the following installed:
 - **Git** (optional, for version control)
 
 To verify your installation, run:
-\`\`\`bash
+```bash
 node --version
 npm --version
-\`\`\`
+```
 
 ## Installation
 
@@ -37,20 +37,20 @@ If you have the ZIP file:
 - Open the folder in your code editor (VSCode recommended)
 
 If using Git:
-\`\`\`bash
+```bash
 git clone <repository-url>
 cd tutor-platform
-\`\`\`
+```
 
 ### 2. Install Dependencies
 
 Open a terminal in the project directory and run:
 
-\`\`\`bash
+```bash
 npm install
 npm i firebase-tools
 firebase deploy
-\`\`\`
+```
 
 This will install all required dependencies including:
 - Vue 3
@@ -62,9 +62,9 @@ This will install all required dependencies including:
 
 ### 3. Start the Development Server
 
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
 
 The application will start at `http://localhost:5173`
 

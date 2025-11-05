@@ -783,14 +783,6 @@ export const getEvents = async (token, calendarId = "primary", type) => {
       }
     );
     const data = await response.json();
-    data.items.forEach((element) => {
-      console.log(
-        element.start.dateTime,
-        element.end.dateTime,
-        element.colorId ?? null,
-        element.description ?? null
-      );
-    });
 
     return {
       success: true,

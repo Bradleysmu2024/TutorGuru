@@ -83,6 +83,7 @@ The application will start at `http://localhost:5173`
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build locally
+- `npm run production` - Build and preview production build locally (recommended ways to run the project)
 
 ## Adding your own images
 

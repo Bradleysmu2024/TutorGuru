@@ -1,6 +1,10 @@
 # TutorGuru Platform
 
-A comprehensive tutoring platform built with Vue.js that connects tutors with students. This platform provides tutors with a dashboard to browse job postings, filter opportunities, and manage their profiles.
+The tuition industry depends on agents, causing high fees, slow matching, and little transparency.
+
+TutorGuru directly connects parents and tutors, allowing flexible assignments and clear communication with no agents involved.
+
+TutorGuru is a comprehensive tutoring platform built with Vue.js that connects tutors with students. This platform provides tutors with a dashboard to browse job postings, filter opportunities, and manage their profiles.
 
 ## Features
 

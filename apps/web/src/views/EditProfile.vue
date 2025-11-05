@@ -40,5 +40,4 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* minimal styling, components will provide the rest */
 </style>

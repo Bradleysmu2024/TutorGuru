@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from "vue-router";
-import { logoutUser, signInWithGoogle } from "../services/firebase";
+import { logoutUser } from "../services/firebase";
 import { useToast } from "../composables/useToast";
 
 const toast = useToast();

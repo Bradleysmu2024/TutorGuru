@@ -5,7 +5,7 @@
     class="open-search-btn shadow"
     @click="showSearchBar = true"
   >
-    🔍 Search
+    <i class="bi bi-search me-1"></i> Search
   </button>
 
   <!-- Search overlay -->

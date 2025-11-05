@@ -171,7 +171,7 @@ router.beforeEach((to, from, next) => {
   // Prevent navigation to assignment detail with undefined ID
   if (to.name === 'AssignmentDetail') {
     if (!to.params.id || to.params.id === 'undefined') {
-      console.error('❌ Blocked navigation to assignment with undefined ID')
+      console.error('Blocked navigation to assignment with undefined ID')
       console.error('From:', from.path)
       next('/parent-dashboard')
       return

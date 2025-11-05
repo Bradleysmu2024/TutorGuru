@@ -58,6 +58,11 @@ Open a terminal in the project directory and run:
 
 ```bash
 npm install
+```
+
+Run the below code after setting up your firebase
+
+```bash
 npm i firebase-tools
 firebase deploy
 ```

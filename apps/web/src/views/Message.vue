@@ -60,7 +60,6 @@ const router = useRouter()
 const route = useRoute()
 
 const selectChat = (user) => {
-  // normalize minimal user objects that may come from sidebar
   if (user && typeof user === 'object') {
     activeUser.value = {
       id: user.id || user.uid || user.userId || null,
@@ -92,19 +91,15 @@ const onInitialChats = (user) => {
 }
 
 onMounted(async () => {
-  // Support both ?tutor=<username> (preferred) and legacy ?tutorId=<uid or username>
   const tutorRaw = route.query.tutor || route.query.tutorId
   if (!tutorRaw) return
   const tutorId = String(tutorRaw).trim()
   try {
-    // Prefer resolving tutorId as a username (friendly URLs)
     const userByName = await findUserByUsername(tutorId)
     if (userByName) {
       activeUser.value = userByName
       return
     }
-
-    // Fallback: attempt to treat tutorId as a user document id
     const userById = await getUserDoc(tutorId)
     if (userById) {
       activeUser.value = userById
@@ -123,7 +118,6 @@ onUnmounted(() => {})
 </script>
 
 <style scoped>
-/* Mobile sidebar overlay */
 .mobile-backdrop {
   position: fixed;
   inset: 0;
@@ -142,8 +136,6 @@ onUnmounted(() => {})
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
   overflow: auto;
 }
-
-/* Ensure chat column takes full height on small screens */
 .d-flex.flex-column > .chat-window {
   min-height: 0;
 }

@@ -21,7 +21,6 @@ const activeComponent = ref(null)
 onMounted(async () => {
   const user = auth.currentUser
   if (!user) {
-    // wait for auth state then decide
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) {
         router.push({ path: '/login', query: { redirect: '/editprofile' } })
@@ -38,7 +37,3 @@ onMounted(async () => {
   activeComponent.value = role === 'tutor' ? TutorProfile : ParentProfile
 })
 </script>
-
-<style scoped>
-/* minimal styling, components will provide the rest */
-</style>

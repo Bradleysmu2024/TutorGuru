@@ -56,7 +56,7 @@ const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const filteredAssignments = ref([]);
 const selectedJob = ref(null);
 const applicationModalRef = ref(null);
-const userApplications = ref({}); // Map assignmentId -> application status
+const userApplications = ref({});
 const mapConfig = {
   center: { lat: 1.3521, lng: 103.8198 },
   zoom: 12,

@@ -18,11 +18,9 @@ const profile = ref({
   children: [],
 });
 const assignments = ref([]);
-const levelsWithGrades = ref([]); // Add this for nested grades structure
+const levelsWithGrades = ref([]);
 
-// Use postal code geocoding composable
-const { geocoding, postalError, postalSuccess, validateAndGeocode } =
-  usePostalCodeGeocoding();
+const { geocoding, postalError, postalSuccess, validateAndGeocode } = usePostalCodeGeocoding();
 
 const showEmailModal = ref(false);
 
@@ -39,7 +37,6 @@ const loadProfile = async () => {
   }
 };
 
-// Avatar upload state for parent
 const avatarInputRef = ref(null);
 const avatarUploading = ref(false);
 
@@ -90,7 +87,6 @@ const saveProfile = async () => {
       );
       return;
     }
-    // write profile into users/{uid}
     await setDoc(doc(db, "users", user.uid), profile.value, { merge: true });
     toast.success("Profile saved successfully!", "Profile Saved");
   } catch (err) {
@@ -107,22 +103,17 @@ const removeChild = (index) => {
   profile.value.children.splice(index, 1);
 };
 
-// Auto-validate and geocode postal code
 const validateAndGeocodePostal = async () => {
   const result = await validateAndGeocode(profile.value.postalCode, {
     includeCoordinates: false, 
   });
 
   if (result.success) {
-    // Update profile data with geocoded information
     profile.value.formattedAddress = result.data.formattedAddress;
     profile.value.location = result.data.location;
   }
 };
 
-onMounted(loadProfile);
-
-// load parent assignments for quick stats
 const loadAssignments = async () => {
   try {
     const user = await getCurrentUser();
@@ -138,14 +129,12 @@ const openEmailChangeModal = () => {
 };
 
 const handleEmailChanged = (newEmail) => {
-  // Update local profile email state
   profile.value.email = newEmail;
 };
 
-onMounted(loadAssignments);
-
-// Load levels with grades on mount, rather than asking user type themselves
 onMounted(async () => {
+  loadAssignments();
+  loadProfile();
   try {
     levelsWithGrades.value = await getLevelsWithGrades();
   } catch (error) {

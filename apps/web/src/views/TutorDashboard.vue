@@ -154,13 +154,9 @@ const filters = ref({
 // Pagination
 const currentPage = ref(1);
 const itemsPerPage = ref(9); // 9 cards (3x3 grid)
-
-// Map assignmentId -> application status for current user
 const userApplications = ref({});
-
 const selectedJob = ref(null);
 const applicationModalRef = ref(null);
-
 let withdrawModal = null;
 const pendingWithdrawJobId = ref(null);
 
@@ -259,8 +255,6 @@ const filteredJobs = computed(() => {
         .toLowerCase()
         .includes(filters.value.search.toLowerCase());
 
-    // Handle 'status' filter mapping: '', 'open', 'applied', 'rejected'
-    // Note: statusFilter already declared above to support closed-assignment exception
     let matchesStatus = true;
     if (statusFilter === "open") {
       matchesStatus = job.status === "open";
@@ -306,14 +300,12 @@ const handleApply = (jobId) => {
 };
 
 const handleApplicationSubmitted = async (jobId) => {
-  // Mark this job as applied for the current user immediately (optimistic update)
   if (jobId) {
     userApplications.value = {
       ...userApplications.value,
       [jobId]: "pending",
     };
   }
-  // Reload jobs to reflect updated status
   await loadJobs();
 };
 
@@ -348,14 +340,6 @@ async function confirmWithdraw() {
       delete updated[jobId]
       userApplications.value = updated
     }
-
-  // Mark this job as open for the current user immediately (optimistic update)
-  // userApplications.value = {
-  //         ...userApplications.value,
-  //         [jobId]: "open",
-  //       };
-
-  // Reload jobs to reflect updated status
   
   
     withdrawModal.hide();
@@ -381,7 +365,6 @@ async function confirmWithdraw() {
   cursor: not-allowed;
 }
 
-/* Pagination styling */
 .pagination-controls {
   display: flex;
   justify-content: center;

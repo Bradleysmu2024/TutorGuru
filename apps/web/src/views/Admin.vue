@@ -154,7 +154,6 @@ async function setVerified(t, value) {
   try {
     await setUserDoc(t.id, { verified: value }, { merge: true })
     toast.success(`User ${value ? 'verified' : 'unverified'}`)
-    // update local list
     const idx = users.value.findIndex(x => x.id === t.id)
     if (idx !== -1) users.value[idx].verified = value
   } catch (err) {
@@ -185,7 +184,6 @@ function openEdit(t) {
 
 async function saveEdit() {
   if (!editUser.value) return
-  // validate required fields
   if (!editForm.value.username || !editForm.value.email) {
     toast.error('Username and email are required')
     return
@@ -193,7 +191,6 @@ async function saveEdit() {
   try {
     const updates = { username: editForm.value.username, name: editForm.value.name, email: editForm.value.email, role: editForm.value.role }
     await setUserDoc(editUser.value.id, updates, { merge: true })
-    // update local list
       const idx = users.value.findIndex(x => x.id === editUser.value.id)
       if (idx !== -1) users.value[idx] = { ...users.value[idx], ...updates }
     toast.success('User updated')
@@ -240,7 +237,6 @@ const defaultLevels = [
 const defaultLocations = [
   'All Locations',
   'Online',
-  // 55 planning areas of Singapore (plus Online & All Locations)
   'Ang Mo Kio',
   'Bedok',
   'Bishan',
@@ -346,7 +342,6 @@ onMounted(() => {
 <style scoped>
 .container { max-width: 900px; }
 
-/* Admin toolbar responsive: on small screens show 2 items per row */
 .toolbar-grid { flex-wrap: wrap; align-items: center; }
 .toolbar-item { box-sizing: border-box; }
 .min-w-160 { min-width: 150px; }
@@ -355,7 +350,6 @@ onMounted(() => {
 @media (max-width: 767px) {
   .toolbar-grid { gap: 0.5rem; }
   .toolbar-grid > .toolbar-item { flex: 0 0 50%; max-width: 46%; }
-  /* Make search take 75% and button 25% on mobile */
   .toolbar-grid > .toolbar-item.toolbar-search { flex: 0 0 75%; max-width: 75%; }
   .toolbar-grid > .toolbar-item.toolbar-clear { flex: 0 0 25%; max-width: 20%; }
   .toolbar-grid > .toolbar-item.min-w-160,

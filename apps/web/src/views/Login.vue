@@ -12,10 +12,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { useToast } from "../composables/useToast";
 import PasswordResetModal from "../components/PasswordResetModal.vue";
 
-// Import background image
-const loginBg = new URL("../assets/images/login/loginbg.jpg", import.meta.url)
-  .href;
-
+const loginBg = new URL("../assets/images/login/loginbg.jpg", import.meta.url).href;
 const toast = useToast();
 const router = useRouter();
 
@@ -58,14 +55,11 @@ const handleLogin = async () => {
     // Get user profile to fetch name
     const userProfile = await getUserDoc(user.uid);
     const userName = userProfile?.name || user.email.split("@")[0];
-
-    // route based on role
     const role = await getUserRole(user.uid);
     toast.success(`Login successful`, `Welcome Back ${userName}!`);
     if (role === "parent") {
       router.push("/parent-dashboard");
     } else {
-      // default to tutor dashboard
       router.push("/dashboard");
     }
   } catch (error) {
@@ -100,7 +94,6 @@ const handleGoogleLogin = async () => {
     );
     const querySnapshot = await getDocs(q);
 
-    // email does not exist
     if (querySnapshot.empty) {
       toast.warning(
         "Google email does not exist. Please register in the Sign Up page",

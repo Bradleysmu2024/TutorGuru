@@ -370,17 +370,12 @@ import {
   db,
   getSubjects,
   getLevels,
-  updateUserEmail,
 } from "../services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   doc,
   getDoc,
   updateDoc,
-  collection,
-  query,
-  where,
-  getDocs,
 } from "firebase/firestore";
 import {
   getStorage,
@@ -547,11 +542,10 @@ const handleUploadComplete = (files) => {
 // Auto-validate and geocode postal code
 const validateAndGeocodePostal = async () => {
   const result = await validateAndGeocode(profile.value.postalCode, {
-    includeCoordinates: false, // Profile doesn't need lat/lng
+    includeCoordinates: false,
   });
 
   if (result.success) {
-    // Update profile data with geocoded information
     profile.value.formattedAddress = result.data.formattedAddress;
     profile.value.location = result.data.location;
   }
@@ -598,7 +592,6 @@ const openEmailChangeModal = () => {
 };
 
 const handleEmailChanged = (newEmail) => {
-  // Update local profile email state
   profile.value.email = newEmail;
 };
 

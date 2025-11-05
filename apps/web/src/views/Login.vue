@@ -5,6 +5,7 @@ import {
   loginUser,
   signInWithGoogle,
   getUserRole,
+  getUserDoc,
   db,
 } from "../services/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
@@ -54,9 +55,13 @@ const handleLogin = async () => {
       })
     );
 
+    // Get user profile to fetch name
+    const userProfile = await getUserDoc(user.uid);
+    const userName = userProfile?.name || user.email.split("@")[0];
+
     // route based on role
     const role = await getUserRole(user.uid);
-    toast.success("Login successful!", "Welcome Back");
+    toast.success(`Login successful`, `Welcome Back ${userName}!`);
     if (role === "parent") {
       router.push("/parent-dashboard");
     } else {
@@ -64,7 +69,6 @@ const handleLogin = async () => {
       router.push("/dashboard");
     }
   } catch (error) {
-    console.error("Login error:", error);
     toast.error("Unexpected error during login", "Login Error");
   } finally {
     loading.value = false;
@@ -98,7 +102,6 @@ const handleGoogleLogin = async () => {
 
     // email does not exist
     if (querySnapshot.empty) {
-      console.log("Google email does not exist");
       toast.warning(
         "Google email does not exist. Please register in the Sign Up page",
         "Account Not Found"
@@ -116,17 +119,20 @@ const handleGoogleLogin = async () => {
       })
     );
 
+    // Get user profile to fetch name
+    const userProfile = await getUserDoc(user.uid);
+    const userName =
+      userProfile?.name || user.displayName || user.email.split("@")[0];
+
     // route based on role
     const role = await getUserRole(user.uid);
-    console.log("Google Login successful:", user, "role=", role);
-    toast.success("Google login successful!", "Welcome Back");
+    toast.success(`Google login successful`, `Welcome Back , ${userName}!`);
     if (role === "parent") {
       router.push("/parent-dashboard");
     } else {
       router.push("/dashboard");
     }
   } catch (error) {
-    console.error("Google Login error:", error);
     toast.error("Unexpected error during Google login", "Login Error");
   } finally {
     loading.value = false;
@@ -272,7 +278,7 @@ const openPasswordResetModal = () => {
 
 <style scoped>
 .card {
-  background-color: rgba(240, 248, 255, 0.70);
+  background-color: rgba(240, 248, 255, 0.7);
 }
 
 .login-page {

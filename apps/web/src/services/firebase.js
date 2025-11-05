@@ -23,10 +23,13 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   connectAuthEmulator,
   onAuthStateChanged,
   updateEmail,
+  verifyBeforeUpdateEmail,
   reauthenticateWithCredential,
   EmailAuthProvider,
 } from "firebase/auth";
@@ -477,7 +480,11 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
         // There should be at most one approved app for this tutor/assignment
         const appDoc = appsSnap.docs[0];
         const appData = appDoc.data() || {};
-        const startRaw = appData.startDate || appData.approvedAt || assignment.startedAt || null;
+        const startRaw =
+          appData.startDate ||
+          appData.approvedAt ||
+          assignment.startedAt ||
+          null;
         if (!startRaw) return 0;
 
         let startDate = new Date(startRaw);
@@ -499,7 +506,11 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
         if (endDate <= now) return 1;
         return 0;
       } catch (err) {
-        console.warn("Error checking assignment completion for doc", adoc.id, err);
+        console.warn(
+          "Error checking assignment completion for doc",
+          adoc.id,
+          err
+        );
         return 0;
       }
     });
@@ -518,32 +529,40 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
 export const getTutorCompletedAssignments = async (tutorId) => {
   try {
     if (!tutorId) return [];
-    
+
     const q = query(
       collection(db, "assignments"),
       where("selectedTutorId", "==", tutorId),
       where("status", "==", "closed") // get all "closed" assignment
     );
-    
+
     const snap = await getDocs(q);
-    const assignments = snap.docs.map(doc => ({
+    const assignments = snap.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
     }));
-    
+
     // Sort by completion date (most recent first)
     assignments.sort((a, b) => {
       const dateA = a.closedAt || a.updatedAt || a.createdAt;
       const dateB = b.closedAt || b.updatedAt || b.createdAt;
-      
-      const timeA = typeof dateA === 'string' ? Date.parse(dateA) : 
-                    dateA && dateA.seconds ? dateA.seconds * 1000 : 0;
-      const timeB = typeof dateB === 'string' ? Date.parse(dateB) : 
-                    dateB && dateB.seconds ? dateB.seconds * 1000 : 0;
-      
+
+      const timeA =
+        typeof dateA === "string"
+          ? Date.parse(dateA)
+          : dateA && dateA.seconds
+          ? dateA.seconds * 1000
+          : 0;
+      const timeB =
+        typeof dateB === "string"
+          ? Date.parse(dateB)
+          : dateB && dateB.seconds
+          ? dateB.seconds * 1000
+          : 0;
+
       return timeB - timeA;
     });
-    
+
     return assignments;
   } catch (err) {
     console.error("Error fetching tutor completed assignments:", err);
@@ -1061,35 +1080,43 @@ export const addEvent_ = async (
   userId
 ) => {
   function generateUUID() {
-  // Modern browsers and Node 19+
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
+    // Modern browsers and Node 19+
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
 
-  // Browser fallback using getRandomValues
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
-  }
+    // Browser fallback using getRandomValues
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+        (
+          c ^
+          (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+        ).toString(16)
+      );
+    }
 
-  // Node.js fallback using require('crypto')
-  try {
-    const { randomBytes } = require('crypto');
-    const bytes = randomBytes(16);
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
-    return `${hex.substr(0,8)}-${hex.substr(8,4)}-${hex.substr(12,4)}-${hex.substr(16,4)}-${hex.substr(20,12)}`;
-  } catch (err) {
-    // Last resort (non-crypto random)
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
+    // Node.js fallback using require('crypto')
+    try {
+      const { randomBytes } = require("crypto");
+      const bytes = randomBytes(16);
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = [...bytes]
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      return `${hex.substr(0, 8)}-${hex.substr(8, 4)}-${hex.substr(
+        12,
+        4
+      )}-${hex.substr(16, 4)}-${hex.substr(20, 12)}`;
+    } catch (err) {
+      // Last resort (non-crypto random)
+      return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
   }
-}
   try {
     const userRef = doc(db, "users", userId);
     switch (type) {
@@ -1613,36 +1640,117 @@ export const submitFeedback = async (assignmentId, rating, comment) => {
 };
 
 // Update user email function (teammate's code)
-export const updateUserEmail = async (newEmail, currentPassword) => {
+// Check if user signed in with Google
+export const isGoogleUser = () => {
+  const user = auth.currentUser;
+  if (!user) return false;
+  
+  // Check if user has Google provider
+  return user.providerData.some(provider => provider.providerId === 'google.com');
+};
+
+// Reauthenticate with Google for users who signed in with Google
+export const reauthenticateWithGoogle = async () => {
   try {
     const user = auth.currentUser;
     if (!user) {
       return { success: false, error: "No user is currently logged in" };
     }
 
-    const credential = EmailAuthProvider.credential(
-      user.email,
-      currentPassword
-    );
-    await reauthenticateWithCredential(user, credential);
+    console.log("Reauthenticating with Google...");
+    const result = await signInWithPopup(auth, provider);
+    console.log("Google reauthentication successful");
+    
+    return { success: true, user: result.user };
+  } catch (error) {
+    console.error("Error reauthenticating with Google:", error);
+    return { success: false, error: error.message };
+  }
+};
 
-    await updateEmail(user, newEmail);
+export const updateUserEmail = async (newEmail, currentPassword = null) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: "No user is currently logged in" };
+    }
 
-    return { success: true };
+    // Check if user is a Google user
+    const googleUser = isGoogleUser();
+    
+    if (googleUser) {
+      // For Google users, reauthenticate with Google popup
+      console.log("User signed in with Google, reauthenticating with Google...");
+      const reauthResult = await reauthenticateWithGoogle();
+      
+      if (!reauthResult.success) {
+        return { success: false, error: "Google reauthentication failed. Please try again." };
+      }
+      console.log("Google reauthentication successful");
+    } else {
+      // For email/password users, reauthenticate with password
+      if (!currentPassword) {
+        return { success: false, error: "Password is required for email/password accounts" };
+      }
+      
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword
+      );
+
+      console.log("Attempting to reauthenticate with password...");
+      await reauthenticateWithCredential(user, credential);
+      console.log("Password reauthentication successful");
+    }
+
+    // Use verifyBeforeUpdateEmail instead of updateEmail for email enumeration protection
+    console.log("Sending verification email to:", newEmail);
+    await verifyBeforeUpdateEmail(user, newEmail);
+    console.log("Verification email sent successfully");
+
+    return { 
+      success: true, 
+      requiresVerification: true,
+      isGoogleUser: googleUser,
+      message: "Please check your new email inbox and click the verification link to complete the change"
+    };
   } catch (error) {
     console.error("Error updating email:", error);
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
 
     let errorMessage = "Failed to update email";
 
-    if (error.code === "auth/wrong-password") {
-      errorMessage = "Current password is incorrect";
-    } else if (error.code === "auth/email-already-in-use") {
-      errorMessage = "This email is already in use by another account";
-    } else if (error.code === "auth/requires-recent-login") {
-      errorMessage =
-        "For security, please log out and log back in before changing your email";
-    } else if (error.code === "auth/invalid-email") {
-      errorMessage = "Invalid email format";
+    // Handle error codes with email enumeration protection
+    switch (error.code) {
+      case "auth/wrong-password":
+      case "auth/invalid-credential":
+        errorMessage = "Current password is incorrect";
+        break;
+      case "auth/email-already-in-use":
+        errorMessage = "This email is already in use by another account";
+        break;
+      case "auth/requires-recent-login":
+        errorMessage =
+          "For security, please log out and log back in before changing your email";
+        break;
+      case "auth/invalid-email":
+        errorMessage = "Invalid email format";
+        break;
+      case "auth/operation-not-allowed":
+        errorMessage = "Email/password sign-in is not enabled";
+        break;
+      case "auth/user-mismatch":
+        errorMessage = "Credentials do not match the current user";
+        break;
+      case "auth/user-not-found":
+        errorMessage = "User account not found";
+        break;
+      case "auth/popup-closed-by-user":
+        errorMessage = "Google sign-in popup was closed. Please try again.";
+        break;
+      default:
+        errorMessage = error.message || "Failed to update email";
     }
 
     return { success: false, error: errorMessage };

@@ -94,18 +94,18 @@ Place your images in the `src/assets/images/` folder. Supported formats:
 
 Open `src/components/Carousel.vue` and update the import statements with your actual image filenames:
 
-\`\`\`javascript
+```javascript
 import image1 from '@/assets/images/your-image-1.jpg'
 import image2 from '@/assets/images/your-image-2.jpg'
 import image3 from '@/assets/images/your-image-3.jpg'
 import image4 from '@/assets/images/your-image-4.jpg'
-\`\`\`
+```
 
 The `@` symbol is an alias for the `src` directory, so `@/assets/images/` points to `src/assets/images/`.
 
 ## Project structure
 
-\`\`\`
+```
 tutor-platform/
 ├── apps/web
 │   ├── public/                 # Static assets
@@ -132,7 +132,7 @@ tutor-platform/
 │   ├── vite.config.js          # Vite configuration
 ├── README.md
 └── firebase.json               # Firebase configuration
-\`\`\`
+```
 
 ## Firebase setup
 

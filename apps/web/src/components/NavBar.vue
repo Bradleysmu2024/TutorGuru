@@ -206,15 +206,15 @@
                   class="dropdown-menu dropdown-menu-end"
                   :class="{ show: assignmentsOpen }"
                 >
-                  <li>
-                    <router-link
-                      to="/dashboard"
-                      class="dropdown-item"
-                      @click="closeNavbar"
-                    >
-                      <i class="bi bi-grid me-2"></i>
-                      Dashboard
-                    </router-link>
+                  <li v-if="currentRole === 'tutor' || currentRole === 'admin'">
+                  <router-link
+                    to="/dashboard"
+                    class="dropdown-item"
+                    @click="closeNavbar"
+                  >
+                    <i class="bi bi-grid me-2"></i>
+                    Dashboard
+                  </router-link>
                   </li>
                   <li v-if="currentRole === 'admin' || currentRole === 'tutor'">
                     <router-link
@@ -225,16 +225,6 @@
                       <i class="bi bi-geo-alt me-2"></i>
                       Assignment Map
                     </router-link>
-                  </li>
-                  <li v-if="currentRole === 'tutor' || currentRole === 'admin'">
-                  <router-link
-                    to="/dashboard"
-                    class="dropdown-item"
-                    @click="closeNavbar"
-                  >
-                    <i class="bi bi-grid me-2"></i>
-                    My Assignments
-                  </router-link>
                   </li>
                 </ul>
               </li>

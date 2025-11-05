@@ -7,7 +7,6 @@
         class="carousel-item h-100"
         :class="{ active: index === 0 }"
       >
-        <!-- Added h-100 to fill container height and adjusted object-fit -->
         <img :src="image" class="d-block w-100 h-100" :alt="`Tutoring image ${index + 1}`">
       </div>
     </div>
@@ -30,7 +29,6 @@ const images = Object.values(imageModules).map(module => module.default)
 </script>
 
 <style scoped>
-/* Made carousel fill full height of container */
 .carousel {
   width: 100%;
   height: 100%;

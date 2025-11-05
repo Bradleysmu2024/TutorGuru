@@ -1175,7 +1175,6 @@ export const getSubjects = async () => {
     if (docSnap.exists()) {
       return docSnap.data().list || [];
     } else {
-      console.log("No subjects found!");
       return [];
     }
   } catch (error) {
@@ -1196,7 +1195,6 @@ export const getLevels = async () => {
       }
       return data;
     } else {
-      console.log("No levels found!");
       return [];
     }
   } catch (error) {
@@ -1223,7 +1221,6 @@ export const getLevelsWithGrades = async () => {
       );
       return [];
     } else {
-      console.log("No levels found!");
       return [];
     }
   } catch (error) {
@@ -1240,7 +1237,6 @@ export const getLocations = async () => {
     if (docSnap.exists()) {
       return docSnap.data().list || [];
     } else {
-      console.log("No locations found!");
       return [];
     }
   } catch (error) {
@@ -1448,8 +1444,6 @@ export const completePayment = async (assignmentId, sessionId) => {
         paidAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-
-      console.log("Payment completed successfully");
     }
   } catch (error) {
     console.error("Error completing payment:", error);

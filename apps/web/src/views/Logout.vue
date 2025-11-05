@@ -14,11 +14,8 @@ const handleLogout = async () => {
       toast.error(`Logout failed: ${response.error}`, "Logout Failed");
       return;
     }
-
-    const user = response.user;
     localStorage.clear();
 
-    console.log("Logout successful:", user);
     toast.success("Logout successful!", "Goodbye");
     router.push("/");
   } catch (error) {

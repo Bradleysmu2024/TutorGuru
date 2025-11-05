@@ -172,7 +172,7 @@ router.beforeEach((to, from, next) => {
   if (to.name === 'AssignmentDetail') {
     if (!to.params.id || to.params.id === 'undefined') {
       console.error('❌ Blocked navigation to assignment with undefined ID')
-      console.log('From:', from.path)
+      console.error('From:', from.path)
       next('/parent-dashboard')
       return
     }

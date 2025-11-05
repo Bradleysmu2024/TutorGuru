@@ -387,7 +387,6 @@
           <TransactionHistory
             :user-id="profile.uid"
             :user-type="userRole"
-            @view-transaction="handleViewTransaction"
           />
         </div>
       </div>
@@ -611,10 +610,6 @@ const messageTutor = () => {
 
 const editProfile = () => {
   router.push("/editprofile");
-};
-
-const handleViewTransaction = (transaction) => {
-  console.log("View transaction:", transaction);
 };
 
 const formatDate = (date) => {

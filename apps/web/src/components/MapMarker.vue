@@ -64,8 +64,6 @@ function createMarker() {
   const router = useRouter();
   const toast = useToast();
 
-  console.log(`Creating marker for assignment ${a?.id}, hasApplied: ${props.hasApplied}`);
-
   // Validate assignment position before creating a marker
   if (!a || !a.position || !isFinite(a.position.lat) || !isFinite(a.position.lng)) {
     console.warn(`Cannot create marker for assignment ${a?.id}: invalid position`);
@@ -77,9 +75,6 @@ function createMarker() {
     map,
     icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
   });
-
-  console.log(`Marker created successfully for assignment ${a.id}`);
-
 
   //Build InfoWindow content safely
   const contentDiv = document.createElement("div");
@@ -237,7 +232,6 @@ function createMarker() {
 
 function removeMarker() {
   if (marker.value) {
-    console.log(`Removing marker for assignment ${props.assignment?.id}`);
     const google = props.google;
     if (google && google.maps && google.maps.event && marker.value) {
       google.maps.event.clearInstanceListeners(marker.value);
@@ -251,7 +245,6 @@ function removeMarker() {
       console.warn("MapMarker: error setting marker.map = null", e);
     }
     marker.value = null;
-    console.log(`Marker removed for assignment ${props.assignment?.id}`);
   }
 }
 
@@ -275,7 +268,6 @@ watch(() => props.assignment, (newA, oldA) => {
 // Watch for changes in hasApplied status to update the marker
 watch(() => props.hasApplied, (newVal, oldVal) => {
   if (newVal !== oldVal) {
-    console.log(`MapMarker ${props.assignment?.id}: hasApplied changed from ${oldVal} to ${newVal} - recreating marker`);
     removeMarker();
     createMarker();
   }

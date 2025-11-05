@@ -100,10 +100,7 @@ onMounted(async () => {
   }
 
   try {
-    console.log('Verifying payment with session ID:', sessionId)
-    
     const paymentData = await verifyPayment(sessionId)
-    console.log('Payment verification response:', paymentData)
     
     if (paymentData.status === 'paid') {
       // payment summary for display

@@ -422,7 +422,6 @@ const confirmSelectTutor = async () => {
 };
 
 const rejectTutorApplication = async (application) => {
-  // Store the application data for confirmation
   pendingAction.value = application;
   rejectApplicationModal.show();
 };
@@ -461,7 +460,6 @@ const confirmRejectApplication = async () => {
 const formatDate = (date) => {
   if (!date) return "Unknown date";
 
-  // Firestore Timestamp objects may have toDate() or seconds property
   try {
     let d = date;
     if (typeof d.toDate === "function") {
@@ -488,7 +486,6 @@ const getEndTime = (start, duration) =>{
     const [hour, minute] = start.split(':').map(Number)
     const end = new Date()
     
-    // Add both hours and fractional minutes
     const totalMinutes = hour * 60 + minute + duration * 60
     end.setHours(0, totalMinutes)
 
@@ -505,11 +502,10 @@ const formatFileSize = (bytes) => {
 };
 
 const goBack = () => {
-  router.push("/parent-dashboard"); // go to parent dashboard
+  router.push("/parent-dashboard");
 };
 
 const editAssignment = () => {
-  // Navigate to PostAssignment page with edit mode
   router.push({
     path: "/post-assignment",
     query: {
@@ -522,7 +518,6 @@ const editAssignment = () => {
 const deleteAssignmentHandler = async () => {
   const assignmentTitle = assignment.value?.title || "this assignment";
 
-  // Show confirmation dialog
   if (
     !confirm(
       `Are you sure you want to delete "${assignmentTitle}"?\n\n` +
@@ -545,7 +540,6 @@ const deleteAssignmentHandler = async () => {
       return;
     }
 
-    // Delete from Firestore
     const result = await deleteAssignment(assignmentId);
 
     if (!result?.success) {
@@ -554,7 +548,6 @@ const deleteAssignmentHandler = async () => {
 
     toast.success("Assignment deleted successfully!", "Deleted");
 
-    // Redirect to parent dashboard
     router.push({
       path: "/parent-dashboard",
       query: { refresh: Date.now().toString() },
@@ -570,13 +563,11 @@ const deleteAssignmentHandler = async () => {
 
 // Initialize map for assignment location
 const initializeMap = async () => {
-  await nextTick(); // Wait for DOM to render
+  await nextTick();
 
   if (!assignment.value?.lat || !assignment.value?.lng) {
     return;
   }
-
-  // Clean up existing map if any
   if (assignmentMap.value) {
     assignmentMap.value.remove();
   }
@@ -1312,8 +1303,6 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-
-  <!-- feedback card replaced modal; UI now appended below Assignment Info -->
 
   <!-- Confirmation Modal for Selecting Tutor -->
   <div class="modal fade" id="selectTutorModal" tabindex="-1" aria-labelledby="selectTutorModalLabel"

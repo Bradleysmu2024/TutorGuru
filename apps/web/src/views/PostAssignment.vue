@@ -22,8 +22,6 @@ const fileUploadRef = ref(null);
 const selectedFiles = ref([]);
 const submitting = ref(false);
 const toast = useToast();
-
-// Edit mode
 const isEditMode = ref(false);
 const assignmentId = ref(null);
 
@@ -58,7 +56,7 @@ const formData = ref({
   sessionStartTime: "12:00",
   rate: 40,
   review: [],
-  selectedDays: [], // Array of day names ['Monday', 'Wednesday']
+  selectedDays: [],
   location: "",
   postalCode: "",
   lat: null,
@@ -87,7 +85,6 @@ const toggleDay = (day) => {
   }
 };
 
-// Computed: sessions per week (derived from selected days)
 const sessionsPerWeek = computed(() => formData.value.selectedDays.length);
 
 const availableGrades = computed(() => {
@@ -104,7 +101,6 @@ const availableGrades = computed(() => {
 watch(
   () => formData.value.level,
   (newLevel, oldLevel) => {
-    // Reset student grade when level changes
     if (newLevel !== oldLevel) {
       formData.value.studentGrade = "";
     }
@@ -132,7 +128,6 @@ const validateAndGeocodePostal = async () => {
   });
 
   if (result.success) {
-    // Update form data with geocoded information
     formData.value.formattedAddress = result.data.formattedAddress;
     formData.value.location = result.data.location;
   }
@@ -141,7 +136,6 @@ const validateAndGeocodePostal = async () => {
 // Load data from Firebase on component mount
 onMounted(async () => {
   try {
-    // Check if we're in edit mode
     if (route.query.edit && route.query.id) {
       isEditMode.value = true;
       assignmentId.value = route.query.id;
@@ -163,7 +157,7 @@ onMounted(async () => {
           sessionDuration: assignment.sessionDuration || 1,
           sessionStartTime: assignment.sessionStartTime || "12:00",
           rate: assignment.rate || 40,
-          selectedDays: assignment.selectedDays || [], // Load selected days
+          selectedDays: assignment.selectedDays || [],
           location: assignment.location || "",
           postalCode: assignment.postalCode || "",
           formattedAddress: assignment.formattedAddress || "",
@@ -184,7 +178,6 @@ onMounted(async () => {
           };
           postalSuccess.value = true;
         }
-        // Preload existing files into the upload component and into selectedFiles so they can be removed/kept
         if (Array.isArray(assignment.files) && assignment.files.length > 0) {
           selectedFiles.value = assignment.files.map((f) => ({ ...f }));
         }
@@ -227,7 +220,6 @@ const submitAssignment = async () => {
     // Convert postal code to coordinates (use already geocoded data if available)
     let geo = geocodedData.value;
     if (!isOnline.value && !geo && formData.value.postalCode?.trim()) {
-      // Fallback: geocode if not already done (only for physical locations)
       geo = await geocodePostalCode(formData.value.postalCode);
     }
 
@@ -271,14 +263,11 @@ const submitAssignment = async () => {
     let result;
 
     if (isEditMode.value && assignmentId.value) {
-      // Edit flow: upload any newly selected files first, then update assignment with combined files
       try {
-        // Determine which existing files the user kept (selectedFiles contains both metadata and File objects)
         const keptExisting = (selectedFiles.value || []).filter(
           (f) => f && f.url
         );
 
-        // Files to upload are the File objects in selectedFiles
         const newFilesMeta = [];
         const filesToUpload = (selectedFiles.value || []).filter(
           (f) => f && f instanceof File
@@ -299,17 +288,13 @@ const submitAssignment = async () => {
           }
         }
 
-        // Combined result is kept existing files plus newly uploaded file metadata
         assignmentData.files = [...keptExisting, ...newFilesMeta];
-
-        // Update assignment doc
         result = await updateAssignment(assignmentId.value, assignmentData);
       } catch (err) {
         console.error("Error uploading files during update:", err);
         throw err;
       }
     } else {
-      // Create new assignment: create doc first to obtain id, then upload files and patch the doc with file metadata
       result = await createAssignment(user.uid, assignmentData);
 
       if (!result?.success) {
@@ -336,20 +321,16 @@ const submitAssignment = async () => {
             }
           }
         }
-
-        // Also include any metadata items that might already be present in selectedFiles
         const existingMeta = (selectedFiles.value || []).filter(
           (f) => f && f.url
         );
         const finalFiles = [...existingMeta, ...uploadedFiles];
 
         if (finalFiles.length > 0) {
-          // Patch assignment with uploaded files and any existing metadata
           await updateAssignment(createdId, { files: finalFiles });
         }
       } catch (err) {
         console.error("Error uploading files after create:", err);
-        // We don't fail the whole create flow here but inform user
         toast.warning(
           "Assignment created but some files failed to upload.",
           "Partial Success"
@@ -456,7 +437,6 @@ const validateForm = () => {
     return false;
   }
 
-  // Validate at least one day is selected
   if (formData.value.selectedDays.length === 0) {
     toast.warning(
       "Please select at least one day per week for tutoring sessions",

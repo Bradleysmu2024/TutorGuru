@@ -53,7 +53,7 @@ const repeatedBrands = [...brands, ...brands]
 .trusted-scroll {
   display: flex;
   animation: scroll-left 20s linear infinite;
-  gap: 6rem; /* ← adjust this value */
+  gap: 6rem; 
 }
 
 .trusted-item {
@@ -75,7 +75,7 @@ const repeatedBrands = [...brands, ...brands]
   object-fit: contain;
   filter: none !important;
   opacity: 1 !important;
-  margin-right: -16px; /* negative margin pulls text closer */
+  margin-right: -16px; /* negative margin to pull text closer */
   vertical-align: middle;
 }
 

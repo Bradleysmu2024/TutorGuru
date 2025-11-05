@@ -78,7 +78,7 @@ onUnmounted(() => {
   align-items: center;
 }
 
-/* Optional: Add overlay for better text readability */
+/* Add overlay for better text readability */
 .hero-search-section::before {
   content: "";
   position: absolute;

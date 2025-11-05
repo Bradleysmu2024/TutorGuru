@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../services/firebase";
 import { useToast } from "../composables/useToast";
@@ -22,7 +22,7 @@ const error = ref(null);
 const sortBy = ref("latest"); // 'latest', 'oldest', 'amount-high', 'amount-low'
 const filterStatus = ref("all"); // 'all', 'completed', 'pending', 'cancelled'
 const pageSize = ref(10); // 5, 10, 20
-const isExpanded = ref(true); // ADD THIS
+const isExpanded = ref(true);
 const toast = useToast();
 
 const loadTransactions = async () => {
@@ -63,14 +63,9 @@ const loadTransactions = async () => {
   }
 };
 
-// add the watcher after loadTransactions is defined
-watch(
-  () => props.userId,
-  (newVal) => {
-    if (newVal) loadTransactions();
-  },
-  { immediate: true }
-);
+onMounted(() => {
+  loadTransactions();
+});
 
 const filteredTransactions = computed(() => {
   let filtered = transactions.value;
@@ -220,7 +215,7 @@ const downloadCSV = () => {
           </div>
         </div>
 
-        <!-- WRAP CONTENT IN COLLAPSIBLE DIV -->
+        <!-- Wrap content in collapsible div -->
         <div v-show="isExpanded">
           <p class="text-muted mb-4">
             {{
@@ -405,7 +400,7 @@ const downloadCSV = () => {
             </div>
           </div>
         </div>
-        <!-- END COLLAPSIBLE CONTENT -->
+        <!-- End collapsible content -->
       </div>
     </div>
   </div>

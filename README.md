@@ -6,6 +6,10 @@ TutorGuru directly connects parents and tutors, allowing flexible assignments an
 
 TutorGuru is a comprehensive tutoring platform built with Vue.js that connects tutors with students. This platform provides tutors with a dashboard to browse job postings, filter opportunities, and manage their profiles.
 
+# Relevant Links
+Youtube demo walkthrough: https://youtu.be/Y8PjdAynPCg
+Github Repo:  https://github.com/Bradleysmu2024/TutorGuru.git
+Deployed Application Link: http://dodieboy.codes/
 ## Features
 
 - **Homepage**: Engaging landing page with hero section and platform statistics

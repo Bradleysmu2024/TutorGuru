@@ -8,7 +8,9 @@ TutorGuru is a comprehensive tutoring platform built with Vue.js that connects t
 
 # Relevant Links
 Youtube demo walkthrough: https://youtu.be/Y8PjdAynPCg
+
 Github Repo:  https://github.com/Bradleysmu2024/TutorGuru.git
+
 Deployed Application Link: http://dodieboy.codes/
 ## Features
 

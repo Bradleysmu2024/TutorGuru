@@ -21,6 +21,8 @@ Deployed Application Link: http://dodieboy.codes/
 - **File Upload**: Drag-and-drop file upload for certificates and documents
 - **Responsive Design**: Fully responsive across desktop, tablet, and mobile devices
 - **Firebase Integration**: Ready for Firebase Authentication and Firestore database
+- **Schedule Updates**: Parents and tutors are able to update their schedules by syncing their calendars
+- **Messaging and Leaderboard**: Parents able to message tutors and view the top ones
 
 ## Prerequisites
 
@@ -94,30 +96,6 @@ The application will start at `http://localhost:5173`
 
 To use your own images in the carousel:
 
-### 1. Create the Images Folder
-
-Create a folder structure: `src/assets/images/`
-
-### 2. Add Your Images
-
-Place your images in the `src/assets/images/` folder. Supported formats:
-- JPG/JPEG
-- PNG
-- WebP
-- SVG
-
-### 3. Update the Carousel Component
-
-Open `src/components/Carousel.vue` and update the import statements with your actual image filenames:
-
-```javascript
-import image1 from '@/assets/images/your-image-1.jpg'
-import image2 from '@/assets/images/your-image-2.jpg'
-import image3 from '@/assets/images/your-image-3.jpg'
-import image4 from '@/assets/images/your-image-4.jpg'
-```
-
-The `@` symbol is an alias for the `src` directory, so `@/assets/images/` points to `src/assets/images/`.
 
 ## Project structure
 

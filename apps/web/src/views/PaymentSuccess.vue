@@ -103,7 +103,6 @@ onMounted(async () => {
     const paymentData = await verifyPayment(sessionId)
     
     if (paymentData.status === 'paid') {
-      // payment summary for display
       paymentSummary.value = {
         assignmentTitle: paymentData.assignmentTitle || 'N/A',
         tutorName: paymentData.tutorName || 'N/A',

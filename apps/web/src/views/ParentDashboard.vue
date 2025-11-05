@@ -90,8 +90,6 @@ const filteredAssignments = computed(() => {
   return assignments.value.filter((a) => a.status === filterStatus.value);
 });
 
-// Removed getStatusBadgeClass and getStatusIcon - now using StatusBadge component
-
 const viewAssignment = (assignmentId) => {
   router.push(`/assignment/${assignmentId}`);
 };

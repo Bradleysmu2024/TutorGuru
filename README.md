@@ -16,7 +16,7 @@ A comprehensive tutoring platform built with Vue.js that connects tutors with st
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** (v18.0.0 or higher) - [Download here](https://nodejs.org/)
+- **Node.js** (v22.0.0 or higher) - [Download here](https://nodejs.org/)
 - **npm** (comes with Node.js)
 - **Git** (optional, for version control)
 

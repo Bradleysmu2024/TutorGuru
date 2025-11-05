@@ -26,7 +26,6 @@
           :key="job.id"
           class="col-md-6 col-lg-4"
         >
-          <!-- pass the current user's application status for this job (if any) -->
           <JobCard :job="job" :appliedStatus="userApplications[job.id]" @apply="handleApply"
             @withdraw="handleWithdraw" />
         </div>
@@ -112,8 +111,6 @@ import {
   getSubjects,
   getLevels,
   getLocations,
-  submitApplication,
-  getEvent_,
 } from "../services/firebase";
 import {
   collection,
@@ -124,7 +121,7 @@ import {
   deleteDoc,
   doc,
 } from "firebase/firestore";
-import { db, auth } from "../services/firebase";
+import { db } from "../services/firebase";
 import { getCurrentUser } from "../services/firebase";
 
 const route = useRoute();
@@ -203,7 +200,7 @@ const loadJobs = async () => {
     const snap = await getDocs(collection(db, "assignments"));
     const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
 
-    // Sort client-side by createdAt (handle ISO strings and Firestore timestamps)
+    // Sort client-side by createdAt descending
     items.sort((a, b) => {
       const ta =
         a.createdAt && typeof a.createdAt === "string"
@@ -230,24 +227,17 @@ const loadJobs = async () => {
 
 const filteredJobs = computed(() => {
   return jobs.value.filter((job) => {
-    // Exclude closed assignments from tutor view by default.
-    // Exception: if the user explicitly filters for 'rejected' and this tutor's application was rejected,
-    // show the closed assignment so the tutor can review their rejected applications.
+    
     const statusFilter = filters.value.status || "";
     if (job.status === "closed") {
-      // Allow closed assignments to pass only when the tutor explicitly filters
-      // for rejected or approved applications and they have that application state.
       if (
-        !(
-          (statusFilter === "rejected" &&
+        !((statusFilter === "rejected" &&
             userApplications.value[job.id] === "rejected") ||
           (statusFilter === "approved" &&
-            userApplications.value[job.id] === "approved")
-        )
+            userApplications.value[job.id] === "approved"))
       ) {
         return false;
       }
-      // otherwise allow closed+rejected/approved for this tutor to pass through
     }
     const norm = (s) => (s || "").toString().toLowerCase().trim();
     const matchesSubject =

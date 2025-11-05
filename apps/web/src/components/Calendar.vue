@@ -346,9 +346,6 @@ async function getEvents(type) {
     let events = [];
     if (querySnapshot) {
       querySnapshot.forEach((doc) => {
-        // console.log(doc)
-        // const data = doc.data()
-
         // Convert Firestore date fields to JS Date strings
         const startDate = new Date(doc.start); // assuming 'start' is stored as ISO string
         const endDate = new Date(doc.end); // assuming 'end' is stored as ISO string
@@ -359,10 +356,8 @@ async function getEvents(type) {
           start: startDate, // e.g., "Sun Oct 12 2025 23:00:00 GMT+0800 (Singapore Standard Time)"
           end: endDate,
         });
-        // console.log(doc.id, doc, 'start:', startDate, 'end:', endDate)
       });
     }
-    // console.log(type, events);
     return events;
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -518,8 +513,6 @@ async function sync_from_google() {
     };
     const user_ = JSON.parse(localStorage.getItem("user"));
     const now = new Date(Date.now());
-    // console.log(now)
-    // check for existing google api token, expiry time, within 5 mins of expiry time
     if (
       !user_.token ||
       !user_.expiry ||

@@ -147,7 +147,6 @@ const handleGoogleRegister = async () => {
   if (loading.value) return;
   loading.value = true;
   try {
-    console.log(registerForm.value.role);
     if (registerForm.value.agreeTerms !== true) {
       toast.warning("Please agree to the terms", "Terms Required");
       loading.value = false;
@@ -178,7 +177,6 @@ const handleGoogleRegister = async () => {
     const querySnapshot = await getDocs(q);
     // email exists
     if (!querySnapshot.empty) {
-      console.log("Email already exists");
       toast.warning(
         "Email is already Used. Please Login with the method you have registered with",
         "Email In Use"
@@ -215,8 +213,6 @@ const handleGoogleRegister = async () => {
         { merge: true }
       );
 
-      console.log("✅ Tutor user created in Firestore for:", user.email);
-
       localStorage.setItem(
         "user",
         JSON.stringify({
@@ -248,8 +244,6 @@ const handleGoogleRegister = async () => {
         },
         { merge: true }
       );
-
-      console.log("✅ Parent user created in Firestore for:", user.email);
 
       localStorage.setItem(
         "user",

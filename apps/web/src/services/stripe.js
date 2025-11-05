@@ -4,11 +4,6 @@ import { db } from './firebase'
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
 
-console.log('Stripe Key Check:', {
-  keyExists: !!stripePublicKey,
-  keyPrefix: stripePublicKey?.substring(0, 7)
-})
-
 let stripePromise = null
 if (stripePublicKey) {
   stripePromise = loadStripe(stripePublicKey)
@@ -17,8 +12,6 @@ if (stripePublicKey) {
 }
 
 export const createPaymentSession = async (assignmentData) => {
-  console.log('Creating Payment Session')
-  
   try {
     const { paymentId, assignmentId, totalAmount, title, selectedTutor } = assignmentData || {}
 
@@ -43,8 +36,6 @@ export const createPaymentSession = async (assignmentData) => {
       // only allowing card payments
       paymentMethodTypes: ['card']
     }
-    
-    console.log('Payment Request:', requestBody)
 
     const response = await fetch('https://us-central1-tutor-72464.cloudfunctions.net/api/create-payment-session', {
       method: 'POST',
@@ -61,7 +52,6 @@ export const createPaymentSession = async (assignmentData) => {
     }
 
     const data = await response.json()
-    console.log('Session data:', data)
 
     if (!data.url || !data.sessionId) {
       throw new Error('No checkout URL from server')

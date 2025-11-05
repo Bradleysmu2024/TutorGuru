@@ -90,23 +90,12 @@ onMounted(async () => {
       );
       const snapshot = await getDocs(q);
 
-      console.log("Total assignments fetched from Firestore:", snapshot.docs.length);
-
       // Coerce lat/lng to numbers and skip invalid entries to avoid Google Maps errors
       const items = snapshot.docs
         .map(doc => {
           const data = doc.data();
-          
-          console.log(`Assignment ${doc.id} data:`, {
-            location: data.location,
-            lat: data.lat,
-            lng: data.lng,
-            formattedAddress: data.formattedAddress
-          });
-          
-          // Skip online assignments (they don't have physical location)
+
           if (data.location === "Online" || !data.lat || !data.lng) {
-            console.log(`Skipping assignment ${doc.id} - ${data.location === "Online" ? "Online assignment" : "Missing coordinates"}`);
             return null;
           }
 
@@ -130,8 +119,6 @@ onMounted(async () => {
 
       assignments.value = items;
       filteredAssignments.value = items;
-      console.log("Loaded open assignments with valid coordinates:", assignments.value.length);
-      console.log("Assignment IDs:", assignments.value.map(a => a.id));
     } catch (error) {
       console.error("Error fetching assignments:", error);
     }
@@ -139,7 +126,6 @@ onMounted(async () => {
 
 // Refresh user applications when component is activated (navigated back to)
 onActivated(async () => {
-  console.log("TutorMap activated - refreshing user applications");
   await loadUserApplications();
 });
 
@@ -178,7 +164,6 @@ async function searchTutorLocation(postalCode) {
           postal: postalCode,
         })
       );
-      console.log("Tutor location saved locally:", location.lat(), location.lng());
     } else {
       toast.error("Postal code not found", "Invalid Postal Code");
     }
@@ -205,7 +190,6 @@ function applyFilter({ subjects, levels }) {
   }
 
   filteredAssignments.value = filtered;
-  console.log("Filtered assignments:", filtered.length, "ids:", filtered.map(f => f.id), "subjectFilterActive:", subjectFilterActive, "levelFilterActive:", levelFilterActive);
 }
 
 // Handle apply button click from MapMarker
@@ -218,8 +202,6 @@ function handleApply(assignmentId) {
 
 // Handle successful application submission
 async function handleApplicationSubmitted(jobId) {
-  console.log("Application submitted for assignment:", jobId);
-  // Reload the page to refresh all data and clear any stuck states
   window.location.reload();
 }
 
@@ -241,7 +223,6 @@ async function loadUserApplications() {
         }
       });
       userApplications.value = map;
-      console.log("Loaded user applications:", Object.keys(map).length);
     }
   } catch (e) {
     console.warn("Failed to load user applications map", e);

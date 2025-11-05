@@ -113,10 +113,6 @@ exports.sendSessionReminders = functions.pubsub
         now.getTime() + 22 * 60 * 60 * 1000
       );
 
-      console.log(
-        `Checking for sessions between ${twentyTwoHoursFromNow.toISOString()} and ${twentySixHoursFromNow.toISOString()}`
-      );
-
       // Get all users
       const usersSnapshot = await admin.firestore().collection("users").get();
       const emailPromises = [];
@@ -144,11 +140,6 @@ exports.sendSessionReminders = functions.pubsub
             sessionTime <= twentySixHoursFromNow
           ) {
             sessionsFound++;
-            console.log(
-              `Found upcoming session for user ${userDoc.id}: ${
-                session.name
-              } at ${sessionTime.toISOString()}`
-            );
 
             // Send email to current user
             emailPromises.push(
@@ -175,9 +166,6 @@ exports.sendSessionReminders = functions.pubsub
       }
 
       await Promise.all(emailPromises);
-      console.log(
-        `Session reminder check complete. Found ${sessionsFound} sessions, sent ${emailPromises.length} emails.`
-      );
       return null;
     } catch (error) {
       console.error("Error in sendSessionReminders:", error);
@@ -255,7 +243,6 @@ async function sendReminderEmail(
     };
 
     await sgMail.send(msg);
-    console.log(`Reminder email sent successfully to ${email}`);
   } catch (error) {
     console.error(`Error sending email to ${email}:`, error);
     if (error.response) {

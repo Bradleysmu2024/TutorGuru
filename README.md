@@ -62,13 +62,6 @@ Open a terminal in the project directory and run:
 npm install
 ```
 
-Run the below code after setting up your firebase
-
-```bash
-npm i firebase-tools
-firebase deploy
-```
-
 This will install all required dependencies including:
 - Vue 3
 - Vue Router 4
@@ -77,7 +70,24 @@ This will install all required dependencies including:
 - Firebase
 - Vite (build tool)
 
-### 3. Start the Development Server
+### 3. Enter api key in .env file
+
+1. cd to /apps/web/ using the below command
+```bash
+cd apps/web/
+```
+2. Create a .env file and fill the file with the following information
+```
+VUE_APP_API_KEY=...
+VUE_APP_AUTH_DOMAIN=...
+VUE_APP_PROJECT_ID=...
+VUE_APP_STORAGE_BUCKET=...
+VUE_APP_MESSAGING_SENDER_ID=...
+VUE_APP_APP_ID=...
+VUE_APP_MEASUREMENT_ID=...
+```
+
+### 4. Start the Development Server
 
 ```bash
 npm run dev
@@ -158,7 +168,12 @@ VUE_APP_APP_ID=...
 VUE_APP_MEASUREMENT_ID=...
 ```
 
-4. Open `src/services/firebase.js` to confirm which env keys the project expects and adjust as needed.
+### 4. Run the below code to update firebase permission and setting
+
+```bash
+npm i firebase-tools
+firebase deploy
+```
 
 
 ## Development notes

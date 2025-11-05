@@ -250,8 +250,8 @@ Firebase issues: verify config keys, ensure Auth/Firestore enabled, and that you
 ## Contributing
 
 This project is part of a team assignment. Team members:
-- **Dzaki** - Tutor Dashboard, Search/Filter, File Upload
-- **Jia Shun** - Message, Profile, Firebase
+- **Dzaki** - Dashboard for tutors / parent, Tutor search filter, File upload, Email Session Reminder, Parent Dashboard
+- **Jia Shun** - Message, Profile, Firebase, Hosting of website, Dark Mode
 - **Bradley** - Payment, Transaction history, Home Page, Profile
 - **Gyaltsen** - Firebase auth, Login pages, Google Maps, Assignment Search
 - **Leonard** - Calendar Scheduling, Tutor Profile Management, Firebase Setup, Reset Password via email

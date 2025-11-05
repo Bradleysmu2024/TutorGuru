@@ -26,13 +26,6 @@ const isExpanded = ref(true); // ADD THIS
 const toast = useToast();
 
 const loadTransactions = async () => {
-  console.log(
-    "Loading transactions for userId:",
-    props.userId,
-    "userType:",
-    props.userType
-  );
-
   if (!props.userId) {
     console.warn("No userId provided");
     loading.value = false;
@@ -53,20 +46,15 @@ const loadTransactions = async () => {
       q = query(paymentsRef, where("tutorId", "==", props.userId));
     }
 
-    console.log("Executing query...");
     const snapshot = await getDocs(q);
-    console.log("Query result - docs count:", snapshot.docs.length);
 
     transactions.value = snapshot.docs.map((doc) => {
       const data = doc.data();
-      console.log("Transaction doc:", doc.id, data);
       return {
         id: doc.id,
         ...data,
       };
     });
-
-    console.log("Loaded transactions:", transactions.value.length);
   } catch (err) {
     console.error("Error loading transactions:", err);
     error.value = "Failed to load transaction history. Please try again.";
@@ -79,10 +67,7 @@ const loadTransactions = async () => {
 watch(
   () => props.userId,
   (newVal) => {
-    console.log("TransactionHistory - userId changed:", newVal);
-    if (newVal) {
-      loadTransactions();
-    }
+    if (newVal) loadTransactions();
   },
   { immediate: true }
 );

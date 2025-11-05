@@ -248,7 +248,6 @@ const processPendingPayment = async () => {
     if (matchingPending) {
       // Reuse matching pending payment
       paymentId = matchingPending.id;
-      console.log(`Reusing existing pending payment:`, paymentId);
     } else {
       shouldCreateNew = true;
       
@@ -256,7 +255,6 @@ const processPendingPayment = async () => {
       const cancelPromises = allPendingSnapshot.docs
         .filter(doc => doc.data().paymentType !== currentPaymentType)
         .map(doc => {
-          console.log(`Cancelling pending payment with different type:`, doc.id);
           return updateDoc(doc.ref, {
             status: 'cancelled',
             cancelledAt: serverTimestamp(),
@@ -281,8 +279,6 @@ const processPendingPayment = async () => {
         totalMonths: totalMonths,
         monthNumber: nextMonthNumber,
       });
-      
-      console.log(`Created new payment record for month ${nextMonthNumber}:`, paymentId);
     }
 
     await createPaymentSession({

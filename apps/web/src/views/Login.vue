@@ -98,7 +98,7 @@ const handleGoogleLogin = async () => {
 
     // email does not exist
     if (querySnapshot.empty) {
-      console.log("Google email does not exist");
+      console.error("Google email does not exist");
       toast.warning(
         "Google email does not exist. Please register in the Sign Up page",
         "Account Not Found"
@@ -118,7 +118,6 @@ const handleGoogleLogin = async () => {
 
     // route based on role
     const role = await getUserRole(user.uid);
-    console.log("Google Login successful:", user, "role=", role);
     toast.success("Google login successful!", "Welcome Back");
     if (role === "parent") {
       router.push("/parent-dashboard");

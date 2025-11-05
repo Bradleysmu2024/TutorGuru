@@ -144,7 +144,6 @@ const handleSubmit = async () => {
 
   try {
     // Send Password Reset Email
-    console.log("email entered:", localResetEmail.value);
     await sendPasswordResetEmail(auth, localResetEmail.value);
 
     loading.value = false;

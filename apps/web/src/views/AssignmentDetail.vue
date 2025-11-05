@@ -67,7 +67,6 @@ const hasReviewed = computed(() => {
 const userReview = computed(() => {
   try {
     const reviews = assignment.value?.review || [];
-    console.log("User reviews:", reviews[0].comment);
     if (!Array.isArray(reviews) || reviews.length === 0) return null;
     return (
       {
@@ -312,22 +311,11 @@ const confirmSelectTutor = async () => {
       // Reload assignment to reflect changes
       await loadAssignment();
 
-      // console.log('app', application)
-      // console.log('assignment', assignment.value)
-      // application.tutorName
-      // application.tutorId
-      // application.tutorEmail
-      //assignment.selectedDays ['Monday', 'Tuesday']
-      //assignment.sessionDuration 2 (hour(s))
-      //assignment.sessionsPerWeek 2 (visual data)
-      //assignment.contractDuration 1 (month(s))
-
       function getWeekdayDatesInRange(startDate, endDate, weekdays) {
         const start = new Date(startDate);
         const end = new Date(endDate);
         const result = [];
 
-        // Normalize to remove time
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
 
@@ -335,7 +323,7 @@ const confirmSelectTutor = async () => {
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
           // getDay(): Sunday=0, Monday=1, ..., Saturday=6
           if (weekdays.includes(d.getDay())) {
-            result.push(new Date(d)); // copy date
+            result.push(new Date(d));
           }
         }
 
@@ -344,8 +332,6 @@ const confirmSelectTutor = async () => {
 
       function convertInput(input) {
         const date = new Date(input);
-
-        // Format output
         const pad = (n) => String(n).padStart(2, "0");
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
           date.getDate()
@@ -366,13 +352,11 @@ const confirmSelectTutor = async () => {
         Friday: 5,
         Saturday: 6,
       };
-      // console.log('test',assignment.value.selectedDays)
       const selected_days = assignment.value.selectedDays.map(
         (day) => days_obj[day]
       );
       let days = getWeekdayDatesInRange(start, end, selected_days);
       days = days.map((d) => d.toDateString());
-      console.log(days);
 
       const colors_obj = {
         default: "#039be5", // blue (peacock)
@@ -399,11 +383,9 @@ const confirmSelectTutor = async () => {
         let endDate = new Date(d);
         endDate.setHours(
           startDate.getHours() + assignment.value.sessionDuration
-        ); // add session Duration to find out ending time
+        );
         startDate = convertInput(startDate);
         endDate = convertInput(endDate);
-        console.log(startDate);
-        console.log(endDate);
         await addEvent_(
           "calendar",
           `${assignment.value.title} + ${assignment.value.subject}`,

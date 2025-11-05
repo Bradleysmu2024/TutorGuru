@@ -15,7 +15,6 @@ import {
   connectFirestoreEmulator,
   serverTimestamp,
   arrayUnion,
-  arrayRemove,
 } from "firebase/firestore";
 import {
   getAuth,
@@ -75,7 +74,6 @@ export const getJobPostings = async (filters = {}) => {
   try {
     let q = collection(db, "jobPostings");
 
-    // Apply filters
     if (filters.subject) {
       q = query(q, where("subject", "==", filters.subject));
     }
@@ -210,7 +208,6 @@ export const deleteAssignment = async (assignmentId) => {
   }
 };
 
-// ============= APPLICATION FUNCTIONS =============
 export const submitApplication = async (
   assignmentId,
   tutorId,
@@ -357,14 +354,14 @@ export const getParentAssignments = async (parentId) => {
         a.createdAt && typeof a.createdAt === "string"
           ? Date.parse(a.createdAt)
           : a.createdAt && a.createdAt.seconds
-          ? a.createdAt.seconds * 1000
-          : 0;
+            ? a.createdAt.seconds * 1000
+            : 0;
       const tb =
         b.createdAt && typeof b.createdAt === "string"
           ? Date.parse(b.createdAt)
           : b.createdAt && b.createdAt.seconds
-          ? b.createdAt.seconds * 1000
-          : 0;
+            ? b.createdAt.seconds * 1000
+            : 0;
       return tb - ta;
     });
     return items;
@@ -395,7 +392,6 @@ export const getAssignmentById = async (id) => {
 export const calculateTutorRating = async (tutorId) => {
   try {
     if (!tutorId) return { success: false, error: "Missing tutorId" };
-    // Query closed assignments where this tutor was selected
     const q = query(
       collection(db, "assignments"),
       where("selectedTutorId", "==", tutorId),
@@ -431,7 +427,6 @@ export const calculateTutorRating = async (tutorId) => {
   }
 };
 
-// Return count of assignments where this tutor was selected
 export const getSelectedAssignmentsCount = async (tutorId) => {
   try {
     if (!tutorId) return 0;
@@ -447,7 +442,6 @@ export const getSelectedAssignmentsCount = async (tutorId) => {
   }
 };
 
-// Count assignments where tutor was selected AND the assignment period has ended
 export const getCompletedAssignmentsCount = async (tutorId) => {
   try {
     if (!tutorId) return 0;
@@ -461,11 +455,9 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
 
     let count = 0;
 
-    // For each assignment, look for the approved application by this tutor to read startDate
     const promises = snap.docs.map(async (adoc) => {
       try {
         const assignment = { id: adoc.id, ...adoc.data() };
-        // Query the applications subcollection for approved application by this tutor
         const appsQ = query(
           collection(db, "assignments", assignment.id, "applications"),
           where("tutorId", "==", tutorId),
@@ -473,8 +465,6 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
         );
         const appsSnap = await getDocs(appsQ);
         if (appsSnap.empty) return 0;
-
-        // There should be at most one approved app for this tutor/assignment
         const appDoc = appsSnap.docs[0];
         const appData = appDoc.data() || {};
         const startRaw = appData.startDate || appData.approvedAt || assignment.startedAt || null;
@@ -482,7 +472,6 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
 
         let startDate = new Date(startRaw);
         if (startDate.toString() === "Invalid Date") {
-          // try Firestore timestamp
           if (startRaw && typeof startRaw.toDate === "function") {
             startDate = startRaw.toDate();
           } else if (startRaw && typeof startRaw.seconds === "number") {
@@ -514,36 +503,34 @@ export const getCompletedAssignmentsCount = async (tutorId) => {
   }
 };
 
-// Get completed assignments for a tutor
 export const getTutorCompletedAssignments = async (tutorId) => {
   try {
     if (!tutorId) return [];
-    
+
     const q = query(
       collection(db, "assignments"),
       where("selectedTutorId", "==", tutorId),
-      where("status", "==", "closed") // get all "closed" assignment
+      where("status", "==", "closed")
     );
-    
+
     const snap = await getDocs(q);
     const assignments = snap.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    
-    // Sort by completion date (most recent first)
+
     assignments.sort((a, b) => {
       const dateA = a.closedAt || a.updatedAt || a.createdAt;
       const dateB = b.closedAt || b.updatedAt || b.createdAt;
-      
-      const timeA = typeof dateA === 'string' ? Date.parse(dateA) : 
-                    dateA && dateA.seconds ? dateA.seconds * 1000 : 0;
-      const timeB = typeof dateB === 'string' ? Date.parse(dateB) : 
-                    dateB && dateB.seconds ? dateB.seconds * 1000 : 0;
-      
+
+      const timeA = typeof dateA === 'string' ? Date.parse(dateA) :
+        dateA && dateA.seconds ? dateA.seconds * 1000 : 0;
+      const timeB = typeof dateB === 'string' ? Date.parse(dateB) :
+        dateB && dateB.seconds ? dateB.seconds * 1000 : 0;
+
       return timeB - timeA;
     });
-    
+
     return assignments;
   } catch (err) {
     console.error("Error fetching tutor completed assignments:", err);
@@ -591,10 +578,8 @@ export const loginUser = async (email, password) => {
   }
 };
 
-// Reactive login status shared across the app
 export const loginStatus = vueRef(false);
 
-// Keep loginStatus and localStorage in sync with Firebase Auth
 onAuthStateChanged(auth, (user) => {
   loginStatus.value = !!user;
   if (user) {
@@ -648,13 +633,9 @@ export const logoutUser = async () => {
 export const signInWithGoogle = async () => {
   try {
     const userCredential = await signInWithPopup(auth, provider);
-
-    // This gives you a Google Access Token. You can use it to access Google APIs.
     const credential = GoogleAuthProvider.credentialFromResult(userCredential);
     const token = credential.accessToken;
-
     const user = userCredential.user;
-
     const expiryTime = Date.now() + 3600 * 1000; // 1 hour
 
     return {
@@ -705,7 +686,6 @@ export const getUserCalendars = async (token) => {
 // Google Calendar API - get Calendar by CalendarId (primary as default input)
 export const getPrimaryCalendar = async (token, calendarId = "primary") => {
   try {
-    // Use the proper calendar endpoint and encode calendarId
     const encodedCalId = encodeURIComponent(calendarId);
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${encodedCalId}`,
@@ -803,14 +783,6 @@ export const getEvents = async (token, calendarId = "primary", type) => {
       }
     );
     const data = await response.json();
-    data.items.forEach((element) => {
-      console.log(
-        element.start.dateTime,
-        element.end.dateTime,
-        element.colorId ?? null,
-        element.description ?? null
-      );
-    });
 
     return {
       success: true,
@@ -857,33 +829,6 @@ export const getEventById = async (token, calendarId = "primary", eventId) => {
 // Google Calendar API - create new event for a calendar
 export const createEvent = async (token, calendarId = "primary", event) => {
   try {
-    // event body format
-    // event = {
-    //   'summary': eventName,
-    //   'description': eventDescription,
-    //   'start':{
-    //     'dateTime': start.toISOString(), // Date.toISOString() -> google date formatting
-    //     'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
-    //   },
-    //   'end':{
-    //     'dateTime': end.toISOString(), // Date.toISOString() -> google date formatting
-    //     'timeZone': Intl.DateTimeFormat().resolvedOptions().timeZone
-    //   }
-    // }
-    // {
-    // "summary": "Meeting with Team",
-    // "description": "Discuss project roadmap",
-    // "start": {
-    //   "dateTime": "2025-10-07T11:00:00",
-    //   "timeZone": "Asia/Singapore"
-    // },
-    // "end": {
-    //   "dateTime": "2025-10-08T11:00:00",
-    //   "timeZone": "Asia/Singapore"
-    // },
-    // "colorId": "5"
-    // }
-
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events`,
       {
@@ -920,21 +865,6 @@ export const updateEvent = async (
   event
 ) => {
   try {
-    // requires start and end in body
-    //   {
-    // "summary": "Meeting with Team",
-    // "description": "Discuss project roadmap",
-    // "start": {
-    //   "dateTime": "2025-10-09T11:00:00.000Z",
-    //   "timeZone": "Asia/Singapore"
-    // },
-    // "end": {
-    //   "dateTime": "2025-10-10T11:00:00.000Z",
-    //   "timeZone": "Asia/Singapore"
-    // },
-    // "colorId": "5"
-    // }
-
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${eventId}`,
       {
@@ -1061,34 +991,19 @@ export const addEvent_ = async (
   userId
 ) => {
   function generateUUID() {
-  // Modern browsers and Node 19+
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-
-  // Browser fallback using getRandomValues
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+      (
+        c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+      ).toString(16)
     );
   }
-
-  // Node.js fallback using require('crypto')
-  try {
-    const { randomBytes } = require('crypto');
-    const bytes = randomBytes(16);
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
-    return `${hex.substr(0,8)}-${hex.substr(8,4)}-${hex.substr(12,4)}-${hex.substr(16,4)}-${hex.substr(20,12)}`;
-  } catch (err) {
-    // Last resort (non-crypto random)
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-      const r = Math.random() * 16 | 0;
-      const v = c === 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
   try {
     const userRef = doc(db, "users", userId);
@@ -1313,7 +1228,6 @@ export const getLocations = async () => {
   }
 };
 
-// User helpers
 export const getUserRole = async (uid) => {
   try {
     if (!uid) return null;
@@ -1328,7 +1242,6 @@ export const getUserRole = async (uid) => {
   }
 };
 
-// Small helper to obtain the current authenticated user via an observer
 export const getCurrentUser = async () => {
   try {
     return new Promise((resolve, reject) => {
@@ -1349,7 +1262,6 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Convenience wrappers for user document operations
 export const getUserDoc = async (uid) => {
   try {
     if (!uid) return null;
@@ -1374,7 +1286,6 @@ export const setUserDoc = async (uid, data, options = { merge: true }) => {
   }
 };
 
-// Convert a user id (uid) to their username (if present). Returns username string or null.
 export const getUsernameById = async (uid) => {
   try {
     if (!uid) return null;
@@ -1394,10 +1305,8 @@ export const uploadUserAvatar = async (uid, file, folder = "users") => {
     if (!uid) throw new Error("Missing uid");
     if (!file) throw new Error("Missing file");
 
-    // get previous avatar URL (if any)
     const userDoc = await getUserDoc(uid);
     const oldUrl = userDoc ? userDoc.avatar || userDoc.avator : null;
-
     const ext = (file.name || "").split(".").pop();
     const path = `${folder}/${uid}/avatar_${Date.now()}.${ext}`;
     const storageRef = ref(storage, path);

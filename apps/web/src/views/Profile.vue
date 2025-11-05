@@ -4,16 +4,13 @@
       <!-- Header -->
       <div class="row g-4">
         <!-- Left column -->
-        <div class="pr-10 col-lg-8">
+        <div class="pr-md-10 col-lg-8">
           <div class="card shadow-sm">
             <div class="card-body px-10">
               <div class="profile text-center mb-3">
                 <div class="mb-3 mx-auto">
                   <img
-                    :src="
-                      profile.avatar ||
-                      defaultAvatar
-                    "
+                    :src="profile.avatar || defaultAvatar"
                     alt="Profile"
                     class="rounded-circle img-fluid"
                     style="width: 150px; height: 150px; object-fit: cover"
@@ -152,39 +149,63 @@
         </div>
 
         <!-- Quick Stats -->
-        <div class="card shadow-sm mt-6 col-lg-4">
-              <div class="card-body">
-            <h6 class="fw-semibold mb-3">Quick Stats</h6>
+        <div class="col-lg-4">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+              <h6 class="fw-semibold mb-3">Quick Stats</h6>
 
-            <!-- Tutor stats -->
-            <div v-if="isTutorProfile">
-              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
-                <span class="text-muted">Completed assignments</span>
-                <span class="fw-semibold">{{ completedAssignmentsCount == null ? '—' : completedAssignmentsCount }}</span>
+              <!-- Tutor stats -->
+              <div v-if="isTutorProfile">
+                <div
+                  class="stat-item d-flex justify-content-between mb-2 border-bottom py-2"
+                >
+                  <span class="text-muted">Completed assignments</span>
+                  <span class="fw-semibold">{{
+                    completedAssignmentsCount == null
+                      ? "—"
+                      : completedAssignmentsCount
+                  }}</span>
+                </div>
+                <div
+                  class="stat-item d-flex justify-content-between mb-2 border-bottom py-2"
+                >
+                  <span class="text-muted">Active Assignment</span>
+                  <span class="fw-semibold">{{ activeStudentsCount }}</span>
+                </div>
+                <div
+                  class="stat-item d-flex justify-content-between border-bottom py-2"
+                >
+                  <span class="text-muted">Rating</span>
+                  <span class="fw-semibold"
+                    >{{ profile.rating ?? "—" }} ⭐</span
+                  >
+                </div>
               </div>
-              <div class="stat-item d-flex justify-content-between mb-2 border-bottom py-2">
-                <span class="text-muted">Active Assignment</span>
-                <span class="fw-semibold">{{ activeStudentsCount }}</span>
-              </div>
-              <div class="stat-item d-flex justify-content-between border-bottom py-2">
-                <span class="text-muted">Rating</span>
-                <span class="fw-semibold">{{ profile.rating ?? "—" }} ⭐</span>
-              </div>
-            </div>
 
-            <!-- Parent stats -->
-            <div v-if="isParentProfile">
-              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
-                <span class="text-muted">Assignments Posted</span>
-                <span class="fw-semibold">{{ profile.assignmentsPosted || 0 }}</span>
-              </div>
-              <div class="d-flex justify-content-between py-2 border-bottom mb-2">
-                <span class="text-muted">Active Assignments</span>
-                <span class="fw-semibold">{{ profile.activeAssignments || 0 }}</span>
-              </div>
-              <div class="d-flex justify-content-between py-2">
-                <span class="text-muted">Children</span>
-                <span class="fw-semibold">{{ profile.children?.length || 0 }}</span>
+              <!-- Parent stats -->
+              <div v-if="isParentProfile">
+                <div
+                  class="d-flex justify-content-between py-2 border-bottom mb-2"
+                >
+                  <span class="text-muted">Assignments Posted</span>
+                  <span class="fw-semibold">{{
+                    profile.assignmentsPosted || 0
+                  }}</span>
+                </div>
+                <div
+                  class="d-flex justify-content-between py-2 border-bottom mb-2"
+                >
+                  <span class="text-muted">Active Assignments</span>
+                  <span class="fw-semibold">{{
+                    profile.activeAssignments || 0
+                  }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                  <span class="text-muted">Children</span>
+                  <span class="fw-semibold">{{
+                    profile.children?.length || 0
+                  }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -193,48 +214,49 @@
         <!-- Documents - Only for tutors -->
         <div
           v-if="isTutorProfile && uploadedDocuments.length > 0"
-          class="card shadow-sm"
+          class="col-lg-12"
         >
-          <div class="card-body">
-            <h5 class="card-title mb-4">
-              <i class="bi bi-file-earmark-text me-2"></i> Documents &
-              Credentials
-            </h5>
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <h5 class="card-title mb-4">
+                <i class="bi bi-file-earmark-text me-2"></i> Documents &
+                Credentials
+              </h5>
 
-            <div class="list-group">
-              <div
-                v-for="(docItem, idx) in uploadedDocuments"
-                :key="idx"
-                class="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div class="d-flex align-items-center">
-                  <i
-                    class="bi bi-file-earmark-check text-success me-2 fs-5"
-                  ></i>
-                  <div>
-                    <div class="fw-semibold">{{ docItem.name }}</div>
-                    <small class="text-muted"
-                      >Uploaded {{ docItem.uploadDate }}</small
-                    >
+              <div class="list-group">
+                <div
+                  v-for="(docItem, idx) in uploadedDocuments"
+                  :key="idx"
+                  class="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div class="d-flex align-items-center">
+                    <i
+                      class="bi bi-file-earmark-check text-success me-2 fs-5"
+                    ></i>
+                    <div>
+                      <div class="fw-semibold">{{ docItem.name }}</div>
+                      <small class="text-muted"
+                        >Uploaded {{ docItem.uploadDate }}</small
+                      >
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <a
-                    :href="docItem.url || '#'"
-                    target="_blank"
-                    class="btn btn-sm btn-outline-primary me-2"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </a>
-                  <button class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-trash"></i>
-                  </button>
+                  <div>
+                    <a
+                      :href="docItem.url || '#'"
+                      target="_blank"
+                      class="btn btn-sm btn-outline-primary me-2"
+                    >
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- Past Assignments Taken - Show for public view and own profile -->
@@ -245,7 +267,9 @@
         <div class="col-12">
           <div class="card shadow-sm">
             <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center mb-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-4"
+              >
                 <h5 class="card-title mb-0">
                   <i class="bi bi-check-circle me-2"></i> Past Assignments Taken
                 </h5>
@@ -253,67 +277,99 @@
                   class="btn btn-sm btn-outline-secondary"
                   @click="isAssignmentsExpanded = !isAssignmentsExpanded"
                 >
-                  <i :class="isAssignmentsExpanded ? 'bi bi-chevron-up' : 'bi bi-chevron-down'" class="me-1"></i>
-                  {{ isAssignmentsExpanded ? 'Hide' : 'Show' }}
+                  <i
+                    :class="
+                      isAssignmentsExpanded
+                        ? 'bi bi-chevron-up'
+                        : 'bi bi-chevron-down'
+                    "
+                    class="me-1"
+                  ></i>
+                  {{ isAssignmentsExpanded ? "Hide" : "Show" }}
                 </button>
               </div>
 
               <div v-show="isAssignmentsExpanded">
                 <p class="text-muted small mb-3">
-                  {{ completedAssignments.length }} assignment{{ completedAssignments.length !== 1 ? 's' : '' }} completed
+                  {{ completedAssignments.length }} assignment{{
+                    completedAssignments.length !== 1 ? "s" : ""
+                  }}
+                  completed
                 </p>
 
                 <div class="list-group">
-                <div
-                  v-for="(assignment, idx) in completedAssignments"
-                  :key="idx"
-                  class="list-group-item border rounded mb-3 p-3"
-                >
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="fw-bold mb-0">{{ assignment.title }}</h6>
-                    <span class="badge bg-success">Completed</span>
-                  </div>
-                  
-                  <div class="mb-2">
-                    <span class="badge bg-primary me-2">
-                      <i class="bi bi-book me-1"></i>{{ assignment.subject }}
-                    </span>
-                    <span class="badge bg-info me-2">
-                      <i class="bi bi-mortarboard me-1"></i>{{ assignment.level }}
-                    </span>
-                    <span class="badge bg-secondary">
-                      <i class="bi bi-geo-alt me-1"></i>{{ assignment.location }}
-                    </span>
-                  </div>
+                  <div
+                    v-for="(assignment, idx) in completedAssignments"
+                    :key="idx"
+                    class="list-group-item border rounded mb-3 p-3"
+                  >
+                    <div
+                      class="d-flex justify-content-between align-items-start mb-2"
+                    >
+                      <h6 class="fw-bold mb-0">{{ assignment.title }}</h6>
+                      <span class="badge bg-success">Completed</span>
+                    </div>
 
-                  <p class="text-muted small mb-2">{{ assignment.description }}</p>
-
-                  <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                      <i class="bi bi-calendar-check me-1"></i>
-                      Completed: {{ formatDate(assignment.closedAt || assignment.updatedAt) }}
-                    </small>
-                    
-                    <div v-if="assignment.review && assignment.review.length > 0">
-                      <span class="text-warning">
-                        <i class="bi bi-star-fill"></i>
-                        {{ assignment.review[0].rating }}/5
+                    <div class="mb-2">
+                      <span class="badge bg-primary me-2">
+                        <i class="bi bi-book me-1"></i>{{ assignment.subject }}
+                      </span>
+                      <span class="badge bg-info me-2">
+                        <i class="bi bi-mortarboard me-1"></i
+                        >{{ assignment.level }}
+                      </span>
+                      <span class="badge bg-secondary">
+                        <i class="bi bi-geo-alt me-1"></i
+                        >{{ assignment.location }}
                       </span>
                     </div>
-                  </div>
 
-                  <div v-if="assignment.review && assignment.review.length > 0 && assignment.review[0].comment" class="mt-2 p-2 bg-light rounded">
-                    <small class="text-muted fst-italic">
-                      <i class="bi bi-quote me-1"></i>{{ assignment.review[0].comment }}
-                    </small>
+                    <p class="text-muted small mb-2">
+                      {{ assignment.description }}
+                    </p>
+
+                    <div
+                      class="d-flex justify-content-between align-items-center"
+                    >
+                      <small class="text-muted">
+                        <i class="bi bi-calendar-check me-1"></i>
+                        Completed:
+                        {{
+                          formatDate(
+                            assignment.closedAt || assignment.updatedAt
+                          )
+                        }}
+                      </small>
+
+                      <div
+                        v-if="assignment.review && assignment.review.length > 0"
+                      >
+                        <span class="text-warning">
+                          <i class="bi bi-star-fill"></i>
+                          {{ assignment.review[0].rating }}/5
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      v-if="
+                        assignment.review &&
+                        assignment.review.length > 0 &&
+                        assignment.review[0].comment
+                      "
+                      class="mt-2 p-2 bg-light rounded"
+                    >
+                      <small class="text-muted fst-italic">
+                        <i class="bi bi-quote me-1"></i
+                        >{{ assignment.review[0].comment }}
+                      </small>
+                    </div>
                   </div>
                 </div>
-              </div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- Transaction History - Only show for own profile -->
@@ -356,7 +412,7 @@ import { useRoute } from "vue-router";
 import router from "../router/routes";
 import { useToast } from "../composables/useToast";
 import TransactionHistory from "../components/TransactionHistory.vue";
-import defaultAvatar from '../assets/images/profileplaceholder.jpg'
+import defaultAvatar from "../assets/images/profileplaceholder.jpg";
 
 const toast = useToast();
 
@@ -445,21 +501,22 @@ const loadProfileRoute = async () => {
         profile.value = u;
         uploadedDocuments.value = u.uploadedDocuments || [];
         userRole.value = u.role || "tutor";
-        profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        profile.value.rating =
+          (await calculateTutorRating(u.id)).average || "-";
         // load number of selected assignments for this tutor
         try {
           const tid = u.uid || u.id || null;
           activeStudentsCount.value = tid
             ? await getSelectedAssignmentsCount(tid)
             : 0;
-            completedAssignmentsCount.value = tid
-              ? await getCompletedAssignmentsCount(tid)
-              : 0;
+          completedAssignmentsCount.value = tid
+            ? await getCompletedAssignmentsCount(tid)
+            : 0;
         } catch (e) {
           console.warn("Failed to load active students count", e);
           activeStudentsCount.value = 0;
         }
-        
+
         // Load completed assignments for tutors
         if (u.role === "tutor" && u.id) {
           completedAssignments.value = await getTutorCompletedAssignments(u.id);
@@ -483,21 +540,22 @@ const loadProfileRoute = async () => {
         profile.value = { ...u, uid };
         uploadedDocuments.value = u.uploadedDocuments || [];
         currentUser.value = auth.currentUser;
-        profile.value.rating = (await calculateTutorRating(u.id)).average || "-";
+        profile.value.rating =
+          (await calculateTutorRating(u.id)).average || "-";
         // load number of selected assignments for this tutor (private profile)
         try {
           const tid = uid || profile.value.uid || profile.value.id || null;
           activeStudentsCount.value = tid
             ? await getSelectedAssignmentsCount(tid)
             : 0;
-            completedAssignmentsCount.value = tid
-              ? await getCompletedAssignmentsCount(tid)
-              : 0;
+          completedAssignmentsCount.value = tid
+            ? await getCompletedAssignmentsCount(tid)
+            : 0;
         } catch (e) {
           console.warn("Failed to load active students count", e);
           activeStudentsCount.value = 0;
         }
-        
+
         // Load completed assignments for tutors
         if (userRole.value === "tutor" && uid) {
           completedAssignments.value = await getTutorCompletedAssignments(uid);

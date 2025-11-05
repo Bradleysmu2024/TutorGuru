@@ -11,7 +11,7 @@ const router = useRouter();
 const loading = ref(false);
 const assignments = ref([]);
 const filterStatus = ref("all");
-const applicationCounts = ref({}); // Store application counts by assignment ID
+const applicationCounts = ref({});
 
 let unsubscribe = null;
 

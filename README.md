@@ -48,6 +48,8 @@ Open a terminal in the project directory and run:
 
 \`\`\`bash
 npm install
+npm i firebase-tools
+firebase deploy
 \`\`\`
 
 This will install all required dependencies including:
@@ -66,14 +68,13 @@ npm run dev
 
 The application will start at `http://localhost:5173`
 
-## Available Scripts
+## Available scripts (in `apps/web/package.json`)
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build locally
-- `npm run production` - Build and preview production build locally
 
-## Adding Your Own Images
+## Adding your own images
 
 To use your own images in the carousel:
 
@@ -102,47 +103,40 @@ import image4 from '@/assets/images/your-image-4.jpg'
 
 The `@` symbol is an alias for the `src` directory, so `@/assets/images/` points to `src/assets/images/`.
 
-## Project Structure
+## Project structure
 
 \`\`\`
 tutor-platform/
-├── public/              # Static assets
-├── src/
-│   ├── assets/         # Images, styles, etc.
-│   │   ├── images/     # Folder for custom images
-│   │   ├── styles/     # CSS files
-│   │   └── icons/      # Icon files
-│   ├── components/     # Reusable Vue components
-│   │   ├── Navbar.vue
-│   │   ├── Footer.vue
-│   │   ├── HeroSection.vue
-│   │   ├── SearchFilter.vue
-│   │   ├── JobCard.vue
-│   │   ├── FileUpload.vue
-│   │   └── Carousel.vue
-│   ├── views/          # Page components
-│   │   ├── Home.vue
-│   │   ├── Dashboard.vue
-│   │   ├── Profile.vue
-│   │   ├── Login.vue
-│   │   └── Register.vue
-│   ├── router/         # Vue Router configuration
-│   │   └── index.js
-│   ├── services/       # API and Firebase services
-│   │   └── firebase.js
-│   ├── data/           # Dummy data for development
-│   │   └── dummyData.js
-│   ├── App.vue         # Root component
-│   └── main.js         # Application entry point
-├── index.html
-├── package.json
-├── vite.config.js
-└── README.md
+├── apps/web
+│   ├── public/                 # Static assets
+│   ├── src/
+│   │   ├── assets/             # Images, styles, etc.
+│   │   │   ├── images/         # Folder for custom images
+│   │   │   ├── styles/         # CSS files
+│   │   │   └── icons/          # Icon files
+│   │   ├── components/         # Reusable Vue components
+│   │   ├── views/              # Page components
+│   │   ├── router/             # Vue Router configuration
+│   │   │   └── index.js
+│   │   ├── services/           # API and Firebase services
+│   │   │   └── firebase.js
+│   │   │   └── stripe.js
+│   │   ├── App.vue             # Root component
+│   │   └── main.js             # Application entry point
+│   ├── index.html
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── firestore.rules         # Firestore configuration
+│   ├── firestore.indexes.json  # Firestore configuration
+│   ├── storage.rules           # Firebase storage configuration
+│   ├── vite.config.js          # Vite configuration
+├── README.md
+└── firebase.json               # Firebase configuration
 \`\`\`
 
-## Firebase Setup
+## Firebase setup
 
-The application is configured to work with Firebase. To connect your Firebase project:
+The web client integrates with Firebase. A few notes to get you running:
 
 ### 1. Create a Firebase Project
 
@@ -156,67 +150,33 @@ The application is configured to work with Firebase. To connect your Firebase pr
 1. In Firebase Console, go to Project Settings
 2. Scroll down to "Your apps" section
 3. Click the web icon (</>) to create a web app
-4. Copy the Firebase configuration object
+4. Copy the Firebase configuration
 
-### 3. Update the Configuration
+### 3. The client expects environment variables for the Firebase config. Create a `.env` (or `.env.local`) in `apps/web` with keys used by the code, for example:
 
-Open `src/services/firebase.js` and replace the placeholder config:
+```
+VUE_APP_API_KEY=...
+VUE_APP_AUTH_DOMAIN=...
+VUE_APP_PROJECT_ID=...
+VUE_APP_STORAGE_BUCKET=...
+VUE_APP_MESSAGING_SENDER_ID=...
+VUE_APP_APP_ID=...
+VUE_APP_MEASUREMENT_ID=...
+```
 
-\`\`\`javascript
-const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
-};
-\`\`\`
+4. Open `src/services/firebase.js` to confirm which env keys the project expects and adjust as needed.
 
-### 4. Set Up Firestore Collections
 
-Create the following collections in Firestore:
+## Development notes
 
-**users** collection:
-\`\`\`javascript
-{
-  uid: string,
-  email: string,
-  name: string,
-  phone: string,
-  subjects: array,
-  education: string,
-  experience: string,
-  hourlyRate: number,
-  bio: string,
-  credentials: array
-}
-\`\`\`
+- The repo contains `apps/web` (frontend) and `functions` (Cloud Functions) folders. Work inside `apps/web` for client changes.
+- Some components include fallback/dummy data for development — check components/composables for mock data if you want to run without Firebase.
 
-**jobPostings** collection:
-\`\`\`javascript
-{
-  id: string,
-  title: string,
-  subject: string,
-  level: string,
-  location: string,
-  type: string,
-  rate: string,
-  description: string,
-  requirements: array,
-  postedDate: timestamp,
-  studentId: string
-}
-\`\`\`
+Authentication and Flow
+- Users register and login via Firebase Auth. Protected routes rely on auth state.
 
-## Development Notes
-
-### Using Dummy Data
-
-The application currently uses dummy data from `src/data/dummyData.js` for development. This allows you to test the UI without setting up Firebase immediately.
-
-Once Firebase is configured, the application will automatically switch to using real data from Firestore.
+File uploads
+- File upload components wire to Firebase Storage when configured. They include client-side validation and progress UI.
 
 ### Authentication Flow
 
@@ -234,18 +194,18 @@ The file upload component supports:
 - Progress tracking
 - Firebase Storage integration (when configured)
 
-## Recommended VSCode Extensions
+## Recommended VSCode extensions
 
 For the best development experience, install these extensions:
 
-- **Volar** - Vue Language Features
-- **TypeScript Vue Plugin (Volar)** - Enhanced TypeScript support
+- **Vue (Official)** - Vue Language Features
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
 - **Auto Rename Tag** - Automatically rename paired tags
 - **Path Intellisense** - Autocomplete filenames
+- **Bootstrap Intellisense** - Intellisense for bootstrap
 
-## Technology Stack
+## Tech stack
 
 - **Frontend Framework**: Vue 3 (Composition API)
 - **Routing**: Vue Router 4
@@ -256,21 +216,21 @@ For the best development experience, install these extensions:
 
 ## Troubleshooting
 
-### Port Already in Use
+### Port already in use:
 
-If port 5173 is already in use:
-\`\`\`bash
+```bash
 npm run dev -- --port 3000
-\`\`\`
+```
 
-### Dependencies Not Installing
+### Dependencies not installing (Windows):
 
-Clear npm cache and reinstall:
-\`\`\`bash
+```powershell
 npm cache clean --force
-rm -rf node_modules package-lock.json
+Remove-Item -Recurse -Force node_modules,package-lock.json
 npm install
-\`\`\`
+```
+
+Firebase issues: verify config keys, ensure Auth/Firestore enabled, and that your `.env` file values match the Firebase console credentials.
 
 ### Firebase Connection Issues
 
@@ -282,6 +242,7 @@ npm install
 
 This project is part of a team assignment. Team members:
 - **Dzaki** - Tutor Dashboard, Search/Filter, File Upload
+- **Jia Shun** - Message, Profile, Firebase
 
 ## License
 

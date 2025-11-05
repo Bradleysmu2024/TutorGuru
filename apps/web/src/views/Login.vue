@@ -150,7 +150,7 @@ const openPasswordResetModal = () => {
               <div class="text-center mb-4">
                 <i class="bi bi-book-half text-primary fs-1 mb-3"></i>
                 <h2 class="fw-bold mb-2">Welcome Back</h2>
-                <p class="text-muted">Login to access your tutor dashboard</p>
+                <p>Login to access your dashboard</p>
               </div>
 
               <form @submit.prevent="handleLogin">

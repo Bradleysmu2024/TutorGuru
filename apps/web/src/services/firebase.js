@@ -24,7 +24,6 @@ import {
   signOut,
   signInWithPopup,
   GoogleAuthProvider,
-  getAdditionalUserInfo,
   connectAuthEmulator,
   onAuthStateChanged,
   updateEmail,
@@ -352,7 +351,7 @@ export const getParentAssignments = async (parentId) => {
     );
     const snap = await getDocs(q);
     const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    // Sort client-side by createdAt (support ISO string or Firestore timestamp)
+    // Sort client-side by createdAt
     items.sort((a, b) => {
       const ta =
         a.createdAt && typeof a.createdAt === "string"

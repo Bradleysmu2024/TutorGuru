@@ -12,8 +12,16 @@ export default defineConfig(({ mode }) => {
     define: {
       'process.env': env
     },
+    server: {
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+      }
+    },
     preview: {
-      allowedHosts: ['dodieboy.codes']
+      allowedHosts: ['dodieboy.codes'],
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups'
+      }
     },
   }
 })

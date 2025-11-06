@@ -139,4 +139,11 @@ onUnmounted(() => {})
 .d-flex.flex-column > .chat-window {
   min-height: 0;
 }
+
+/* Mobile & tablet responsive */
+@media (max-width: 991.98px) {
+  .mobile-sidebar{
+    top: 78px;
+  }
+}
 </style>

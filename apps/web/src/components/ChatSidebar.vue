@@ -117,7 +117,6 @@ const loadChats = async () => {
 
 onMounted(() => {
   loadChats()
-  // load current user's profile for header
   const tryLoadProfile = async (uid) => {
     if (!uid) return
     try {
